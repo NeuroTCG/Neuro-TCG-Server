@@ -1,6 +1,7 @@
 import kotlinx.coroutines.*
 import java.io.*
 import java.net.*
+
 suspend fun main() {
     val serverSocket = withContext(Dispatchers.IO) {
         ServerSocket(9933)
@@ -15,14 +16,28 @@ suspend fun main() {
 
     val dataIn: DataInputStream = DataInputStream(clientSocket.inputStream)
     val dataOut: DataOutputStream = DataOutputStream(clientSocket.outputStream)
+    var exitConnection: Boolean = false
 
-    val clientMessage: String = withContext(Dispatchers.IO) {
-        dataIn.readUTF()
-    }
-    println(clientMessage)
-    val serverMessage: String = "Hi this is coming from Server!"
-    withContext(Dispatchers.IO) {
-        dataOut.writeUTF(serverMessage)
+    while (!exitConnection){
+        val clientMessage: String = withContext(Dispatchers.IO) {
+            dataIn.readUTF()
+        }
+        var serverMessage: String
+        if (clientMessage == "exit") {
+            println("client command 'EXIT'")
+            serverMessage = "client commanded server to exit"
+            exitConnection = true
+        } else if (clientMessage == "ping") {
+            println("client command 'PING'")
+            serverMessage = "pong"
+        } else {
+            serverMessage = "Hi this is coming from Server!"
+        }
+
+        println(clientMessage)
+        withContext(Dispatchers.IO) {
+            dataOut.writeUTF(serverMessage)
+        }
     }
 
     withContext(Dispatchers.IO) {
