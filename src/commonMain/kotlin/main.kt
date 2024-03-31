@@ -1,35 +1,40 @@
-import korlibs.time.*
-import korlibs.korge.*
-import korlibs.korge.scene.*
-import korlibs.korge.tween.*
-import korlibs.korge.view.*
-import korlibs.image.color.*
-import korlibs.image.format.*
-import korlibs.io.file.std.*
-import korlibs.math.geom.*
-import korlibs.math.interpolation.*
+import kotlinx.coroutines.*
+import java.io.*
+import java.net.*
+suspend fun main() {
+    val serverSocket = withContext(Dispatchers.IO) {
+        ServerSocket(5001)
+    }
+    println("Listening for clients...")
+    val clientSocket = withContext(Dispatchers.IO) {
+        serverSocket.accept()
+    }
+    val clientSocketIP = clientSocket.inetAddress.toString()
+    val clientSocketPort = clientSocket.port
+    println("[IP: $clientSocketIP ,Port: $clientSocketPort]  Client Connection Successful!")
 
-suspend fun main() = Korge(windowSize = Size(512, 512), backgroundColor = Colors["#2b2b2b"]) {
-	val sceneContainer = sceneContainer()
+    val dataIn = DataInputStream(clientSocket.inputStream)
+    val dataOut = DataOutputStream(clientSocket.outputStream)
 
-	sceneContainer.changeTo { MyScene() }
-}
+    val clientMessage = withContext(Dispatchers.IO) {
+        dataIn.readUTF()
+    }
+    println(clientMessage)
+    val serverMessage = "Hi this is coming from Server!"
+    withContext(Dispatchers.IO) {
+        dataOut.writeUTF(serverMessage)
+    }
 
-class MyScene : Scene() {
-	override suspend fun SContainer.sceneMain() {
-		val minDegrees = (-16).degrees
-		val maxDegrees = (+16).degrees
-
-		val image = image(resourcesVfs["korge.png"].readBitmap()) {
-			rotation = maxDegrees
-			anchor(.5, .5)
-			scale(0.8)
-			position(256, 256)
-		}
-
-		while (true) {
-			image.tween(image::rotation[minDegrees], time = 1.seconds, easing = Easing.EASE_IN_OUT)
-			image.tween(image::rotation[maxDegrees], time = 1.seconds, easing = Easing.EASE_IN_OUT)
-		}
-	}
+    withContext(Dispatchers.IO) {
+        dataIn.close()
+    }
+    withContext(Dispatchers.IO) {
+        dataOut.close()
+    }
+    withContext(Dispatchers.IO) {
+        serverSocket.close()
+    }
+    withContext(Dispatchers.IO) {
+        clientSocket.close()
+    }
 }
