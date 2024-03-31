@@ -1,0 +1,17 @@
+/.gradle
+/.idea
+/build
+/modules
+/bundles
+/deps
+*.iml
+*.hprof
+*.log
+korge.keystore
+src/main/*
+.DS_Store
+
+
+# Project exclude paths
+/gradle/wrapper/
+/kotlin-js-store/
