@@ -9,18 +9,18 @@ suspend fun main() {
     val clientSocket = withContext(Dispatchers.IO) {
         serverSocket.accept()
     }
-    val clientSocketIP = clientSocket.inetAddress.toString()
-    val clientSocketPort = clientSocket.port
+    val clientSocketIP: String = clientSocket.inetAddress.toString()
+    val clientSocketPort: Int = clientSocket.port
     println("[IP: $clientSocketIP ,Port: $clientSocketPort]  Client Connection Successful!")
 
-    val dataIn = DataInputStream(clientSocket.inputStream)
-    val dataOut = DataOutputStream(clientSocket.outputStream)
+    val dataIn: DataInputStream = DataInputStream(clientSocket.inputStream)
+    val dataOut: DataOutputStream = DataOutputStream(clientSocket.outputStream)
 
-    val clientMessage = withContext(Dispatchers.IO) {
+    val clientMessage: String = withContext(Dispatchers.IO) {
         dataIn.readUTF()
     }
     println(clientMessage)
-    val serverMessage = "Hi this is coming from Server!"
+    val serverMessage: String = "Hi this is coming from Server!"
     withContext(Dispatchers.IO) {
         dataOut.writeUTF(serverMessage)
     }
