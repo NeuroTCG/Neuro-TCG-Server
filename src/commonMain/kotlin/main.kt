@@ -3,7 +3,7 @@ import java.io.*
 import java.net.*
 suspend fun main() {
     val serverSocket = withContext(Dispatchers.IO) {
-        ServerSocket(5001)
+        ServerSocket(9933)
     }
     println("Listening for clients...")
     val clientSocket = withContext(Dispatchers.IO) {
