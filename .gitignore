@@ -8,7 +8,6 @@
 *.hprof
 *.log
 korge.keystore
-src/main/*
 .DS_Store
 
 
