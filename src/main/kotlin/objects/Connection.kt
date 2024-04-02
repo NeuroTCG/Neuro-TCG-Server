@@ -23,8 +23,16 @@ class Connection {
         var serverMessage: String = ""
 
         while (!exitConnection) {
-            val clientMessage: String = withContext(Dispatchers.IO) {
-                dataIn.readUTF()
+            val clientMessage: String?;
+            try {
+                clientMessage = withContext(Dispatchers.IO) {
+                        dataIn.readUTF()
+                }
+            }
+            catch (e: EOFException){
+                println("Client closed the connection unexpectedly");
+                exitConnection = true;
+                continue;
             }
             val serverResponse: MutableList<Any> = withContext(Dispatchers.IO) {
                 Parser().parse(clientMessage)
