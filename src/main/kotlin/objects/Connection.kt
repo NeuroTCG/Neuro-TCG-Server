@@ -12,29 +12,30 @@ class Connection {
         val clientSocketIP: String = clientSocket.inetAddress.toString()
         val clientSocketPort: Int = clientSocket.port
         println("[IP: $clientSocketIP ,Port: $clientSocketPort]  Client classes.Connection Successful!")
-        val dataIn: DataInputStream = DataInputStream(clientSocket.inputStream)
-        val dataOut: DataOutputStream = DataOutputStream(clientSocket.outputStream)
+        val dataIn = DataInputStream(clientSocket.inputStream)
+        val dataOut = DataOutputStream(clientSocket.outputStream)
         withContext(Dispatchers.IO){dataOut.writeUTF("Connected to the server")}
-        var exitConnection: Boolean = false
-        var serverMessage: String = ""
+        var exitConnection = false
+        var serverMessage: String
 
         while (!exitConnection) {
-            val clientMessage: String?;
+            val clientMessage: String?
             try {
                 clientMessage = withContext(Dispatchers.IO){dataIn.readUTF()}
             }
             catch (e: SocketException){
-                println("Client reset the connection");
-                break;
+                println("Client reset the connection")
+                break
             }
             catch (e: EOFException){
-                println("Client closed the connection unexpectedly");
-                break;
+                println("Client closed the connection unexpectedly")
+                break
             }
             val serverResponse: MutableList<Any> = withContext(Dispatchers.IO) {Parser().parse(clientMessage)}
             serverMessage = serverResponse[0] as String
             exitConnection = serverResponse[1] as Boolean
-            println(clientMessage)
+            println("client: $clientMessage")
+            println("server: $serverMessage")
             withContext(Dispatchers.IO) {dataOut.writeUTF(serverMessage)}
         }
         stop(dataIn, dataOut, serverSocket, clientSocket)
