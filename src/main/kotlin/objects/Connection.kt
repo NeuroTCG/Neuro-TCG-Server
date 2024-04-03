@@ -23,10 +23,13 @@ class Connection {
             try {
                 clientMessage = withContext(Dispatchers.IO){dataIn.readUTF()}
             }
+            catch (e: SocketException){
+                println("Client reset the connection");
+                break;
+            }
             catch (e: EOFException){
                 println("Client closed the connection unexpectedly");
-                exitConnection = true;
-                continue;
+                break;
             }
             val serverResponse: MutableList<Any> = withContext(Dispatchers.IO) {Parser().parse(clientMessage)}
             serverMessage = serverResponse[0] as String
