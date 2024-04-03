@@ -1,22 +1,19 @@
 package objects
 
 class Parser {
-    suspend fun parse(clientMessage: String): MutableList<Any> {
+    fun parse(clientMessage: String): ClientCommand {
         val clientMessageArray: List<String> = clientMessage.split(",")
         val clientCommand: String = clientMessageArray[0]
-        var serverMessage: String = ""
-        var exitConnection: Boolean = false
-        when (clientCommand) {
-            "exit" -> {
-                println("client command 'EXIT'")
-                serverMessage = "client commanded server to exit"
-                exitConnection = true
-            }
-            "ping" -> {
-                println("client command 'PING'")
-                serverMessage = "pong"
+
+        return when (clientCommand) {
+            "exit" -> ClientCommand(ClientCommandType.Exit)
+            "ping" -> ClientCommand(ClientCommandType.Ping)
+
+            else -> {
+                val msg = ClientCommand(ClientCommandType.Message)
+                msg.message = clientMessageArray.joinToString(",")
+                msg
             }
         }
-    return mutableListOf<Any>(serverMessage, exitConnection)
     }
 }

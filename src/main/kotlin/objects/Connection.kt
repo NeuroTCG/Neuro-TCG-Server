@@ -1,50 +1,36 @@
 package objects
 
-import kotlinx.coroutines.*
 import java.io.*
 import java.net.*
+class Connection(socket: Socket) {
+    private val clientSocket = socket
+    private val dataIn = DataInputStream(clientSocket.inputStream)
+    private val dataOut = DataOutputStream(clientSocket.outputStream)
 
-class Connection {
-    suspend fun start() {
-        val serverSocket = withContext(Dispatchers.IO) {ServerSocket(9933)}
-        println("Listening for clients...")
-        val clientSocket = withContext(Dispatchers.IO) {serverSocket.accept()}
-        val clientSocketIP: String = clientSocket.inetAddress.toString()
-        val clientSocketPort: Int = clientSocket.port
-        println("[IP: $clientSocketIP ,Port: $clientSocketPort]  Client classes.Connection Successful!")
-        val dataIn = DataInputStream(clientSocket.inputStream)
-        val dataOut = DataOutputStream(clientSocket.outputStream)
-        withContext(Dispatchers.IO){dataOut.writeUTF("Connected to the server")}
-        var exitConnection = false
-        var serverMessage: String
+    var isOpen = true
+        private set
 
-        while (!exitConnection) {
-            val clientMessage: String?
-            try {
-                clientMessage = withContext(Dispatchers.IO){dataIn.readUTF()}
-            }
-            catch (e: SocketException){
-                println("Client reset the connection")
-                break
-            }
-            catch (e: EOFException){
-                println("Client closed the connection unexpectedly")
-                break
-            }
-            val serverResponse: MutableList<Any> = withContext(Dispatchers.IO) {Parser().parse(clientMessage)}
-            serverMessage = serverResponse[0] as String
-            exitConnection = serverResponse[1] as Boolean
-            println("client: $clientMessage")
-            println("server: $serverMessage")
-            withContext(Dispatchers.IO) {dataOut.writeUTF(serverMessage)}
+    fun readMessage(): String? {
+        try {
+            return dataIn.readUTF()
         }
-        stop(dataIn, dataOut, serverSocket, clientSocket)
+        catch (e: SocketException){
+            return null
+        }
+        catch (e: EOFException){
+            return null
+        }
     }
-    private suspend fun stop(dataIn: DataInputStream, dataOut: DataOutputStream, serverSocket: ServerSocket, clientSocket: Socket) {
+    fun writeMessage(msg: String) {
+        dataOut.writeUTF(msg)
+    }
+
+    fun close() {
         println("Disconnecting...")
-        withContext(Dispatchers.IO) {dataIn.close()}
-        withContext(Dispatchers.IO) {dataOut.close()}
-        withContext(Dispatchers.IO) {serverSocket.close()}
-        withContext(Dispatchers.IO) {clientSocket.close()}
+        dataIn.close()
+        dataOut.flush()
+        dataOut.close()
+        clientSocket.close()
+        isOpen = false
     }
 }
