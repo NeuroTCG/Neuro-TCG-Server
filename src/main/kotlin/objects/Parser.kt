@@ -8,6 +8,11 @@ class Parser {
         return when (clientCommand) {
             "exit" -> ClientCommand(ClientCommandType.Exit)
             "ping" -> ClientCommand(ClientCommandType.Ping)
+            "gameEvent" -> {
+                val packet = ClientCommand(ClientCommandType.GameEvent)
+                packet.message = clientMessageArray.joinToString(",")
+                packet
+            }
 
             else -> {
                 val msg = ClientCommand(ClientCommandType.Message)

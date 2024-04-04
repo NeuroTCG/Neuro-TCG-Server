@@ -27,6 +27,10 @@ class Game(clientSocket: Socket) {
                     connection.close()
                     println("Connection closed by client")
                 }
+                ClientCommandType.GameEvent -> {
+                    println("received game event packet with content: ${command.message}")
+                    connection.writeMessage("received game event packet with content ${command.message}")
+                }
                 ClientCommandType.Message -> println("Message from client: ${command.message}")
             }
         }
