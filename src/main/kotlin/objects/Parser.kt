@@ -10,7 +10,9 @@ class Parser {
             "ping" -> ClientCommand(ClientCommandType.Ping)
             "gameEvent" -> {
                 val packet = ClientCommand(ClientCommandType.GameEvent)
-                packet.message = clientMessageArray.joinToString(",")
+                val clientMessageMutable = clientMessageArray.toMutableList()
+                clientMessageMutable.removeFirst()
+                packet.message = clientMessageMutable.joinToString(",")
                 packet
             }
 

@@ -11,14 +11,12 @@ class Connection(socket: Socket) {
         private set
 
     fun readMessage(): String? {
-        try {
-            return dataIn.readUTF()
-        }
-        catch (e: SocketException){
-            return null
-        }
-        catch (e: EOFException){
-            return null
+        return try {
+            dataIn.readUTF()
+        } catch (e: SocketException){
+            null
+        } catch (e: EOFException){
+            null
         }
     }
     fun writeMessage(msg: String) {

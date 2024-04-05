@@ -6,7 +6,7 @@ class Game(clientSocket: Socket) {
     val connection = Connection(clientSocket)
     val boardState = BoardState()
 
-    fun mainLoop(){
+    fun mainLoop() {
         connection.writeMessage("Hello from the server")
 
         while (connection.isOpen) {
@@ -28,8 +28,8 @@ class Game(clientSocket: Socket) {
                     println("Connection closed by client")
                 }
                 ClientCommandType.GameEvent -> {
-                    println("received game event packet with content: ${command.message}")
-                    connection.writeMessage("received game event packet with content ${command.message}")
+                    println("Received game event packet with content: ${command.message}")
+                    connection.writeMessage("Received game event packet with content ${command.message}")
                 }
                 ClientCommandType.Message -> println("Message from client: ${command.message}")
             }
