@@ -5,6 +5,8 @@ import java.net.Socket
 class Game(clientSocket: Socket) {
     val connection = Connection(clientSocket)
     val boardState = BoardState()
+    val supportedVersions = listOf("early development build")
+    val recommendedVersion = "early development build"
 
     fun mainLoop() {
         connection.writeMessage("Hello from the server")
@@ -18,7 +20,7 @@ class Game(clientSocket: Socket) {
             }
 
             val command = Parser().parse(clientMessage)
-            when (command.type){
+            when (command.type) {
                 ClientCommandType.Ping -> {
                     connection.writeMessage("pong")
                     println("Ping from client")
@@ -30,6 +32,20 @@ class Game(clientSocket: Socket) {
                 ClientCommandType.GameEvent -> {
                     println("Received game event packet with content: ${command.message}")
                     connection.writeMessage("Received game event packet with content ${command.message}")
+                }
+                ClientCommandType.Version -> {
+                    if (supportedVersions.contains(command.message)) {
+                        if (command.message != recommendedVersion) {
+                            println("client with version ${command.message} connected")
+                            connection.writeMessage("non-recommended version")
+                        } else {
+                            println("client with recommended version connected")
+                            connection.writeMessage("version OK")
+                        }
+                    } else {
+                        println("unsupported client attempted to connect")
+                        connection.writeMessage("unsupported version")
+                    }
                 }
                 ClientCommandType.Message -> println("Message from client: ${command.message}")
             }

@@ -6,6 +6,7 @@ enum class ClientCommandType {
     Exit,
     Message,
     GameEvent,
+    Version,
 }
 class ClientCommand(val type: ClientCommandType) {
     /**

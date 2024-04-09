@@ -15,6 +15,15 @@ class Parser {
                 packet.message = clientMessageMutable.joinToString(",")
                 packet
             }
+            "version" -> {
+                val version = ClientCommand(ClientCommandType.Version)
+                if (clientMessageArray.size < 2) {
+                    version.message = "invalid version packet"
+                } else {
+                    version.message = clientMessageArray[1]
+                }
+                version
+            }
 
             else -> {
                 val msg = ClientCommand(ClientCommandType.Message)
