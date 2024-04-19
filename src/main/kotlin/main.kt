@@ -1,7 +1,13 @@
 import objects.Game
+import objects.shared.*
 import java.net.*
 
 fun main() {
+    CardStats.cardIDMapping = hashMapOf(
+        Pair(0, CardStats(100, 50)),
+        Pair(1, CardStats(200, 5)),
+    )
+
     while (true) {
         val serverSocket = ServerSocket(9933)
         println("Listening for clients...")
