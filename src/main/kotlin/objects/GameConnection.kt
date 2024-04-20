@@ -2,7 +2,7 @@ package objects
 
 import java.io.*
 import java.net.*
-class Connection(socket: Socket) {
+class GameConnection(socket: Socket) {
     private val clientSocket = socket
     private val dataIn = DataInputStream(clientSocket.inputStream)
     private val dataOut = DataOutputStream(clientSocket.outputStream)

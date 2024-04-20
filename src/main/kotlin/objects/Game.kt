@@ -6,7 +6,7 @@ import objects.shared.*
 import java.net.*
 
 class Game(clientSocket: Socket) {
-    val connection = Connection(clientSocket)
+    val connection = GameConnection(clientSocket)
     val boardManager = BoardStateManager()
     val supportedVersions = listOf("early development build")
     val recommendedVersion = "early development build"
