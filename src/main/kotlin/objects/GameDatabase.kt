@@ -28,7 +28,7 @@ object CurrentGames: Table() {
 object PreviousGames: Table() {
     val game_ID: Column<UUID> = uuid("id")
     val player1_ID: Column<Int> = integer("player1")
-    val player1_deck: Column<ByteArray> = binary("player1_deck") // Array of card IDs as a string.
+    val player1_deck: Column<ByteArray> = binary("player1_deck") // Array of card IDs as a ByteArray.
     val player2_ID: Column<Int> = integer("player2")
     val player2_deck: Column<ByteArray> = binary("player2_deck") // same here.
     val winner: Column<Boolean> = bool("winner") // False for player 1, True for player 2.
