@@ -22,7 +22,7 @@ object CurrentGames: Table() {
     override val primaryKey by lazy { super.primaryKey ?: PrimaryKey(game_ID) }
     val player1_ID: Column<Int> = integer("player1")
     val player2_ID: Column<Int> = integer("player2")
-    val current_game_state: Column<ByteArray> = binary("current_game_state") // Array as a string. Don't have any better idea how to store it.
+    val current_game_state: Column<ByteArray> = binary("current_game_state") // Array as a ByteArray. Decode with CBOR.
 }
 
 object PreviousGames: Table() {
