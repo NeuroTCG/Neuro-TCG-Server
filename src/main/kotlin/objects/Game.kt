@@ -1,11 +1,11 @@
 package objects
 
+import io.ktor.websocket.*
 import kotlinx.serialization.*
 import kotlinx.serialization.json.*
 import objects.shared.*
-import java.net.*
 
-class Game(clientSocket: Socket) {
+class Game(clientSocket: DefaultWebSocketServerSession) {
     val connection = GameConnection(clientSocket)
     val boardManager = BoardStateManager()
     val supportedVersions = listOf("early development build")

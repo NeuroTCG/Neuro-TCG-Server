@@ -1,6 +1,10 @@
-import objects.Game
+import io.ktor.application.*
+import io.ktor.routing.*
+import io.ktor.server.engine.*
+import io.ktor.server.netty.*
+import io.ktor.websocket.*
+import objects.*
 import objects.shared.*
-import java.net.*
 
 fun main() {
     CardStats.cardIDMapping = hashMapOf(
@@ -8,18 +12,15 @@ fun main() {
         Pair(1, CardStats(200, 5)),
     )
 
-    while (true) {
-        val serverSocket = ServerSocket(9933)
-        println("Listening for clients...")
-
-        val clientSocket = serverSocket.accept()
-        val clientSocketIP: String = clientSocket.inetAddress.toString()
-        val clientSocketPort: Int = clientSocket.port
-        println("[IP: $clientSocketIP ,Port: $clientSocketPort]  Client Connection Successful!")
-
-        val game = Game(clientSocket)
-        game.mainLoop()
-
-        serverSocket.close()
-    }
+    println("Listening for clients...")
+    embeddedServer(Netty, port = 9933) {
+        install(WebSockets)
+        routing {
+            webSocket("/game") {
+                println("New connection established")
+                val game = Game(this)
+                game.mainLoop()
+            }
+        }
+    }.start(wait = true)
 }

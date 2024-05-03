@@ -1,34 +1,37 @@
 package objects
 
+import io.ktor.http.cio.websocket.*
+import io.ktor.websocket.*
+import kotlinx.coroutines.*
 import java.io.*
 import java.net.*
-class GameConnection(socket: Socket) {
+
+class GameConnection(socket: DefaultWebSocketServerSession) {
     private val clientSocket = socket
-    private val dataIn = DataInputStream(clientSocket.inputStream)
-    private val dataOut = DataOutputStream(clientSocket.outputStream)
 
     var isOpen = true
         private set
 
     fun readMessage(): String? {
         return try {
-            dataIn.readUTF()
-        } catch (e: SocketException){
+            runBlocking { clientSocket.incoming.receive().data.decodeToString() }
+        } catch (e: SocketException) {
             null
-        } catch (e: EOFException){
+        } catch (e: EOFException) {
             null
         }
     }
+
     fun writeMessage(msg: String) {
-        dataOut.writeUTF(msg)
+        runBlocking {
+            clientSocket.send(msg)
+            clientSocket.flush()
+        }
     }
 
     fun close() {
         println("Disconnecting...")
-        dataIn.close()
-        dataOut.flush()
-        dataOut.close()
-        clientSocket.close()
+        runBlocking { clientSocket.close(CloseReason(CloseReason.Codes.NORMAL, "Bye")) }
         isOpen = false
     }
 }
