@@ -4,6 +4,9 @@ import kotlinx.serialization.cbor.Cbor
 import org.jetbrains.exposed.dao.id.*
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.*
+import org.jetbrains.exposed.sql.javatime.datetime
+import java.time.LocalDateTime
+
 import java.sql.Connection
 import java.util.*
 
@@ -15,15 +18,15 @@ class GameDatabase {
     fun createTables() {
         TransactionManager.defaultDatabase = db
         TransactionManager.manager.defaultIsolationLevel = Connection.TRANSACTION_SERIALIZABLE
-        SchemaUtils.createMissingTablesAndColumns(CurrentGames, PreviousGames)
+        SchemaUtils.createMissingTablesAndColumns(CurrentGames, PreviousGames, Cards, DeckMasters, Creatures, MagicCards, TrapCards)
     }
     @OptIn(ExperimentalSerializationApi::class)
     fun createGame (player1ID: Int, player2ID: Int) {
         val startingGameState: MutableList<MutableList<MutableList<Int>>> =
             mutableListOf(
-                    mutableListOf(mutableListOf(0), mutableListOf(0), mutableListOf(0), mutableListOf(0)), // Row 1
-                    mutableListOf(mutableListOf(0), mutableListOf(0), mutableListOf(0)), // Row 2
-                    mutableListOf(mutableListOf(0), mutableListOf(0)) // Trap cards
+                mutableListOf(mutableListOf(0), mutableListOf(0), mutableListOf(0), mutableListOf(0)), // Row 1
+                mutableListOf(mutableListOf(0), mutableListOf(0), mutableListOf(0)), // Row 2
+                mutableListOf(mutableListOf(0), mutableListOf(0)) // Trap cards
             )
         transaction {
             CurrentGames.insert {
@@ -78,7 +81,7 @@ class GameDatabase {
     ) {
         transaction {
             PreviousGames.insert {
-                it[game_ID] = gameID
+                it[date] = LocalDateTime.now()
                 it[player1_ID] = player1ID
                 it[player1_deck] = player1Deck
                 it[player2_ID] = player2ID
@@ -94,20 +97,17 @@ class GameDatabase {
 
 
 object CurrentGames: Table() {
-    val game_ID: Column<EntityID<UUID>> = uuid("id")
-        .autoGenerate()
-        .autoIncrement()
-        .entityId()
-    // Not sure if this is how you make a primary key, yet to be tested.
-    override val primaryKey by lazy { super.primaryKey ?: PrimaryKey(game_ID) }
+    val game_ID: Column<EntityID<UUID>> = uuid("game_id").autoGenerate().entityId()
     val player1_ID: Column<Int> = integer("player1")
     val player2_ID: Column<Int> = integer("player2")
     val current_game_state: Column<ByteArray> = binary("current_game_state") // Array as a ByteArray. Decode with CBOR.
     val incremental_moves: Column<ByteArray> = binary("incremental_moves") // same here.
+
+    override val primaryKey = PrimaryKey(game_ID)
 }
 
 object PreviousGames: Table() {
-    val game_ID: Column<UUID> = uuid("id")
+    val date: Column<LocalDateTime> = datetime("date_created")
     val player1_ID: Column<Int> = integer("player1")
     val player1_deck: Column<ByteArray> = binary("player1_deck") // Array of card IDs as a ByteArray.
     val player2_ID: Column<Int> = integer("player2")
@@ -120,4 +120,59 @@ object PreviousGames: Table() {
     // Base state is the state of the board before the first move. Because it's always the same, we don't have to store it in the database.
     // The changes are incremental.
     // We can decode the ByteArray back into nested arrays with CBOR for replays or training.
+}
+
+// For now, store tactics as enums. We will change it to a few bits later.
+// Superpower, passive and abilities should be parsed separately. We should just give them a name or an ID.
+object Cards : Table("cards") {
+    val card_ID: Column<Int> = integer("card_id").autoIncrement()
+    val cardName: Column<String> = varchar("card_name", 100)
+    val cardType: Column<String> = varchar("card_type", 100)
+
+    override val primaryKey = PrimaryKey(card_ID)
+}
+
+object DeckMasters : Table("deck_masters") {
+    val card_ID: Column<Int> = reference("card_id", Cards.card_ID)
+    val hp: Column<Short> = short("hp")
+    val attack: Column<Short> = short("attack")
+    val abilityRamCost: Column<Short> = short("ability_ram_cost")
+    val passive: Column<String> = text("passive")
+    val superPower: Column<String> = text("super_power")
+    val tactics: Column<DeckMasterTactics> = enumeration("tactics", DeckMasterTactics::class)
+
+    override val primaryKey = PrimaryKey(card_ID)
+}
+
+enum class DeckMasterTactics {
+    REACH, NIMBLE, BOTH
+}
+
+object Creatures : Table("creatures") {
+    val card_ID: Column<Int> = reference("card_id", Cards.card_ID)
+    val ramCost: Column<Short> = short("ram_cost")
+    val attack: Column<Short> = short("attack")
+    val hp: Column<Short> = short("hp")
+    val passive: Column<String> = text("passive")
+    val tactics: Column<CreatureTactics> = enumeration("tactics", CreatureTactics::class)
+}
+
+enum class CreatureTactics {
+    REACH, NIMBLE, BOTH
+}
+
+object MagicCards : Table("magic_cards") {
+    val card_ID: Column<Int> = reference("card_id", Cards.card_ID)
+    val cost: Column<Short> = short("cost")
+    val deltaHp: Column<Short> = short("delta_hp")
+    val attackRow: Column<Byte> = byte("attack_row")
+    val effect: Column<String> = text("effect")
+}
+
+object TrapCards : Table("trap_cards") {
+    val card_ID: Column<Int> = reference("card_id", Cards.card_ID)
+    val cost: Column<Short> = short("cost")
+    val deltaHp: Column<Short> = short("delta_hp")
+    val condition: Column<String> = text("condition")
+    val attackRow: Column<Byte> = byte("attack_row")
 }
