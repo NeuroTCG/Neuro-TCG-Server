@@ -14,3 +14,6 @@ korge.keystore
 # Project exclude paths
 /gradle/wrapper/
 /kotlin-js-store/
+
+/data/*
+!/data/.keep

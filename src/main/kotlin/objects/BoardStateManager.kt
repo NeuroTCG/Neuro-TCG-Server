@@ -3,8 +3,11 @@ package objects
 import objects.shared.*
 import kotlin.math.*
 
-class BoardStateManager {
+class BoardStateManager(val db: GameDatabase) {
     private var boardState = BoardState()
+    val player1ID: Int = 1
+    val player2ID: Int = 2
+    val gameID = db.createGame(player1ID, player2ID)
 
     fun getBoardState(): BoardState {
         return this.boardState

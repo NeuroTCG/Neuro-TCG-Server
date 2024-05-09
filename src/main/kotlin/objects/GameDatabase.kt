@@ -12,7 +12,8 @@ import java.util.*
 
 // All transactions are blocking, so use them wrapped in withContext(), if you need concurrency.
 class GameDatabase {
-    private val db = Database.connect("jdbc:sqlite:/data/data.db", "org.sqlite.JDBC")
+    private val db = Database.connect("jdbc:sqlite:./data/data.db", "org.sqlite.JDBC")
+
     @OptIn(ExperimentalSerializationApi::class)
     private val cbor = Cbor
     fun createTables() {
@@ -21,21 +22,21 @@ class GameDatabase {
         SchemaUtils.createMissingTablesAndColumns(CurrentGames, PreviousGames, Cards, DeckMasters, Creatures, MagicCards, TrapCards)
     }
     @OptIn(ExperimentalSerializationApi::class)
-    fun createGame (player1ID: Int, player2ID: Int) {
+    fun createGame (player1ID: Int, player2ID: Int): UUID {
         val startingGameState: MutableList<MutableList<MutableList<Int>>> =
             mutableListOf(
                 mutableListOf(mutableListOf(0), mutableListOf(0), mutableListOf(0), mutableListOf(0)), // Row 1
                 mutableListOf(mutableListOf(0), mutableListOf(0), mutableListOf(0)), // Row 2
                 mutableListOf(mutableListOf(0), mutableListOf(0)) // Trap cards
             )
-        transaction {
+        return transaction {
             CurrentGames.insert {
                 it[player1_ID] = player1ID
                 it[player2_ID] = player2ID
                 it[current_game_state] = cbor.encodeToByteArray(startingGameState)
                 it[incremental_moves] = cbor.encodeToByteArray(mutableListOf<MutableList<MutableList<Int?>?>?>())
             }
-        }
+        }.resultedValues!!.last()[CurrentGames.game_ID].value
     }
     @OptIn(ExperimentalSerializationApi::class)
     fun updateGame (gameID: UUID, givenMoveList: MutableList<MutableList<MutableList<Int>>>? = null, givenGameState: MutableList<MutableList<MutableList<Int>>>? = null, change: MutableList<MutableList<Int>>) {

@@ -5,12 +5,13 @@ import kotlinx.serialization.*
 import kotlinx.serialization.json.*
 import objects.shared.*
 
-class Game(clientSocket: DefaultWebSocketServerSession) {
+class Game(clientSocket: DefaultWebSocketServerSession, db: GameDatabase) {
     val connection = GameConnection(clientSocket)
-    val boardManager = BoardStateManager()
+    val boardManager = BoardStateManager(db)
     val supportedVersions = listOf("early development build")
     val recommendedVersion = "early development build"
 
+    val id = boardManager.gameID
 
     fun mainLoop() {
         connection.writeMessage("Hello from the server")

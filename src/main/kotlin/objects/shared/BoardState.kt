@@ -1,6 +1,6 @@
 package objects.shared
 
-import kotlinx.serialization.Serializable
+import kotlinx.serialization.*
 
 @Serializable
 class BoardState{
@@ -9,6 +9,7 @@ class BoardState{
     // [[0,0,0,0],[0,0,0],[0,0]]
     // [[0,0,0,0],[0,0,0],[0,0]]
     // ]
+    @Required
     val rows = mutableListOf<MutableList<MutableList<PlayedCard?>>>(
         mutableListOf<MutableList<PlayedCard?>>(
             mutableListOf<PlayedCard?>(null, null, null, null),
@@ -19,7 +20,7 @@ class BoardState{
             mutableListOf<PlayedCard?>(null, null, null),
         )
     )
-
+    @Required
     val traps = mutableListOf<MutableList<TrapCard?>>(
         mutableListOf<TrapCard?>(null, null),
         mutableListOf<TrapCard?>(null, null),

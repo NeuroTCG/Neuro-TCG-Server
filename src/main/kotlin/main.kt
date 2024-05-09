@@ -12,14 +12,19 @@ fun main() {
         Pair(1, CardStats(200, 5)),
     )
 
+    val db = GameDatabase()
+    db.createTables()
+
     println("Listening for clients...")
     embeddedServer(Netty, port = 9933) {
         install(WebSockets)
         routing {
             webSocket("/game") {
                 println("New connection established")
-                val game = Game(this)
+                val game = Game(this, db)
+                println("Starting game ${game.id}")
                 game.mainLoop()
+                println("Game finished")
             }
         }
     }.start(wait = true)
