@@ -5,6 +5,7 @@ import io.ktor.server.netty.*
 import io.ktor.websocket.*
 import objects.*
 import objects.shared.*
+import java.io.File
 
 fun main() {
     CardStats.cardIDMapping = hashMapOf(
@@ -38,7 +39,9 @@ fun main() {
     */
 
     val db = GameDatabase()
-    db.createTables()
+    if (!File("data/data.db").exists()) {
+        db.createTables()
+    }
 
     println("Listening for clients...")
     embeddedServer(Netty, port = 9933) {
