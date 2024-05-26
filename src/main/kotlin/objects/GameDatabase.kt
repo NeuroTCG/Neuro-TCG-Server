@@ -1,6 +1,7 @@
 package objects
 import kotlinx.serialization.*
-import kotlinx.serialization.cbor.Cbor
+import kotlinx.serialization.json.*
+import objects.Cards.autoIncrement
 import org.jetbrains.exposed.dao.id.*
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.*
@@ -13,65 +14,96 @@ import java.util.*
 // All transactions are blocking, so use them wrapped in withContext(), if you need concurrency.
 class GameDatabase {
     private val db = Database.connect("jdbc:sqlite:./data/data.db", "org.sqlite.JDBC")
-
     @OptIn(ExperimentalSerializationApi::class)
-    private val cbor = Cbor
+    private val json = Json
     fun createTables() {
         TransactionManager.defaultDatabase = db
         TransactionManager.manager.defaultIsolationLevel = Connection.TRANSACTION_SERIALIZABLE
-        SchemaUtils.createMissingTablesAndColumns(CurrentGames, PreviousGames, Cards, DeckMasters, Creatures, MagicCards, TrapCards)
+        transaction {
+            SchemaUtils.create(CurrentGames, PreviousGames, Cards, DeckMasters, Creatures, MagicCards, TrapCards)
+            commit()
+        }
     }
     @OptIn(ExperimentalSerializationApi::class)
-    fun createGame (player1ID: Int, player2ID: Int): UUID {
-        val startingGameState: MutableList<MutableList<MutableList<Int>>> =
-            mutableListOf(
-                mutableListOf(mutableListOf(0), mutableListOf(0), mutableListOf(0), mutableListOf(0)), // Row 1
-                mutableListOf(mutableListOf(0), mutableListOf(0), mutableListOf(0)), // Row 2
-                mutableListOf(mutableListOf(0), mutableListOf(0)) // Trap cards
-            )
-        return transaction {
+    fun createGame (player1ID: Int, player2ID: Int) {
+        val startingGameState: String =
+            """
+                |[
+                |   [
+                |       [
+                |           [0], [0], [0], [0]
+                |       ], 
+                |       [
+                |           [0], [0], [0]
+                |       ], 
+                |       [
+                |           [0], [0]
+                |       ]
+                |   ],
+                |   [
+                |       [
+                |           [0], [0], [0], [0]
+                |       ], 
+                |       [
+                |           [0], [0], [0]
+                |       ], 
+                |       [
+                |           [0], [0]
+                |       ]
+                |   ],
+                |]""".trimMargin()
+
+        transaction {
             CurrentGames.insert {
                 it[player1_ID] = player1ID
                 it[player2_ID] = player2ID
-                it[current_game_state] = cbor.encodeToByteArray(startingGameState)
-                it[incremental_moves] = cbor.encodeToByteArray(mutableListOf<MutableList<MutableList<Int?>?>?>())
+                it[current_game_state] = startingGameState
+                it[incremental_moves] = ""
             }
-        }.resultedValues!!.last()[CurrentGames.game_ID].value
+            commit()
+        }
     }
     @OptIn(ExperimentalSerializationApi::class)
-    fun updateGame (gameID: UUID, givenMoveList: MutableList<MutableList<MutableList<Int>>>? = null, givenGameState: MutableList<MutableList<MutableList<Int>>>? = null, change: MutableList<MutableList<Int>>) {
-        // Like: [[Change 1, from, to, ...], [Change 2, ...]]
+    fun updateGame (gameID: Int, givenMoveList: String? = null, givenGameState: String? = null, givenChange: String) {
+        // Like: [[[Player], [field], [change]], [[Player], [field], [change]]...]
         // Not completely sure how exactly, but the idea is that we pass in a list of lists integers that represent a change in the game state.
-        // Something like: [[index of row (0, 1 , 2), index of column (0-3 depending on row)], [what to change the card slot to (card ID, health and all the other card parameters)]]
+        // Something like:
+        // [
+        //  [player (Either 0 or 1 for Player 1 and 2 respectfully)],
+        //  [index of row (0, 1 , 2), index of column (0-3 depending on row)],
+        //  [what to change the card slot to (card ID, health and all the other card parameters)]
+        // ]
         // For the change, we might implement preambles or action IDs, like 100 for card ID, 101 for health, 102 for status, etc.
         // That way, we won't have to replace the whole card info every time.
         // But, as of now, we only replace the whole info.
         transaction {
-            val currentGameState: MutableList<MutableList<MutableList<Int>>> = if (givenGameState.isNullOrEmpty()) {
-                cbor.decodeFromByteArray(CurrentGames.select(CurrentGames.current_game_state).where { CurrentGames.game_ID eq gameID }.firstOrNull() as ByteArray)
+            val currentGameState: MutableList<MutableList<MutableList<MutableList<Int>>>>  = if (givenGameState.isNullOrEmpty()) {
+                json.decodeFromString<MutableList<MutableList<MutableList<MutableList<Int>>>>>(CurrentGames.select(CurrentGames.current_game_state).where { CurrentGames.game_ID eq gameID }.firstOrNull() as String)
             }
             else {
-                givenGameState
+                json.decodeFromString<MutableList<MutableList<MutableList<MutableList<Int>>>>>(givenGameState)
             }
-            val moveList: MutableList<MutableList<MutableList<Int>>> = if (givenMoveList.isNullOrEmpty()) {
-                cbor.decodeFromByteArray(CurrentGames.select(CurrentGames.incremental_moves).where { CurrentGames.game_ID eq gameID }.firstOrNull() as ByteArray)
+            val moveList: MutableList<MutableList<Int>>  = if (givenMoveList.isNullOrEmpty()) {
+                json.decodeFromString<MutableList<MutableList<Int>>>(CurrentGames.select(CurrentGames.incremental_moves).where { CurrentGames.game_ID eq gameID }.firstOrNull() as String)
             } else {
-                givenMoveList
+                json.decodeFromString<MutableList<MutableList<Int>>>(givenMoveList)
             }
             // givenGameState and givenMoveList are just there for better performance. If they are null, we will get the game state and move list from the database and decode them using CBOR.
             // If they are passed in, however, the server will use them instead and won't have to waste time and resources decoding them from the database every turn.
+            val change: MutableList<MutableList<Int>> = json.decodeFromString<MutableList<MutableList<Int>>>(givenChange)
+            val newMoveList = moveList + change
             CurrentGames.update({ CurrentGames.game_ID eq gameID }) {
-                it[incremental_moves] = cbor.encodeToByteArray(moveList.add(element=change))
+                it[incremental_moves] = newMoveList.toString()
             }
-            currentGameState[change[0][0]/* row */][change[0][1] /* column */] = change[1] /* card info, given we are replacing the whole info */
+            currentGameState[change[0][0] /* Player */][change[1][0]/* row */][change[1][1] /* column */] = change[2] // TODO: Gotta figure out how we want to handle changes. For now, it's a List of Integers.
             CurrentGames.update({ CurrentGames.game_ID eq gameID }) {
-                it[current_game_state] = cbor.encodeToByteArray(currentGameState)
+                it[current_game_state] = currentGameState.toString()
             }
             commit()
         }
     }
     fun saveGameToArchive (
-        gameID: UUID,
+        gameID: Int,
         player1ID: Int,
         player2ID: Int,
         player1Deck: ByteArray,
@@ -98,11 +130,11 @@ class GameDatabase {
 
 
 object CurrentGames: Table() {
-    val game_ID: Column<EntityID<UUID>> = uuid("game_id").autoGenerate().entityId()
+    val game_ID: Column<Int> = integer("game_id").autoIncrement()
     val player1_ID: Column<Int> = integer("player1")
     val player2_ID: Column<Int> = integer("player2")
-    val current_game_state: Column<ByteArray> = binary("current_game_state") // Array as a ByteArray. Decode with CBOR.
-    val incremental_moves: Column<ByteArray> = binary("incremental_moves") // same here.
+    val current_game_state: Column<String> = text("current_game_state") // Array as a String. Parse with JSON.
+    val incremental_moves: Column<String> = text("incremental_moves") // same here.
 
     override val primaryKey = PrimaryKey(game_ID)
 }
