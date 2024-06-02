@@ -4,8 +4,8 @@ import kotlinx.serialization.*
 
 @Serializable
 class AttackPacket(
-    @Required val target_position: BoardPosition,
-    @Required val attacker_position: BoardPosition
+    @Required val target_position: CardPosition,
+    @Required val attacker_position: CardPosition
 ) : Packet(PacketType.attack) {
     val response_id: Int = generateResponseID()
 
@@ -28,8 +28,8 @@ class AttackPacket(
 
     @Serializable
     class Opponent(
-        @Required val target_position: BoardPosition,
-        @Required val attacker_position: BoardPosition,
+        @Required val target_position: CardPosition,
+        @Required val attacker_position: CardPosition,
         @Required val target_card: FullCardState?,
         @Required val attacker_card: FullCardState?,
     ) : Packet(PacketType.attack_opponent)

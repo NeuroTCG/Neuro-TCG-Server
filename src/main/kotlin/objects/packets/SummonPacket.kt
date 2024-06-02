@@ -4,7 +4,7 @@ import kotlinx.serialization.*
 
 @Serializable
 class SummonPacket(
-    @Required val card_id: Int, @Required val position: BoardPosition
+    @Required val card_id: Int, @Required val position: CardPosition
 ) : Packet(PacketType.summon) {
     val response_id: Int = generateResponseID()
 
@@ -30,7 +30,7 @@ class SummonPacket(
 
     @Serializable
     class Opponent(
-        @Required val position: BoardPosition,
+        @Required val position: CardPosition,
         @Required val new_card: FullCardState
     ) : Packet(PacketType.summon_opponent)
 

@@ -1,4 +1,4 @@
-All gameplay related connections happen on the `/game` endpoint. A new connection starts out with only the init packets being valid.
+    All gameplay related connections happen on the `/game` endpoint. A new connection starts out with only the init packets being valid.
 
 All packets include a `type` entry.
 # To Custom Clients
