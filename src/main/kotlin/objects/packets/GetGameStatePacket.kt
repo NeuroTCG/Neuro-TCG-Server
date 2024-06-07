@@ -3,12 +3,13 @@ package objects.packets
 import kotlinx.serialization.*
 
 @Serializable
+@SerialName(PacketType.GET_GAME_STATE)
 class GetGameStatePacket(
     @Required val reason: Reason
-) : Packet(PacketType.get_game_state) {
+) : Packet() {
     val response_id: Int = generateResponseID()
 
-    enum class Reason{
+    enum class Reason {
         state_conflict,
         reconnect,
         connect,

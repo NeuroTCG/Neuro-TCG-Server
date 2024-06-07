@@ -1,100 +1,46 @@
 package objects
 
 import io.ktor.websocket.*
-import kotlinx.serialization.*
-import kotlinx.serialization.json.*
-import objects.shared.*
+import objects.packets.*
 
 class Game(clientSocket: DefaultWebSocketServerSession, db: GameDatabase) {
     val connection = GameConnection(clientSocket)
-    val boardManager = BoardStateManager(db)
-    val supportedVersions = listOf("early development build")
-    val recommendedVersion = "early development build"
+    val boardManager = BoardStateManager(db, connection, null)
 
     val id = boardManager.gameID
 
     fun mainLoop() {
-        connection.writeMessage("Hello from the server")
+        val prefix = "[Game ${id}] "
+
+        println(prefix + "Starting game")
+        println(prefix + "Sending match to client")
+        connection.sendPacket(MatchFoundPacket(UserInfo("Evil", "Vedals PC"), id, false))
+
+
 
         while (connection.isOpen) {
-            val clientMessage = connection.readMessage()
-            if (clientMessage == null) {
-                println("Client closed the connection unexpectedly")
-                connection.close()
-                break
-            }
-
-            val command = Parser().parse(clientMessage)
-            when (command.type) {
-                ClientCommandType.Ping -> {
-                    connection.writeMessage("pong")
-                    println("Ping from client")
-                }
-                ClientCommandType.Cards -> {
-                    connection.writeMessage(Json.encodeToString(CardStats.cardIDMapping))
-                }
-
-                ClientCommandType.Exit -> {
+            when (val packet = connection.receivePacket()) {
+                null -> {
                     connection.close()
-                    println("Connection closed by client")
+                    println(prefix + "Connection was closed unexpectedly")
                 }
 
-                ClientCommandType.GameEvent -> {
-                    println("Received game event packet with content: ${command.message}")
-                    connection.writeMessage("Received game event packet with content ${command.message}")
+                is GetGameStatePacket -> {
+                    connection.sendPacket(UnknownPacketPacket(packet.response_id))
+                    println(prefix + "GetGameState packet is not implemented yet. (response_id: ${packet.response_id}, reason: ${packet.reason}")
                 }
 
-                ClientCommandType.Version -> {
-                    if (supportedVersions.contains(command.message)) {
-                        if (command.message != recommendedVersion) {
-                            println("client with version ${command.message} connected")
-                            connection.writeMessage("non-recommended version")
-                        } else {
-                            println("client with recommended version connected")
-                            connection.writeMessage("version OK")
-                        }
-                    } else {
-                        println("unsupported client attempted to connect")
-                        connection.writeMessage("unsupported version")
-                    }
+                is AttackPacket -> {
+                    boardManager.handleAttackPacket(packet, true)
                 }
 
-                ClientCommandType.Message -> println("Message from client: ${command.message}")
-                ClientCommandType.Attack -> {
-                    try {
-                        boardManager.attack(
-                            0,
-                            command.row,
-                            command.column,
-                            command.targetRow,
-                            command.targetColumn
-                        )
-                        connection.writeMessage("valid")
-                        val json = Json.encodeToString(boardManager.getBoardState())
-                        connection.writeMessage(json)
-                        println(json)
-                    } catch (e: InvalidMoveException) {
-                        connection.writeMessage("invalid")
-                        println(e.message)
-                    }
+                is SummonPacket -> {
+                    boardManager.handleSummonPacket(packet, true)
                 }
 
-                ClientCommandType.Summon -> {
-                    try {
-                        boardManager.summon(
-                            0,
-                            command.row,
-                            command.column,
-                            command.cardIndex
-                        )
-                        connection.writeMessage("valid")
-                        val json = Json.encodeToString(boardManager.getBoardState())
-                        connection.writeMessage(json)
-                        println(json)
-                    } catch (e: InvalidMoveException) {
-                        connection.writeMessage("invalid")
-                        println(e.message)
-                    }
+                else -> {
+                    connection.sendPacket(UnknownPacketPacket(null))
+                    println(prefix + "Received unknown packet")
                 }
             }
         }

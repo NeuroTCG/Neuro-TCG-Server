@@ -1,21 +1,20 @@
 package objects.packets
 
-import kotlinx.serialization.*
-
-@Serializable
-enum class PacketType {
-    client_info,
-    client_info_accept,
-    disconnect,
-    authenticate,
-    authentication_valid,
-    match_found,
-    unknown_packet,
-    get_game_state,
-    summon,
-    summon_response,
-    summon_opponent,
-    attack,
-    attack_response,
-    attack_opponent,
+class PacketType {
+    companion object {
+        const val CLIENT_INFO = "client_info"
+        const val CLIENT_INFO_ACCEPT = "client_info_accept"
+        const val DISCONNECT = "disconnect"
+        const val AUTHENTICATE = "authenticate"
+        const val AUTHENTICATION_VALID = "authentication_valid"
+        const val MATCH_FOUND = "match_found"
+        const val UNKNOWN_PACKET = "unknown_packet"
+        const val GET_GAME_STATE = "get_game_state"
+        const val SUMMON = "summon"
+        const val SUMMON_RESPONSE = "summon_response"
+        const val SUMMON_OPPONENT = "summon_opponent"
+        const val ATTACK = "attack"
+        const val ATTACK_RESPONSE = "attack_response"
+        const val ATTACK_OPPONENT = "attack_opponent"
+    }
 }

@@ -4,7 +4,7 @@ import kotlinx.serialization.*
 import java.util.concurrent.atomic.*
 
 @Serializable
-open class Packet(@Required val type: PacketType) {
+sealed class Packet {
     companion object {
         fun generateResponseID(): Int {
             return responseIDCounter.incrementAndGet()
