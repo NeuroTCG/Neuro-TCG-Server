@@ -2,7 +2,6 @@ package objects
 
 import io.ktor.http.cio.websocket.*
 import io.ktor.websocket.*
-import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 import kotlinx.serialization.*
 import kotlinx.serialization.json.*
@@ -13,7 +12,7 @@ import java.net.*
 class GameConnection(socket: DefaultWebSocketServerSession) {
     private val clientSocket = socket
 
-    init {
+    suspend fun connect() {
         println("Waiting for client info")
         val clientInfo = receivePacket()
         println("client info received")
@@ -66,10 +65,9 @@ class GameConnection(socket: DefaultWebSocketServerSession) {
     var isOpen = true
         private set
 
-    fun receivePacket(): Packet? {
+    suspend fun receivePacket(): Packet? {
         return try {
-            val packet =
-                runBlocking { Json.decodeFromString<Packet>((clientSocket.incoming.receive() as Frame.Text).readText()) }
+            val packet = Json.decodeFromString<Packet>((clientSocket.incoming.receive() as Frame.Text).readText())
             println("Received '${packet}'")
             packet
         } catch (e: SocketException) {
@@ -81,16 +79,14 @@ class GameConnection(socket: DefaultWebSocketServerSession) {
         }
     }
 
-    fun sendPacket(packet: Packet) {
-        runBlocking {
-            clientSocket.send(Json.encodeToString(packet))
-            clientSocket.flush()
-            println("Sent '${packet}'")
-        }
+    suspend fun sendPacket(packet: Packet) {
+        clientSocket.send(Json.encodeToString(packet))
+        clientSocket.flush()
+        println("Sent '${packet}'")
     }
 
-    fun close() {
-        runBlocking { clientSocket.close(CloseReason(CloseReason.Codes.NORMAL, "Bye")) }
+    suspend fun close() {
+        clientSocket.close(CloseReason(CloseReason.Codes.NORMAL, "Bye"))
         isOpen = false
     }
 }

@@ -9,9 +9,10 @@ class Game(clientSocket: DefaultWebSocketServerSession, db: GameDatabase) {
 
     val id = boardManager.gameID
 
-    fun mainLoop() {
+    suspend fun mainLoop() {
         val prefix = "[Game ${id}] "
 
+        connection.connect()
         println(prefix + "Starting game")
         println(prefix + "Sending match to client")
         connection.sendPacket(MatchFoundPacket(UserInfo("Evil", "Vedals PC"), id, false))

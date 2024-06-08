@@ -41,7 +41,7 @@ class BoardStateManager(
         this.boardState.rows[playerBoolToIndex(isFirstPlayer)][position.row][position.column] = card
     }
 
-    fun handleSummonPacket(packet: SummonPacket, isFirstPlayer: Boolean) {
+    suspend fun handleSummonPacket(packet: SummonPacket, isFirstPlayer: Boolean) {
         if (!isTurnOfPlayer(isFirstPlayer)) {
             currentPlayerConnection.sendPacket(packet.getResponsePacket(false, null))
             return
@@ -63,7 +63,7 @@ class BoardStateManager(
     }
 
 
-    fun handleAttackPacket(packet: AttackPacket, isFirstPlayer: Boolean) {
+    suspend fun handleAttackPacket(packet: AttackPacket, isFirstPlayer: Boolean) {
         if (!isTurnOfPlayer(isFirstPlayer)) {
             currentPlayerConnection.sendPacket(packet.getResponsePacket(false, null, null))
             return
