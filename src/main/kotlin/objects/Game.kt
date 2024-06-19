@@ -15,6 +15,8 @@ class Game(clientSocket: DefaultWebSocketServerSession, db: GameDatabase) {
 
         connection.connect()
         println(prefix + "Starting game")
+        println(prefix + "Sending game rules to client")
+        connection.sendPacket(RuleInfoPacket())
         println(prefix + "Sending match to client")
         connection.sendPacket(MatchFoundPacket(UserInfo("Evil", "Vedals PC"), id, false))
 

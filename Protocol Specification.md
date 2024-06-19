@@ -26,10 +26,23 @@ The api uses the same data layouts multiple times. These are called objects.
 
 ## CardState Object
 
+The state of a card when on the board
+
 ```json
 {
     "id": 3,
     "health": 100
+}
+```
+
+## CardStats Object
+
+The stats, name, etc. for all instances of one card. IDs are not given out in order.
+
+```json
+{
+    "max_hp": 100,
+    "base_atk": 50
 }
 ```
 
@@ -209,6 +222,30 @@ of "waiting for opponent...")
     "you": {
         "username": "Neuro",
         "region": "Vedals PC"
+    }
+}
+```
+
+## RuleInfo Packet
+
+Sent by: Server
+
+Informs the client of the rules used for the upcoming match. This is sent directly after the AuthenticationValid packet.
+
+Each of the values in `card_id_mapping` is a CardStats object.
+
+```json
+{
+    "type": "rule_info",
+    "card_id_mapping": {
+        "0": {
+            "max_hp": 100,
+            "base_atk": 50
+        },
+        "1": {
+            "max_hp": 200,
+            "base_atk": 5
+        }
     }
 }
 ```

@@ -2,7 +2,6 @@ package objects
 
 import objects.packets.*
 import objects.packets.objects.*
-import objects.shared.*
 import kotlin.math.*
 
 class BoardStateManager(
@@ -52,7 +51,7 @@ class BoardStateManager(
             return
         }
 
-        val newCardState = CardState(packet.card_id, CardStats.getCardByID(packet.card_id).maxHP)
+        val newCardState = CardState(packet.card_id, CardStats.getCardByID(packet.card_id).max_hp)
         setCard(
             isFirstPlayer,
             packet.position,
@@ -78,8 +77,8 @@ class BoardStateManager(
             return
         }
 
-        target.health -= CardStats.getCardByID(attacker.id).baseATK
-        attacker.health -= max(CardStats.getCardByID(target.id).baseATK - 1, 0)
+        target.health -= CardStats.getCardByID(attacker.id).base_atk
+        attacker.health -= max(CardStats.getCardByID(target.id).base_atk - 1, 0)
 
         setCard(isFirstPlayer, packet.attacker_position, attacker)
         setCard(!isFirstPlayer, packet.target_position, target)

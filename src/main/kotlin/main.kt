@@ -8,10 +8,7 @@ import objects.shared.*
 import java.io.File
 
 fun main() {
-    CardStats.cardIDMapping = hashMapOf(
-        Pair(0, CardStats(100, 50)),
-        Pair(1, CardStats(200, 5)),
-    )
+
 
     /*
     ClientInfoPacket("Official Client", "0.0.1", 1u)

@@ -7,7 +7,9 @@ class PacketType {
         const val DISCONNECT = "disconnect"
         const val AUTHENTICATE = "authenticate"
         const val AUTHENTICATION_VALID = "authentication_valid"
+        const val RULE_INFO = "rule_info"
         const val MATCH_FOUND = "match_found"
+
         const val UNKNOWN_PACKET = "unknown_packet"
         const val GET_BOARD_STATE = "get_board_state"
         const val GET_BOARD_STATE_RESPONSE = "get_board_state_response"
