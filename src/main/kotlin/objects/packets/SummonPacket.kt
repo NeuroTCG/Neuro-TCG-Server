@@ -1,6 +1,7 @@
 package objects.packets
 
 import kotlinx.serialization.*
+import objects.packets.objects.*
 
 @Serializable
 @SerialName(PacketType.SUMMON)
@@ -9,11 +10,11 @@ class SummonPacket(
 ) : Packet() {
     val response_id: Int = generateResponseID()
 
-    fun getResponsePacket(valid: Boolean, new_card: FullCardState?): Response {
+    fun getResponsePacket(valid: Boolean, new_card: CardState?): Response {
         return Response(valid, response_id, new_card)
     }
 
-    fun getOpponentPacket(new_card: FullCardState): Opponent {
+    fun getOpponentPacket(new_card: CardState): Opponent {
         return Opponent(position, new_card)
     }
 
@@ -23,7 +24,7 @@ class SummonPacket(
     class Response(
         @Required val valid: Boolean,
         @Required val response_id: Int,
-        @Required val new_card: FullCardState?
+        @Required val new_card: CardState?
     ) : Packet() {
         init {
             require(valid == (new_card != null))
@@ -34,7 +35,7 @@ class SummonPacket(
     @SerialName(PacketType.SUMMON_OPPONENT)
     class Opponent(
         @Required val position: CardPosition,
-        @Required val new_card: FullCardState
+        @Required val new_card: CardState
     ) : Packet()
 
 }

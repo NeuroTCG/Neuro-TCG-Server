@@ -1,4 +1,4 @@
-package objects.packets
+package objects.packets.objects
 
 import kotlinx.serialization.*
 

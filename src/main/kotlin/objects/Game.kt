@@ -2,6 +2,7 @@ package objects
 
 import io.ktor.websocket.*
 import objects.packets.*
+import objects.packets.objects.*
 
 class Game(clientSocket: DefaultWebSocketServerSession, db: GameDatabase) {
     val connection = GameConnection(clientSocket)
@@ -26,9 +27,9 @@ class Game(clientSocket: DefaultWebSocketServerSession, db: GameDatabase) {
                     println(prefix + "Connection was closed unexpectedly")
                 }
 
-                is GetGameStatePacket -> {
-                    connection.sendPacket(UnknownPacketPacket(packet.response_id))
-                    println(prefix + "GetGameState packet is not implemented yet. (response_id: ${packet.response_id}, reason: ${packet.reason}")
+                is GetBoardStatePacket -> {
+                    println("getboardstate")
+                    connection.sendPacket(packet.getResponsePacket(boardManager.getBoardState()))
                 }
 
                 is AttackPacket -> {

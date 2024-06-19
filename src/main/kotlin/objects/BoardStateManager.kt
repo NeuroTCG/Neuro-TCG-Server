@@ -1,6 +1,7 @@
 package objects
 
 import objects.packets.*
+import objects.packets.objects.*
 import objects.shared.*
 import kotlin.math.*
 
@@ -33,12 +34,12 @@ class BoardStateManager(
         else 1
     }
 
-    private fun getCard(isFirstPlayer: Boolean, position: CardPosition): FullCardState? {
-        return this.boardState.rows[playerBoolToIndex(isFirstPlayer)][position.row][position.column]
+    private fun getCard(isFirstPlayer: Boolean, position: CardPosition): CardState? {
+        return this.boardState.cards[playerBoolToIndex(isFirstPlayer)][position.row][position.column]
     }
 
-    private fun setCard(isFirstPlayer: Boolean, position: CardPosition, card: FullCardState?) {
-        this.boardState.rows[playerBoolToIndex(isFirstPlayer)][position.row][position.column] = card
+    private fun setCard(isFirstPlayer: Boolean, position: CardPosition, card: CardState?) {
+        this.boardState.cards[playerBoolToIndex(isFirstPlayer)][position.row][position.column] = card
     }
 
     suspend fun handleSummonPacket(packet: SummonPacket, isFirstPlayer: Boolean) {
@@ -51,7 +52,7 @@ class BoardStateManager(
             return
         }
 
-        val newCardState = FullCardState(packet.card_id, CardStats.getCardByID(packet.card_id).maxHP)
+        val newCardState = CardState(packet.card_id, CardStats.getCardByID(packet.card_id).maxHP)
         setCard(
             isFirstPlayer,
             packet.position,

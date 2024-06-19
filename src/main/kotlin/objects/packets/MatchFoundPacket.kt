@@ -1,6 +1,7 @@
 package objects.packets
 
 import kotlinx.serialization.*
+import objects.packets.objects.*
 
 @Serializable
 @SerialName(PacketType.MATCH_FOUND)

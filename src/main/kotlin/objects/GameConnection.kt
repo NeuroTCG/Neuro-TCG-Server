@@ -6,6 +6,7 @@ import kotlinx.coroutines.channels.*
 import kotlinx.serialization.*
 import kotlinx.serialization.json.*
 import objects.packets.*
+import objects.packets.objects.*
 import java.io.*
 import java.net.*
 
@@ -52,7 +53,7 @@ class GameConnection(socket: DefaultWebSocketServerSession) {
             }
 
             is AuthenticatePacket -> {
-                sendPacket(AuthenticationValidPacket(false))
+                sendPacket(AuthenticationValidPacket(false, UserInfo(authPacket.username, "somewhere, idk")))
                 println("User '${authPacket.username}' has connected")
             }
 
@@ -66,16 +67,33 @@ class GameConnection(socket: DefaultWebSocketServerSession) {
         private set
 
     suspend fun receivePacket(): Packet? {
+        val text = try {
+            (clientSocket.incoming.receive() as Frame.Text).readText()
+        } catch (e: SocketException) {
+            return null
+        } catch (e: EOFException) {
+            return null
+        } catch (e: ClosedReceiveChannelException) {
+            return null
+        } catch (e: Exception){
+            e.printStackTrace()
+            return null
+        }
+
         return try {
-            val packet = Json.decodeFromString<Packet>((clientSocket.incoming.receive() as Frame.Text).readText())
+            val packet = Json.decodeFromString<Packet>(text)
             println("Received '${packet}'")
             packet
-        } catch (e: SocketException) {
-            null
-        } catch (e: EOFException) {
-            null
-        } catch (e: ClosedReceiveChannelException) {
-            null
+        } catch (e: IllegalArgumentException) {
+            e.printStackTrace()
+            UnknownPacketPacket(null)
+        } catch (e: SerializationException) {
+            e.printStackTrace()
+            UnknownPacketPacket(null)
+        }catch (e: Exception){
+            e.printStackTrace()
+            UnknownPacketPacket(null)
+            return null
         }
     }
 
@@ -86,6 +104,7 @@ class GameConnection(socket: DefaultWebSocketServerSession) {
     }
 
     suspend fun close() {
+        print("closing connection")
         clientSocket.close(CloseReason(CloseReason.Codes.NORMAL, "Bye"))
         isOpen = false
     }

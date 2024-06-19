@@ -1,7 +1,7 @@
-package objects.shared
+package objects.packets.objects
 
 import kotlinx.serialization.*
-import objects.packets.*
+import objects.shared.*
 
 @Serializable
 class BoardState {
@@ -11,13 +11,13 @@ class BoardState {
     // [[0,0,0,0],[0,0,0],[0,0]]
     // ]
     @Required
-    val rows = mutableListOf<MutableList<MutableList<FullCardState?>>>(
+    val cards = mutableListOf<MutableList<MutableList<CardState?>>>(
         mutableListOf(
             mutableListOf(null, null, null, null),
             mutableListOf(null, null, null),
         ),
         mutableListOf(
-            mutableListOf(FullCardState(0, 70), null, null, null),
+            mutableListOf(CardState(0, 70), null, null, null),
             mutableListOf(null, null, null),
         )
     )
