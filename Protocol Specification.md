@@ -269,7 +269,7 @@ The `game_id` can be used to spectate the game, if we decide to implement that.
         "username": "Evil",
         "region": "Vedals PC"
     },
-    "game_id": "7c178559-9611-46a7-96e0-37fc9fe5241a",
+    "game_id": "1243",
     "is_reconnect": false
 }
 
@@ -284,17 +284,15 @@ has a bug.
 
 The client may send this packet to the server, but if a client doesn't understand a packet, it is likely their fault.
 Sending this packet to the server will result in the connection being closed. Use this opportunity to inform the user of
-this and they can maybe continue the game with a newer version or the official client. Don't try to ignore an
+this, and they can maybe continue the game with a newer version or the official client. Don't try to ignore an
 unknown packet, as it will most likely result in state conflicts later and will just make for a bad user experience.
-
-If the causing packet had a `response_id`, it will be repeated here. If not, it is set to null.
 
 This is the only packet that is valid in both the init phase and the gameplay phase.
 
 ```json
 {
     "type": "unknown_packet",
-    "response_id": 17
+    "message": "packet type 'i_win_now' does not exist"
 }
 ```
 
@@ -322,8 +320,6 @@ If `valid` is `false`:
 - If this action should have been valid, the client must refresh its state using a `GetGameState` packet. If the action
   still fails, this is most likely a bug in the client.
 
-Any opponent packets indicate that the opponent did something. The client must update its state as
-in [Updating Client State](#updating-client-state).
 
 ## Updating Client State
 
@@ -352,12 +348,11 @@ If your reason isn't covered by these options, please inform us of this and don'
 ```json
 {
     "type": "get_board_state",
-    "response_id": 1,
     "reason": "reconnect"
 }
 ```
 
-## GetBoardStateResponse
+## GetBoardStateResponse Packet
 
 Sent by: Server
 
@@ -368,7 +363,6 @@ Contains the full game state. The client should validate that this matches its o
 ```json
 {
     "type": "get_board_state_response",
-    "response_id": 1,
     "board": {
         "cards": [
             [
@@ -412,7 +406,7 @@ Contains the full game state. The client should validate that this matches its o
 }
 ```
 
-## Summon Packet
+## SummonRequest Packet
 
 Sent by: Client
 
@@ -422,8 +416,7 @@ Tries to summon a card at a given position.
 
 ```json
 {
-    "type": "summon",
-    "response_id": 2,
+    "type": "summon_request",
     "card_id": 3,
     "position": [
         1,
@@ -432,34 +425,20 @@ Tries to summon a card at a given position.
 }
 ```
 
-## SummonResponse Packet
+## Summon Packet
 
 Sent by: Server
+
+Informs the client of a summon by either it or the opponent. `is_you` indicates whose action it was.
 
 `new_card` is a CardState object or null.
+`position` is a CardPosition object or null.
 
 ```json
 {
-    "type": "summon_response",
-    "response_id": 2,
+    "type": "summon",
+    "is_you": true,
     "valid": true,
-    "new_card": {
-        "id": 3,
-        "health": 100
-    }
-}
-```
-
-## SummonOpponent Packet
-
-Sent by: Server
-
-`new_card` is a CardState object.
-`position` is a CardPosition Object.
-
-```json
-{
-    "type": "summon_opponent",
     "position": [
         1,
         2
@@ -471,7 +450,8 @@ Sent by: Server
 }
 ```
 
-## Attack Packet
+
+## AttackRequest Packet
 
 Sent by: Client
 
@@ -482,8 +462,7 @@ Tries to attack the card at `target_position` with the card at `attacker_positio
 
 ```json
 {
-    "type": "attack",
-    "response_id": 3,
+    "type": "attack_request",
     "target_position": [
         1,
         1
@@ -495,35 +474,11 @@ Tries to attack the card at `target_position` with the card at `attacker_positio
 }
 ```
 
-## AttackResponse Packet
+## Attack Packet
 
 Sent by: Server
 
-If any of the cards were killed by this attack, they will be set to `null`.
-
-`target_card` is a CardState object or null.
-`attacker_card` is a CardState object or null.
-
-```json
-
-{
-    "type": "attack_response",
-    "response_id": 3,
-    "valid": true,
-    "target_card": {
-        "id": 1,
-        "health": 29
-    },
-    "attacker_card": {
-        "id": 3,
-        "health": 90
-    }
-}
-```
-
-## AttackOpponent Packet
-
-Sent by: Server
+Informs the client of an attack by either it or the opponent. `is_you` indicates whose action it was.
 
 If any of the cards were killed by this attack, they will be set to `null`.
 
@@ -532,9 +487,13 @@ If any of the cards were killed by this attack, they will be set to `null`.
 `target_position` is a CardPosition Object.
 `attacker_position` is a CardPosition Object.
 
+
 ```json
+
 {
-    "type": "attack_opponent",
+    "type": "attack",
+    "is_you": true,
+    "valid": true,
     "target_position": [
         1,
         1

@@ -39,7 +39,7 @@ class GameConnection(socket: DefaultWebSocketServerSession) {
             }
 
             else -> {
-                sendPacket(UnknownPacketPacket(null))
+                sendPacket(UnknownPacketPacket("expected ${PacketType.CLIENT_INFO} packet"))
             }
         }
 
@@ -58,7 +58,7 @@ class GameConnection(socket: DefaultWebSocketServerSession) {
             }
 
             else -> {
-                sendPacket(UnknownPacketPacket(null))
+                sendPacket(UnknownPacketPacket("expected ${PacketType.AUTHENTICATE} packet"))
             }
         }
     }
@@ -86,13 +86,13 @@ class GameConnection(socket: DefaultWebSocketServerSession) {
             packet
         } catch (e: IllegalArgumentException) {
             e.printStackTrace()
-            UnknownPacketPacket(null)
+            UnknownPacketPacket("unknown packet")
         } catch (e: SerializationException) {
             e.printStackTrace()
-            UnknownPacketPacket(null)
+            UnknownPacketPacket("unknown packet")
         }catch (e: Exception){
             e.printStackTrace()
-            UnknownPacketPacket(null)
+            UnknownPacketPacket("unknown packet")
             return null
         }
     }

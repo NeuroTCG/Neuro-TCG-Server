@@ -41,13 +41,13 @@ class BoardStateManager(
         this.boardState.cards[playerBoolToIndex(isFirstPlayer)][position.row][position.column] = card
     }
 
-    suspend fun handleSummonPacket(packet: SummonPacket, isFirstPlayer: Boolean) {
+    suspend fun handleSummonPacket(packet: SummonRequestPacket, isFirstPlayer: Boolean) {
         if (!isTurnOfPlayer(isFirstPlayer)) {
-            currentPlayerConnection.sendPacket(packet.getResponsePacket(false, null))
+            currentPlayerConnection.sendPacket(packet.getResponsePacket(is_you = true, valid = false, new_card = null))
             return
         }
         if (getCard(isFirstPlayer, packet.position) != null) {
-            currentPlayerConnection.sendPacket(packet.getResponsePacket(false, null))
+            currentPlayerConnection.sendPacket(packet.getResponsePacket(true, valid = false, new_card = null))
             return
         }
 
@@ -58,14 +58,25 @@ class BoardStateManager(
             newCardState
         )
 
-        currentPlayerConnection.sendPacket(packet.getResponsePacket(true, newCardState))
-        currentOpponentConnection?.sendPacket(packet.getOpponentPacket(newCardState))
+        currentPlayerConnection.sendPacket(packet.getResponsePacket(true, valid = true, new_card = newCardState))
+        currentOpponentConnection?.sendPacket(
+            packet.getResponsePacket(
+                is_you = false,
+                valid = true,
+                new_card = newCardState
+            )
+        )
     }
 
 
-    suspend fun handleAttackPacket(packet: AttackPacket, isFirstPlayer: Boolean) {
+    suspend fun handleAttackPacket(packet: AttackRequestPacket, isFirstPlayer: Boolean) {
         if (!isTurnOfPlayer(isFirstPlayer)) {
-            currentPlayerConnection.sendPacket(packet.getResponsePacket(false, null, null))
+            currentPlayerConnection.sendPacket(packet.getResponsePacket(
+                is_you = true,
+                valid = false,
+                target_card = null,
+                attacker_card = null
+            ))
             return
         }
 
@@ -73,7 +84,12 @@ class BoardStateManager(
         val target = getCard(!isFirstPlayer, packet.target_position)
 
         if (attacker == null || target == null) {
-            currentPlayerConnection.sendPacket(packet.getResponsePacket(false, null, null))
+            currentPlayerConnection.sendPacket(packet.getResponsePacket(
+                is_you = true,
+                valid = false,
+                target_card = null,
+                attacker_card = null
+            ))
             return
         }
 
@@ -83,7 +99,16 @@ class BoardStateManager(
         setCard(isFirstPlayer, packet.attacker_position, attacker)
         setCard(!isFirstPlayer, packet.target_position, target)
 
-        currentPlayerConnection.sendPacket(packet.getResponsePacket(true, target, attacker))
-        currentOpponentConnection?.sendPacket(packet.getOpponentPacket(target, attacker))
+        currentPlayerConnection.sendPacket(packet.getResponsePacket(
+            is_you = true,
+            valid = true,
+            target_card = target,
+            attacker_card = attacker
+        ))
+        currentOpponentConnection?.sendPacket(packet.getResponsePacket(false,
+            valid = true,
+            target_card = target,
+            attacker_card = attacker
+        ))
     }
 }

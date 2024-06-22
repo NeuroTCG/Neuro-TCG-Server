@@ -31,19 +31,19 @@ class Game(clientSocket: DefaultWebSocketServerSession, db: GameDatabase) {
 
                 is GetBoardStatePacket -> {
                     println("getboardstate")
-                    connection.sendPacket(packet.getResponsePacket(boardManager.getBoardState()))
+                    connection.sendPacket(GetBoardStateResponse(boardManager.getBoardState()))
                 }
 
-                is AttackPacket -> {
+                is AttackRequestPacket -> {
                     boardManager.handleAttackPacket(packet, true)
                 }
 
-                is SummonPacket -> {
+                is SummonRequestPacket -> {
                     boardManager.handleSummonPacket(packet, true)
                 }
 
                 else -> {
-                    connection.sendPacket(UnknownPacketPacket(null))
+                    connection.sendPacket(UnknownPacketPacket("unknown packet type received"))
                     println(prefix + "Received unknown packet")
                 }
             }

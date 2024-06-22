@@ -13,11 +13,9 @@ class PacketType {
         const val UNKNOWN_PACKET = "unknown_packet"
         const val GET_BOARD_STATE = "get_board_state"
         const val GET_BOARD_STATE_RESPONSE = "get_board_state_response"
+        const val SUMMON_REQUEST = "summon_request"
         const val SUMMON = "summon"
-        const val SUMMON_RESPONSE = "summon_response"
-        const val SUMMON_OPPONENT = "summon_opponent"
+        const val ATTACK_REQUEST = "attack_request"
         const val ATTACK = "attack"
-        const val ATTACK_RESPONSE = "attack_response"
-        const val ATTACK_OPPONENT = "attack_opponent"
     }
 }

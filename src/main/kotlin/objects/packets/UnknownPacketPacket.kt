@@ -5,5 +5,5 @@ import kotlinx.serialization.*
 @Serializable
 @SerialName(PacketType.UNKNOWN_PACKET)
 class UnknownPacketPacket(
-    @Required val response_id: Int?,
+    @Required val message: String,
 ) : Packet() {}
