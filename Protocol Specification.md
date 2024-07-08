@@ -126,7 +126,8 @@ Each of the nested objects in `traps` can be a TrapState(unimplemented) or null.
             null
             // local right
         ]
-    ]
+    ],
+    "first_player_active": true
 }
 ```
 
@@ -261,6 +262,7 @@ or `reconnect`. Do **not** generate this state on your own.
 The `game_id` can be used to spectate the game, if we decide to implement that.
 
 `opponent` is a UserInfo object.
+`is_first_player` indicates if you are the first or second player
 
 ```json
 {
@@ -270,7 +272,8 @@ The `game_id` can be used to spectate the game, if we decide to implement that.
         "region": "Vedals PC"
     },
     "game_id": "1243",
-    "is_reconnect": false
+    "is_reconnect": false,
+    "is_first_player": true
 }
 
 ```
@@ -401,7 +404,8 @@ Contains the full game state. The client should validate that this matches its o
                 null,
                 null
             ]
-        ]
+        ],
+        "first_player_active": true
     }
 }
 ```

@@ -14,23 +14,24 @@ class BoardStateManager(
     val player2ID: Int = 2
     val gameID = db.createGame(player1ID, player2ID)
 
-    var currentPlayer: Int = player1ID
-    var otherPlayer: Int = player2ID
-
-    var currentPlayerConnection = player1Connection
-    var currentOpponentConnection = player2Connection
-
     fun getBoardState(): BoardState {
         return this.boardState
     }
 
     private fun isTurnOfPlayer(isFirstPlayer: Boolean): Boolean {
-        return (player1ID == currentPlayer) and isFirstPlayer
+        return isFirstPlayer == boardState.first_player_active
     }
 
     private fun playerBoolToIndex(isFirstPlayer: Boolean): Int {
         return if (isFirstPlayer) 0
         else 1
+    }
+
+    private fun getConnection(isFirstPlayer: Boolean): GameConnection? {
+        return if (isTurnOfPlayer(isFirstPlayer))
+            player1Connection
+        else
+            player2Connection
     }
 
     private fun getCard(isFirstPlayer: Boolean, position: CardPosition): CardState? {
@@ -43,11 +44,17 @@ class BoardStateManager(
 
     suspend fun handleSummonPacket(packet: SummonRequestPacket, isFirstPlayer: Boolean) {
         if (!isTurnOfPlayer(isFirstPlayer)) {
-            currentPlayerConnection.sendPacket(packet.getResponsePacket(is_you = true, valid = false, new_card = null))
+            getConnection(isFirstPlayer)?.sendPacket(
+                packet.getResponsePacket(
+                    is_you = true,
+                    valid = false,
+                    new_card = null
+                )
+            )
             return
         }
         if (getCard(isFirstPlayer, packet.position) != null) {
-            currentPlayerConnection.sendPacket(packet.getResponsePacket(true, valid = false, new_card = null))
+            getConnection(isFirstPlayer)?.sendPacket(packet.getResponsePacket(true, valid = false, new_card = null))
             return
         }
 
@@ -58,8 +65,8 @@ class BoardStateManager(
             newCardState
         )
 
-        currentPlayerConnection.sendPacket(packet.getResponsePacket(true, valid = true, new_card = newCardState))
-        currentOpponentConnection?.sendPacket(
+        getConnection(isFirstPlayer)?.sendPacket(packet.getResponsePacket(true, valid = true, new_card = newCardState))
+        getConnection(!isFirstPlayer)?.sendPacket(
             packet.getResponsePacket(
                 is_you = false,
                 valid = true,
@@ -71,12 +78,14 @@ class BoardStateManager(
 
     suspend fun handleAttackPacket(packet: AttackRequestPacket, isFirstPlayer: Boolean) {
         if (!isTurnOfPlayer(isFirstPlayer)) {
-            currentPlayerConnection.sendPacket(packet.getResponsePacket(
-                is_you = true,
-                valid = false,
-                target_card = null,
-                attacker_card = null
-            ))
+            getConnection(isFirstPlayer)?.sendPacket(
+                packet.getResponsePacket(
+                    is_you = true,
+                    valid = false,
+                    target_card = null,
+                    attacker_card = null
+                )
+            )
             return
         }
 
@@ -84,12 +93,14 @@ class BoardStateManager(
         val target = getCard(!isFirstPlayer, packet.target_position)
 
         if (attacker == null || target == null) {
-            currentPlayerConnection.sendPacket(packet.getResponsePacket(
-                is_you = true,
-                valid = false,
-                target_card = null,
-                attacker_card = null
-            ))
+            getConnection(isFirstPlayer)?.sendPacket(
+                packet.getResponsePacket(
+                    is_you = true,
+                    valid = false,
+                    target_card = null,
+                    attacker_card = null
+                )
+            )
             return
         }
 
@@ -99,16 +110,21 @@ class BoardStateManager(
         setCard(isFirstPlayer, packet.attacker_position, attacker)
         setCard(!isFirstPlayer, packet.target_position, target)
 
-        currentPlayerConnection.sendPacket(packet.getResponsePacket(
-            is_you = true,
-            valid = true,
-            target_card = target,
-            attacker_card = attacker
-        ))
-        currentOpponentConnection?.sendPacket(packet.getResponsePacket(false,
-            valid = true,
-            target_card = target,
-            attacker_card = attacker
-        ))
+        getConnection(isFirstPlayer)?.sendPacket(
+            packet.getResponsePacket(
+                is_you = true,
+                valid = true,
+                target_card = target,
+                attacker_card = attacker
+            )
+        )
+        getConnection(!isFirstPlayer)?.sendPacket(
+            packet.getResponsePacket(
+                false,
+                valid = true,
+                target_card = target,
+                attacker_card = attacker
+            )
+        )
     }
 }

@@ -27,4 +27,6 @@ class BoardState {
         mutableListOf(null, null),
         mutableListOf(null, null),
     )
+    @Required
+    var first_player_active: Boolean = true
 }

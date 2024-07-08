@@ -18,7 +18,7 @@ class Game(clientSocket: DefaultWebSocketServerSession, db: GameDatabase) {
         println(prefix + "Sending game rules to client")
         connection.sendPacket(RuleInfoPacket())
         println(prefix + "Sending match to client")
-        connection.sendPacket(MatchFoundPacket(UserInfo("Evil", "Vedals PC"), id, false))
+        connection.sendPacket(MatchFoundPacket(UserInfo("Evil", "Vedals PC"), id, false, true))
 
 
 
