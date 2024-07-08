@@ -7,7 +7,7 @@ import kotlin.math.*
 class BoardStateManager(
     val db: GameDatabase,
     val player1Connection: GameConnection,
-    val player2Connection: GameConnection?
+    val player2Connection: GameConnection
 ) {
     private var boardState = BoardState()
     val player1ID: Int = 1
@@ -27,7 +27,7 @@ class BoardStateManager(
         else 1
     }
 
-    private fun getConnection(isFirstPlayer: Boolean): GameConnection? {
+    private fun getConnection(isFirstPlayer: Boolean): GameConnection {
         return if (isTurnOfPlayer(isFirstPlayer))
             player1Connection
         else
@@ -44,7 +44,7 @@ class BoardStateManager(
 
     suspend fun handleSummonPacket(packet: SummonRequestPacket, isFirstPlayer: Boolean) {
         if (!isTurnOfPlayer(isFirstPlayer)) {
-            getConnection(isFirstPlayer)?.sendPacket(
+            getConnection(isFirstPlayer).sendPacket(
                 packet.getResponsePacket(
                     is_you = true,
                     valid = false,
@@ -54,7 +54,7 @@ class BoardStateManager(
             return
         }
         if (getCard(isFirstPlayer, packet.position) != null) {
-            getConnection(isFirstPlayer)?.sendPacket(packet.getResponsePacket(true, valid = false, new_card = null))
+            getConnection(isFirstPlayer).sendPacket(packet.getResponsePacket(true, valid = false, new_card = null))
             return
         }
 
@@ -65,8 +65,8 @@ class BoardStateManager(
             newCardState
         )
 
-        getConnection(isFirstPlayer)?.sendPacket(packet.getResponsePacket(true, valid = true, new_card = newCardState))
-        getConnection(!isFirstPlayer)?.sendPacket(
+        getConnection(isFirstPlayer).sendPacket(packet.getResponsePacket(true, valid = true, new_card = newCardState))
+        getConnection(!isFirstPlayer).sendPacket(
             packet.getResponsePacket(
                 is_you = false,
                 valid = true,
@@ -78,7 +78,7 @@ class BoardStateManager(
 
     suspend fun handleAttackPacket(packet: AttackRequestPacket, isFirstPlayer: Boolean) {
         if (!isTurnOfPlayer(isFirstPlayer)) {
-            getConnection(isFirstPlayer)?.sendPacket(
+            getConnection(isFirstPlayer).sendPacket(
                 packet.getResponsePacket(
                     is_you = true,
                     valid = false,
@@ -93,7 +93,7 @@ class BoardStateManager(
         val target = getCard(!isFirstPlayer, packet.target_position)
 
         if (attacker == null || target == null) {
-            getConnection(isFirstPlayer)?.sendPacket(
+            getConnection(isFirstPlayer).sendPacket(
                 packet.getResponsePacket(
                     is_you = true,
                     valid = false,
@@ -110,7 +110,7 @@ class BoardStateManager(
         setCard(isFirstPlayer, packet.attacker_position, attacker)
         setCard(!isFirstPlayer, packet.target_position, target)
 
-        getConnection(isFirstPlayer)?.sendPacket(
+        getConnection(isFirstPlayer).sendPacket(
             packet.getResponsePacket(
                 is_you = true,
                 valid = true,
@@ -118,7 +118,7 @@ class BoardStateManager(
                 attacker_card = attacker
             )
         )
-        getConnection(!isFirstPlayer)?.sendPacket(
+        getConnection(!isFirstPlayer).sendPacket(
             packet.getResponsePacket(
                 false,
                 valid = true,

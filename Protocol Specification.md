@@ -176,8 +176,9 @@ The connection was closed by the server. It will no longer respond to packets an
 - `auth_invalid` authentication failed
 - `auth_user_banned` the user is banned
 - `protocol_too_old` the server uses a newer protocol than the client supports
+- `opponent_disconnect` the opponent has disconnected
 
-`message` is a human readable string speaking to the user. It explains the reason for this disconnect. The client may
+`message` is a human-readable string speaking to the user. It explains the reason for this disconnect. The client may
 choose to use its own message, but it is expected to inform the user before returning to a main menu or similar.
 
 ```json

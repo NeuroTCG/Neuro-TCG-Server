@@ -13,5 +13,6 @@ class DisconnectPacket(
         auth_invalid,
         auth_user_banned,
         protocol_too_old,
+        opponent_disconnect
     }
 }

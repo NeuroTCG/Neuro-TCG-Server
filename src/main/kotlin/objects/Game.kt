@@ -1,45 +1,54 @@
 package objects
 
-import io.ktor.websocket.*
 import objects.packets.*
-import objects.packets.objects.*
 
-class Game(clientSocket: DefaultWebSocketServerSession, db: GameDatabase) {
-    val connection = GameConnection(clientSocket)
-    val boardManager = BoardStateManager(db, connection, null)
+class Game(val p1Connection: GameConnection, val p2connection: GameConnection, db: GameDatabase) {
+    val boardManager = BoardStateManager(db, p1Connection, p2connection)
 
     val id = boardManager.gameID
 
-    suspend fun mainLoop() {
-        val prefix = "[Game ${id}] "
+    suspend fun mainLoop(firstPlayer: Boolean) {
+        val prefix = "[Game ${id}][Player ${if (firstPlayer) 1 else 2}] "
+        val connection = if (firstPlayer) p1Connection else p2connection
+        val otherConnection = if (firstPlayer) p2connection else p1Connection
 
-        connection.connect()
         println(prefix + "Starting game")
         println(prefix + "Sending game rules to client")
         connection.sendPacket(RuleInfoPacket())
         println(prefix + "Sending match to client")
-        connection.sendPacket(MatchFoundPacket(UserInfo("Evil", "Vedals PC"), id, false, true))
-
+        connection.sendPacket(MatchFoundPacket(otherConnection.getUserInfo(), id, false, firstPlayer))
 
 
         while (connection.isOpen) {
             when (val packet = connection.receivePacket()) {
                 null -> {
-                    connection.close()
+                    if (connection.isOpen)
+                        connection.close()
                     println(prefix + "Connection was closed unexpectedly")
+
+                    if (otherConnection.isOpen) {
+                        println(prefix + "Informing opponent")
+                        otherConnection.sendPacket(
+                            DisconnectPacket(
+                                DisconnectPacket.Reason.opponent_disconnect,
+                                "The opponent has closed it's connection"
+                            )
+                        )
+                        //otherConnection.close()
+                    }
                 }
 
                 is GetBoardStatePacket -> {
-                    println("getboardstate")
+                    println(prefix + "getboardstate")
                     connection.sendPacket(GetBoardStateResponse(boardManager.getBoardState()))
                 }
 
                 is AttackRequestPacket -> {
-                    boardManager.handleAttackPacket(packet, true)
+                    boardManager.handleAttackPacket(packet, firstPlayer)
                 }
 
                 is SummonRequestPacket -> {
-                    boardManager.handleSummonPacket(packet, true)
+                    boardManager.handleSummonPacket(packet, firstPlayer)
                 }
 
                 else -> {

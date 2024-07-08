@@ -12,6 +12,11 @@ import java.net.*
 
 class GameConnection(socket: DefaultWebSocketServerSession) {
     private val clientSocket = socket
+    private var userInfo: UserInfo? = null
+
+    fun getUserInfo(): UserInfo {
+        return userInfo!!
+    }
 
     suspend fun connect() {
         println("Waiting for client info")
@@ -53,7 +58,8 @@ class GameConnection(socket: DefaultWebSocketServerSession) {
             }
 
             is AuthenticatePacket -> {
-                sendPacket(AuthenticationValidPacket(false, UserInfo(authPacket.username, "somewhere, idk")))
+                userInfo = UserInfo(authPacket.username, "somewhere, idk")
+                sendPacket(AuthenticationValidPacket(false, userInfo!!))
                 println("User '${authPacket.username}' has connected")
             }
 
@@ -70,12 +76,16 @@ class GameConnection(socket: DefaultWebSocketServerSession) {
         val text = try {
             (clientSocket.incoming.receive() as Frame.Text).readText()
         } catch (e: SocketException) {
+            isOpen = false
             return null
         } catch (e: EOFException) {
+            isOpen = false
             return null
         } catch (e: ClosedReceiveChannelException) {
+            isOpen = false
             return null
-        } catch (e: Exception){
+        } catch (e: Exception) {
+            isOpen = false
             e.printStackTrace()
             return null
         }
@@ -90,7 +100,7 @@ class GameConnection(socket: DefaultWebSocketServerSession) {
         } catch (e: SerializationException) {
             e.printStackTrace()
             UnknownPacketPacket("unknown packet")
-        }catch (e: Exception){
+        } catch (e: Exception) {
             e.printStackTrace()
             UnknownPacketPacket("unknown packet")
             return null
@@ -104,7 +114,7 @@ class GameConnection(socket: DefaultWebSocketServerSession) {
     }
 
     suspend fun close() {
-        print("closing connection")
+        println("closing connection")
         clientSocket.close(CloseReason(CloseReason.Codes.NORMAL, "Bye"))
         isOpen = false
     }
