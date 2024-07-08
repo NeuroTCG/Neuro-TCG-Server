@@ -73,6 +73,7 @@ class BoardStateManager(
                 new_card = newCardState
             )
         )
+        boardState.first_player_active = !boardState.first_player_active
     }
 
 
@@ -126,5 +127,6 @@ class BoardStateManager(
                 attacker_card = attacker
             )
         )
+        boardState.first_player_active = !boardState.first_player_active
     }
 }
