@@ -78,7 +78,7 @@ Each of the nested objects in `traps` can be a TrapState(unimplemented) or null.
 ```json
 {
     "cards": [
-        // you
+        // player 1
         [
             // local bottom row
             [
@@ -94,7 +94,7 @@ Each of the nested objects in `traps` can be a TrapState(unimplemented) or null.
                 null
             ]
         ],
-        // opponent
+        // player 2
         [
             // local bottom row
             [
@@ -112,14 +112,14 @@ Each of the nested objects in `traps` can be a TrapState(unimplemented) or null.
         ]
     ],
     "traps": [
-        // you
+        // player 1
         [
             null,
             // local left
             null
             // local right
         ],
-        // opponent
+        // player 2
         [
             null,
             // local left
@@ -127,7 +127,20 @@ Each of the nested objects in `traps` can be a TrapState(unimplemented) or null.
             // local right
         ]
     ],
-    "first_player_active": true
+    "first_player_active": true,
+    "hands": [
+        // player 1
+        [
+            1,
+            2,
+            17
+        ],
+        // player 2
+        [
+            2,
+            4
+        ]
+    ]
 }
 ```
 
@@ -324,7 +337,6 @@ If `valid` is `false`:
 - If this action should have been valid, the client must refresh its state using a `GetGameState` packet. If the action
   still fails, this is most likely a bug in the client.
 
-
 ## Updating Client State
 
 The client is expected to update its game state using the given information in the packet. In case of a conflict with
@@ -406,7 +418,18 @@ Contains the full game state. The client should validate that this matches its o
                 null
             ]
         ],
-        "first_player_active": true
+        "first_player_active": true,
+        "hands": [
+            [
+                3,
+                19
+            ],
+            [
+                9,
+                2,
+                987
+            ]
+        ]
     }
 }
 ```
@@ -455,7 +478,6 @@ Informs the client of a summon by either it or the opponent. `is_you` indicates 
 }
 ```
 
-
 ## AttackRequest Packet
 
 Sent by: Client
@@ -492,7 +514,6 @@ If any of the cards were killed by this attack, they will be set to `null`.
 `target_position` is a CardPosition Object.
 `attacker_position` is a CardPosition Object.
 
-
 ```json
 
 {
@@ -515,5 +536,96 @@ If any of the cards were killed by this attack, they will be set to `null`.
         "id": 3,
         "health": 90
     }
+}
+```
+
+## SwitchPlaceRequest Packet
+
+Sent by: Client
+
+Tries to swap two cards or a card and null.
+
+`position1` is a CardPosition Object.
+`position2` is a CardPosition Object.
+
+```json
+{
+    "type": "switch_place_request",
+    "position1": [
+        2,
+        0
+    ],
+    "position2": [
+        1,
+        1
+    ]
+}
+```
+
+## SwitchPlace Packet
+
+Sent by: Server
+
+Informs the client that two cards or a card and `null` have swapped places. `is_you` indicates whose action it was.
+
+`position1` is a CardPosition Object.
+`position2` is a CardPosition Object.
+
+```json
+{
+    "type": "switch_place",
+    "is_you": false,
+    "valid": true,
+    "position1": [
+        2,
+        0
+    ],
+    "position2": [
+        1,
+        1
+    ]
+}
+```
+
+## StartTurn Packet
+
+Sent by: Server
+
+```json
+{
+    "type": "start_turn"
+}
+```
+
+## EndTurn Packet
+
+Sent by: Server or Client
+
+```json
+{
+    "type": "end_turn"
+}
+```
+
+## DrawCardRequest Packet
+
+Sent by: Client
+
+```json
+{
+    "type": "draw_card_request"
+}
+```
+
+## DrawCard Packet
+
+Sent by: Server
+
+A negative card ID indicates that the action was invalid.
+
+```json
+{
+    "type": "draw_card",
+    "card_id": 3
 }
 ```

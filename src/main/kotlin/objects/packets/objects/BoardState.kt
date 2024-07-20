@@ -11,22 +11,25 @@ class BoardState {
     // [[0,0,0,0],[0,0,0],[0,0]]
     // ]
     @Required
-    val cards = mutableListOf<MutableList<MutableList<CardState?>>>(
-        mutableListOf(
-            mutableListOf(null, null, null, null),
-            mutableListOf(null, null, null),
-        ),
-        mutableListOf(
-            mutableListOf(CardState(0, 70), null, null, null),
-            mutableListOf(null, null, null),
+    val cards = arrayOf<Array<Array<CardState?>>>(
+        arrayOf(
+            arrayOfNulls(4),
+            arrayOfNulls(3),
+        ), arrayOf(
+            arrayOfNulls(4),
+            arrayOfNulls(3),
         )
     )
 
     @Required
-    val traps = mutableListOf<MutableList<TrapCard?>>(
-        mutableListOf(null, null),
-        mutableListOf(null, null),
+    val traps = arrayOf<Array<TrapCard?>>(
+        arrayOfNulls(2),
+        arrayOfNulls(2),
     )
+
     @Required
     var first_player_active: Boolean = true
+
+    @Required
+    var hands = arrayOf<MutableList<Int>>(mutableListOf(), mutableListOf())
 }

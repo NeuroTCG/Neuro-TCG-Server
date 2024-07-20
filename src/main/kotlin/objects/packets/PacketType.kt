@@ -17,5 +17,13 @@ class PacketType {
         const val SUMMON = "summon"
         const val ATTACK_REQUEST = "attack_request"
         const val ATTACK = "attack"
+        const val SWITCH_PLACE_REQUEST = "switch_place_request"
+        const val SWITCH_PLACE = "switch_place"
+
+        const val START_TURN = "start_turn"
+        const val END_TURN = "end_turn"
+
+        const val DRAW_CARD_REQUEST = "draw_card_request"
+        const val DRAW_CARD = "draw_card"
     }
 }

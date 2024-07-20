@@ -18,6 +18,8 @@ class Game(val p1Connection: GameConnection, val p2connection: GameConnection, d
         println(prefix + "Sending match to client")
         connection.sendPacket(MatchFoundPacket(otherConnection.getUserInfo(), id, false, firstPlayer))
 
+        if (firstPlayer)
+            connection.sendPacket(StartTurnPacket())
 
         while (connection.isOpen) {
             when (val packet = connection.receivePacket()) {
@@ -49,6 +51,18 @@ class Game(val p1Connection: GameConnection, val p2connection: GameConnection, d
 
                 is SummonRequestPacket -> {
                     boardManager.handleSummonPacket(packet, firstPlayer)
+                }
+
+                is SwitchPlaceRequestPacket ->{
+                    boardManager.handleSwitchPlacePacket(packet, firstPlayer)
+                }
+
+                is EndTurnPacket -> {
+                    boardManager.handleEndTurn(firstPlayer)
+                }
+
+                is DrawCardRequestPacket -> {
+                    boardManager.handleDrawCard(firstPlayer)
                 }
 
                 else -> {

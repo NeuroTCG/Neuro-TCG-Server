@@ -108,7 +108,9 @@ class GameConnection(socket: DefaultWebSocketServerSession) {
     }
 
     suspend fun sendPacket(packet: Packet) {
-        clientSocket.send(Json.encodeToString(packet))
+        val x = Json.encodeToString(packet)
+        println(x)
+        clientSocket.send(x)
         clientSocket.flush()
         println("Sent '${packet}'")
     }
