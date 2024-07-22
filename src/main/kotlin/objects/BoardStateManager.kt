@@ -107,8 +107,8 @@ class BoardStateManager(
             return
         }
 
-        val attacker = getCard(isFirstPlayer, packet.attacker_position)
-        val target = getCard(!isFirstPlayer, packet.target_position)
+        var attacker = getCard(isFirstPlayer, packet.attacker_position)
+        var target = getCard(!isFirstPlayer, packet.target_position)
 
         if (attacker == null || target == null) {
             getConnection(isFirstPlayer).sendPacket(
@@ -124,6 +124,11 @@ class BoardStateManager(
 
         target.health -= CardStats.getCardByID(attacker.id).base_atk
         attacker.health -= max(CardStats.getCardByID(target.id).base_atk - 1, 0)
+        if (attacker.health <= 0)
+            attacker = null
+        if (target.health <= 0)
+            target = null
+
 
         setCard(isFirstPlayer, packet.attacker_position, attacker)
         setCard(!isFirstPlayer, packet.target_position, target)
@@ -138,7 +143,7 @@ class BoardStateManager(
         )
         getConnection(!isFirstPlayer).sendPacket(
             packet.getResponsePacket(
-                false,
+                is_you = false,
                 valid = true,
                 target_card = target,
                 attacker_card = attacker
@@ -148,13 +153,11 @@ class BoardStateManager(
 
     suspend fun handleSwitchPlacePacket(packet: SwitchPlaceRequestPacket, isFirstPlayer: Boolean) {
         if (!isTurnOfPlayer(isFirstPlayer)) {
-            getConnection(isFirstPlayer).sendPacket(
-                packet.getResponsePacket(
-                    is_you = true,
-                    valid = false
-                )
-            )
+            getConnection(isFirstPlayer).sendPacket(packet.getResponsePacket(is_you = true, valid = false))
             return
+        }
+        if (packet.position1 == packet.position2) {
+            getConnection(isFirstPlayer).sendPacket(packet.getResponsePacket(is_you = true, valid = false))
         }
 
         val c1 = getCard(isFirstPlayer, packet.position1)
