@@ -20,7 +20,6 @@ class Game(val p1Connection: GameConnection, val p2connection: GameConnection, d
 
         if (firstPlayer)
             connection.sendPacket(StartTurnPacket())
-
         while (connection.isOpen) {
             when (val packet = connection.receivePacket()) {
                 null -> {
@@ -53,7 +52,7 @@ class Game(val p1Connection: GameConnection, val p2connection: GameConnection, d
                     boardManager.handleSummonPacket(packet, firstPlayer)
                 }
 
-                is SwitchPlaceRequestPacket ->{
+                is SwitchPlaceRequestPacket -> {
                     boardManager.handleSwitchPlacePacket(packet, firstPlayer)
                 }
 
@@ -70,6 +69,7 @@ class Game(val p1Connection: GameConnection, val p2connection: GameConnection, d
                     println(prefix + "Received unknown packet")
                 }
             }
+            println(prefix + "new ram: ${boardManager.getBoardState().ram[0]}, ${boardManager.getBoardState().ram[1]}  max: ${boardManager.getBoardState().max_ram[0]}, ${boardManager.getBoardState().max_ram[1]}")
         }
     }
 }

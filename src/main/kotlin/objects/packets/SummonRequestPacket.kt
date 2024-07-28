@@ -10,8 +10,8 @@ class SummonRequestPacket(
     @Required val position: CardPosition
 ) : Packet() {
 
-    fun getResponsePacket(is_you: Boolean, valid: Boolean, new_card: CardState?): SummonPacket {
-        return SummonPacket(is_you, valid, position, new_card)
+    fun getResponsePacket(is_you: Boolean, valid: Boolean, new_card: CardState?, new_ram: Int): SummonPacket {
+        return SummonPacket(is_you, valid, position, new_card, new_ram)
     }
 
 }
@@ -22,7 +22,8 @@ class SummonPacket(
     @Required val is_you: Boolean,
     @Required val valid: Boolean,
     @Required val position: CardPosition?,
-    @Required val new_card: CardState?
+    @Required val new_card: CardState?,
+    @Required val new_ram: Int
 ) : Packet() {
     init {
         require(valid == (new_card != null))

@@ -32,4 +32,9 @@ class BoardState {
 
     @Required
     var hands = arrayOf<MutableList<Int>>(mutableListOf(), mutableListOf())
+
+    @Required
+    var ram = arrayOf<Int>(1, 1)
+
+    var max_ram = arrayOf<Int>(1, 1)
 }

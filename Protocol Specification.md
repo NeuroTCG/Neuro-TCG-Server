@@ -42,7 +42,8 @@ The stats, name, etc. for all instances of one card. IDs are not given out in or
 ```json
 {
     "max_hp": 100,
-    "base_atk": 50
+    "base_atk": 50,
+    "summoning_cost": 3
 }
 ```
 
@@ -140,6 +141,18 @@ Each of the nested objects in `traps` can be a TrapState(unimplemented) or null.
             2,
             4
         ]
+    ],
+    "ram": [
+        // player 1 
+        7,
+        // player 2
+        5
+    ],
+    "max_ram": [
+        // player 1
+        7,
+        // player 2
+        7
     ]
 }
 ```
@@ -461,6 +474,7 @@ Informs the client of a summon by either it or the opponent. `is_you` indicates 
 
 `new_card` is a CardState object or null.
 `position` is a CardPosition object or null.
+`new_ram` is a number.
 
 ```json
 {
@@ -474,7 +488,8 @@ Informs the client of a summon by either it or the opponent. `is_you` indicates 
     "new_card": {
         "id": 3,
         "health": 100
-    }
+    },
+    "new_ram": 2
 }
 ```
 
