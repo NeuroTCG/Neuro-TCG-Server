@@ -9,7 +9,7 @@ class CardStats(
     companion object {
         // TODO: maybe move this out of here since it isn't networking related
         val cardIDMapping: HashMap<Int, CardStats> = hashMapOf(
-            Pair(0, CardStats(2, 2, 1)), // Pirate Evil / Neuro
+            Pair(0, CardStats(2, 2, 2)), // Pirate Evil / Neuro
             Pair(1, CardStats(3, 3, 5)), // Filipino Boy
         )
 
