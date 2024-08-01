@@ -242,8 +242,8 @@ class BoardStateManager(
         boardState.first_player_active = !boardState.first_player_active
     }
 
-    private val firstQueue = mutableListOf(0, 1, 1, 1, 0, 0)
-    private val secondQueue = mutableListOf(0, 1, 0, 0, 1, 1)
+    private val firstQueue = mutableListOf(2, 1, 1, 1, 0, 0)
+    private val secondQueue = mutableListOf(2, 1, 0, 0, 1, 1)
 
     suspend fun handleDrawCard(isFirstPlayer: Boolean) {
         if (!isTurnOfPlayer(isFirstPlayer)) {
