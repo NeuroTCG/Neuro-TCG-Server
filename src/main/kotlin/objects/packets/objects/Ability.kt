@@ -6,7 +6,9 @@ import kotlinx.serialization.*
 enum class AbilityEffect {
     NONE,
     ADD_HP_TO_ALLY_CARD,
-    SEAL_ENEMY_CARD
+    SEAL_ENEMY_CARD,
+    ATTACK,
+    ATTACK_ROW
 }
 
 @Serializable
