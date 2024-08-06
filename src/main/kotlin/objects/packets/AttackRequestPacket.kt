@@ -8,11 +8,12 @@ import objects.packets.objects.*
 @SerialName(PacketType.ATTACK_REQUEST)
 class AttackRequestPacket(
     @Required val target_position: CardPosition,
-    @Required val attacker_position: CardPosition
+    @Required val attacker_position: CardPosition,
+    @Required val counterattack: Boolean
 ) : Packet() {
 
-    fun getResponsePacket(is_you: Boolean, valid: Boolean, target_card: CardState?, attacker_card: CardState?): AttackPacket {
-        return AttackPacket(is_you, valid, target_position, attacker_position, target_card, attacker_card)
+    fun getResponsePacket(is_you: Boolean, valid: Boolean, target_card: CardState?, attacker_card: CardState?, counterattack: Boolean): AttackPacket {
+        return AttackPacket(is_you, valid, target_position, attacker_position, target_card, attacker_card, counterattack)
     }
 
 }
@@ -26,4 +27,5 @@ class AttackPacket(
     @Required val attacker_position: CardPosition?,
     @Required val target_card: CardState?,
     @Required val attacker_card: CardState?,
+    @Required val counterattack: Boolean,
 ) : Packet()

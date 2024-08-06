@@ -156,7 +156,8 @@ class BoardStateManager(
                     is_you = true,
                     valid = false,
                     target_card = null,
-                    attacker_card = null
+                    attacker_card = null,
+                    packet.counterattack
                 )
             )
             return
@@ -171,19 +172,16 @@ class BoardStateManager(
                     is_you = true,
                     valid = false,
                     target_card = null,
-                    attacker_card = null
+                    attacker_card = null,
+                    packet.counterattack
                 )
             )
             return
         }
 
         target.health -= CardStats.getCardByID(attacker.id).base_atk
-        attacker.health -= max(CardStats.getCardByID(target.id).base_atk - 1, 0)
-        if (attacker.health <= 0)
-            attacker = null
         if (target.health <= 0)
             target = null
-
 
         setCard(isFirstPlayer, packet.attacker_position, attacker)
         setCard(!isFirstPlayer, packet.target_position, target)
@@ -193,7 +191,8 @@ class BoardStateManager(
                 is_you = true,
                 valid = true,
                 target_card = target,
-                attacker_card = attacker
+                attacker_card = attacker,
+                packet.counterattack
             )
         )
         getConnection(!isFirstPlayer).sendPacket(
@@ -201,7 +200,8 @@ class BoardStateManager(
                 is_you = false,
                 valid = true,
                 target_card = target,
-                attacker_card = attacker
+                attacker_card = attacker,
+                packet.counterattack
             )
         )
     }
