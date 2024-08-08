@@ -57,6 +57,7 @@ class BoardStateManager(
     private fun getRam(isFirstPlayer: Boolean): Int {
         return this.boardState.ram[playerBoolToIndex(isFirstPlayer)]
     }
+
     private fun getMaxRam(isFirstPlayer: Boolean): Int {
         return this.boardState.max_ram[playerBoolToIndex(isFirstPlayer)]
     }
@@ -68,7 +69,7 @@ class BoardStateManager(
     }
 
     private fun refreshRam(isFirstPlayer: Boolean) {
-        if (getMaxRam(isFirstPlayer) < 10){
+        if (getMaxRam(isFirstPlayer) < 10) {
             this.boardState.max_ram[playerBoolToIndex(isFirstPlayer)] += 1
         }
         this.boardState.ram[playerBoolToIndex(isFirstPlayer)] = getMaxRam(isFirstPlayer)
@@ -150,7 +151,7 @@ class BoardStateManager(
 
 
     suspend fun handleAttackPacket(packet: AttackRequestPacket, isFirstPlayer: Boolean) {
-        if (!isTurnOfPlayer(isFirstPlayer)) {
+        val sendInvalid = suspend {
             getConnection(isFirstPlayer).sendPacket(
                 packet.getResponsePacket(
                     is_you = true,
@@ -160,6 +161,10 @@ class BoardStateManager(
                     packet.counterattack
                 )
             )
+        }
+
+        if (!isTurnOfPlayer(isFirstPlayer)) {
+            sendInvalid()
             return
         }
 
@@ -167,19 +172,14 @@ class BoardStateManager(
         var target = getCard(!isFirstPlayer, packet.target_position)
 
         if (attacker == null || target == null) {
-            getConnection(isFirstPlayer).sendPacket(
-                packet.getResponsePacket(
-                    is_you = true,
-                    valid = false,
-                    target_card = null,
-                    attacker_card = null,
-                    packet.counterattack
-                )
-            )
+            sendInvalid()
             return
         }
 
         target.health -= CardStats.getCardByID(attacker.id).base_atk
+        attacker.health -= max(CardStats.getCardByID(target.id).base_atk - 1, 0)
+        if (attacker.health <= 0)
+            attacker = null
         if (target.health <= 0)
             target = null
 
@@ -261,6 +261,63 @@ class BoardStateManager(
 
         getConnection(isFirstPlayer).sendPacket(DrawCard(cardID, true))
         getConnection(!isFirstPlayer).sendPacket(DrawCard(cardID, false))
+    }
+
+    suspend fun handleUseAbilityPacket(packet: UseAbilityRequestPacket, firstPlayer: Boolean) {
+        val sendInvalid = suspend {
+            getConnection(firstPlayer).sendPacket(packet.getResponsePacket(is_you = true, valid = false, null, null))
+        }
+
+        if (!isTurnOfPlayer(firstPlayer)) {
+            sendInvalid()
+            return
+        }
+
+        val ability_card = getCard(firstPlayer, packet.ability_position)
+        if (ability_card == null) {
+            sendInvalid()
+            return
+        }
+
+        val ability = CardStats.getCardByID(ability_card.id).ability
+        when (ability.effect) {
+            AbilityEffect.NONE -> TODO()
+            AbilityEffect.ADD_HP_TO_ALLY_CARD -> {
+                val ally = getCard(firstPlayer, packet.target_position)
+                if (ally == null) {
+                    sendInvalid()
+                    return
+                }
+                assert(ability.range == AbilityRange.ALLY_CARD)
+
+                ally.health += ability.value
+                ally.health = ally.health.coerceIn(0, CardStats.getCardByID(ally.id).max_hp)
+                setCard(firstPlayer, packet.target_position, ally)
+
+                removeRam(firstPlayer, ability.cost)
+
+                getConnection(firstPlayer).sendPacket(
+                    packet.getResponsePacket(
+                        is_you = true,
+                        valid = true,
+                        target_card = ally,
+                        ability_card = ability_card
+                    )
+                )
+                getConnection(!firstPlayer).sendPacket(
+                    packet.getResponsePacket(
+                        is_you = false,
+                        valid = true,
+                        target_card = ally,
+                        ability_card = ability_card
+                    )
+                )
+            }
+
+            AbilityEffect.SEAL_ENEMY_CARD -> TODO()
+            AbilityEffect.ATTACK -> TODO()
+            AbilityEffect.ATTACK_ROW -> TODO()
+        }
     }
 
 

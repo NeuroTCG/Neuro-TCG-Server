@@ -27,6 +27,9 @@ class CardStats(
     @Required val card_type: CardType,
     @Required val ability: Ability
 ) {
+    init{
+        assert(summoning_cost in 0..10)
+    }
     companion object {
         // TODO: maybe move this out of here since it isn't networking related
         val cardIDMapping: HashMap<Int, CardStats> = hashMapOf(
@@ -58,12 +61,6 @@ class CardStats(
                 Ability(AbilityEffect.ADD_HP_TO_ALLY_CARD, 3, AbilityRange.ALLY_CARD, 4)
             ))
         )
-
-        init {
-            cardIDMapping.forEach { (_, v) ->
-                assert(v.summoning_cost in 1..10) // may be 0..10
-            }
-        }
 
         fun getCardByID(id: Int): CardStats {
             return cardIDMapping.getValue(id)

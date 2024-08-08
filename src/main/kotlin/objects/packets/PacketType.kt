@@ -25,5 +25,8 @@ class PacketType {
 
         const val DRAW_CARD_REQUEST = "draw_card_request"
         const val DRAW_CARD = "draw_card"
+
+        const val USE_ABILITY_REQUEST = "use_ability_request"
+        const val USE_ABILITY = "use_ability"
     }
 }

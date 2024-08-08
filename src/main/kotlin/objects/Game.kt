@@ -64,6 +64,10 @@ class Game(val p1Connection: GameConnection, val p2connection: GameConnection, d
                     boardManager.handleDrawCard(firstPlayer)
                 }
 
+                is UseAbilityRequestPacket -> {
+                    boardManager.handleUseAbilityPacket(packet, firstPlayer)
+                }
+
                 else -> {
                     connection.sendPacket(UnknownPacketPacket("unknown packet type received"))
                     println(prefix + "Received unknown packet")
