@@ -5,19 +5,21 @@ import objects.packets.objects.*
 
 @Serializable
 @SerialName(PacketType.USE_ABILITY_REQUEST)
+@Suppress("PropertyName")
 class UseAbilityRequestPacket(
     @Required val target_position: CardPosition,
     @Required val ability_position: CardPosition,
 ) : Packet() {
 
-    fun getResponsePacket(is_you: Boolean, valid: Boolean, target_card: CardState?, ability_card: CardState?): UseAbilityPacket {
-        return UseAbilityPacket(is_you, valid, target_position, ability_position, target_card, ability_card)
+    fun getResponsePacket(isYou: Boolean, valid: Boolean, targetCard: CardState?, abilityCard: CardState?): UseAbilityPacket {
+        return UseAbilityPacket(isYou, valid, target_position, ability_position, targetCard, abilityCard)
     }
 
 }
 
 @Serializable
 @SerialName(PacketType.USE_ABILITY)
+@Suppress("PropertyName")
 class UseAbilityPacket(
     @Required val is_you: Boolean,
     @Required val valid: Boolean,

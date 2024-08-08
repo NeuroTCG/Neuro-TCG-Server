@@ -4,118 +4,132 @@ import objects.packets.*
 import objects.packets.objects.*
 import kotlin.math.*
 
+enum class Player {
+    Player1,
+    Player2;
+
+    operator fun not(): Player {
+        return if (this == Player1)
+            Player2
+        else
+            Player1
+    }
+}
+
 class BoardStateManager(
-    val db: GameDatabase,
-    val player1Connection: GameConnection,
-    val player2Connection: GameConnection
+    private val db: GameDatabase,
+    private val player1Connection: GameConnection,
+    private val player2Connection: GameConnection
 ) {
     private var boardState = BoardState()
-    val player1ID: Int = 1
-    val player2ID: Int = 2
+    private val player1ID: Int = 1
+    private val player2ID: Int = 2
     val gameID = db.createGame(player1ID, player2ID)
 
     fun getBoardState(): BoardState {
         return this.boardState
     }
 
-    private fun isTurnOfPlayer(isFirstPlayer: Boolean): Boolean {
-        return isFirstPlayer == boardState.first_player_active
+    private fun isTurnOfPlayer(player: Player): Boolean {
+        return boardState.first_player_active == (player == Player.Player1)
     }
 
-    private fun playerBoolToIndex(isFirstPlayer: Boolean): Int {
-        return if (isFirstPlayer) 0
-        else 1
+    private fun playerToIndex(player: Player): Int {
+        return if (player == Player.Player1)
+            0
+        else
+            1
     }
 
-    private fun getConnection(isFirstPlayer: Boolean): GameConnection {
-        return if (isFirstPlayer)
+    private fun getConnection(player: Player): GameConnection {
+        return if (player == Player.Player1)
             player1Connection
         else
             player2Connection
     }
 
-    private fun handContains(isFirstPlayer: Boolean, id: Int): Boolean {
-        return this.boardState.hands[playerBoolToIndex(isFirstPlayer)].contains(id)
+    private fun handContains(player: Player, id: Int): Boolean {
+        return this.boardState.hands[playerToIndex(player)].contains(id)
     }
 
-    private fun getCard(isFirstPlayer: Boolean, position: CardPosition): CardState? {
-        return this.boardState.cards[playerBoolToIndex(isFirstPlayer)][position.row][position.column]
+    private fun getCard(player: Player, position: CardPosition): CardState? {
+        return this.boardState.cards[playerToIndex(player)][position.row][position.column]
     }
 
-    private fun setCard(isFirstPlayer: Boolean, position: CardPosition, card: CardState?) {
-        this.boardState.cards[playerBoolToIndex(isFirstPlayer)][position.row][position.column] = card
+    private fun setCard(player: Player, position: CardPosition, card: CardState?) {
+        this.boardState.cards[playerToIndex(player)][position.row][position.column] = card
     }
 
-    private fun placeInHand(isFirstPlayer: Boolean, cardID: Int) {
-        this.boardState.hands[playerBoolToIndex(isFirstPlayer)].add(cardID)
+    private fun placeInHand(player: Player, cardID: Int) {
+        this.boardState.hands[playerToIndex(player)].add(cardID)
     }
 
-    private fun removeFromHand(isFirstPlayer: Boolean, cardID: Int) {
-        this.boardState.hands[playerBoolToIndex(isFirstPlayer)].remove(cardID)
+    private fun removeFromHand(player: Player, cardID: Int) {
+        this.boardState.hands[playerToIndex(player)].remove(cardID)
     }
 
-    private fun getRam(isFirstPlayer: Boolean): Int {
-        return this.boardState.ram[playerBoolToIndex(isFirstPlayer)]
+    private fun getRam(player: Player): Int {
+        return this.boardState.ram[playerToIndex(player)]
     }
 
-    private fun getMaxRam(isFirstPlayer: Boolean): Int {
-        return this.boardState.max_ram[playerBoolToIndex(isFirstPlayer)]
+    private fun getMaxRam(player: Player): Int {
+        return this.boardState.max_ram[playerToIndex(player)]
     }
 
-    private fun removeRam(isFirstPlayer: Boolean, amount: Int) {
+    private fun removeRam(player: Player, amount: Int) {
         assert(amount > 0)
-        this.boardState.ram[playerBoolToIndex(isFirstPlayer)] -= amount
-        assert(this.boardState.ram[playerBoolToIndex(isFirstPlayer)] in 0..getMaxRam(isFirstPlayer))
+        this.boardState.ram[playerToIndex(player)] -= amount
+        assert(this.boardState.ram[playerToIndex(player)] in 0..getMaxRam(player))
     }
 
-    private fun refreshRam(isFirstPlayer: Boolean) {
-        if (getMaxRam(isFirstPlayer) < 10) {
-            this.boardState.max_ram[playerBoolToIndex(isFirstPlayer)] += 1
+    private fun refreshRam(player: Player) {
+        if (getMaxRam(player) < 10) {
+            this.boardState.max_ram[playerToIndex(player)] += 1
         }
-        this.boardState.ram[playerBoolToIndex(isFirstPlayer)] = getMaxRam(isFirstPlayer)
+        this.boardState.ram[playerToIndex(player)] = getMaxRam(player)
     }
 
-    suspend fun handleSummonPacket(packet: SummonRequestPacket, isFirstPlayer: Boolean) {
-        if (!isTurnOfPlayer(isFirstPlayer)) {
-            getConnection(isFirstPlayer).sendPacket(
+    suspend fun handleSummonPacket(packet: SummonRequestPacket, player: Player) {
+        if (!isTurnOfPlayer(player)) {
+            getConnection(player).sendPacket(
                 packet.getResponsePacket(
-                    is_you = true,
+                    isYou = true,
                     valid = false,
-                    new_card = null,
-                    new_ram = -1
+                    newCard = null,
+                    newRam = -1
                 )
             )
             return
         }
-        if (getCard(isFirstPlayer, packet.position) != null) {
-            getConnection(isFirstPlayer).sendPacket(
+        if (getCard(player, packet.position) != null) {
+            getConnection(player).sendPacket(
                 packet.getResponsePacket(
                     true,
                     valid = false,
-                    new_card = null,
-                    new_ram = -1
+                    newCard = null,
+                    newRam = -1
                 )
             )
             return
         }
-        if (!handContains(isFirstPlayer, packet.card_id)) {
-            getConnection(isFirstPlayer).sendPacket(
+        if (!handContains(player, packet.card_id)) {
+            getConnection(player).sendPacket(
                 packet.getResponsePacket(
                     true,
                     valid = false,
-                    new_card = null,
-                    new_ram = -1
+                    newCard = null,
+                    newRam = -1
                 )
             )
             return
         }
-        if (getRam(isFirstPlayer) < CardStats.getCardByID(packet.card_id).summoning_cost) {
-            getConnection(isFirstPlayer).sendPacket(
+        if (getRam(player) < CardStats.getCardByID(packet.card_id).summoning_cost) {
+            getConnection(player).sendPacket(
                 packet.getResponsePacket(
                     true,
                     valid = false,
-                    new_card = null,
-                    new_ram = -1
+                    newCard = null,
+                    newRam = -1
                 )
             )
             return
@@ -123,53 +137,53 @@ class BoardStateManager(
 
         val newCardState = CardState(packet.card_id, CardStats.getCardByID(packet.card_id).max_hp)
         setCard(
-            isFirstPlayer,
+            player,
             packet.position,
             newCardState
         )
 
-        removeFromHand(isFirstPlayer, packet.card_id)
-        removeRam(isFirstPlayer, CardStats.getCardByID(packet.card_id).summoning_cost)
+        removeFromHand(player, packet.card_id)
+        removeRam(player, CardStats.getCardByID(packet.card_id).summoning_cost)
 
-        getConnection(isFirstPlayer).sendPacket(
+        getConnection(player).sendPacket(
             packet.getResponsePacket(
                 true,
                 valid = true,
-                new_card = newCardState,
-                new_ram = getRam(isFirstPlayer)
+                newCard = newCardState,
+                newRam = getRam(player)
             )
         )
-        getConnection(!isFirstPlayer).sendPacket(
+        getConnection(!player).sendPacket(
             packet.getResponsePacket(
-                is_you = false,
+                isYou = false,
                 valid = true,
-                new_card = newCardState,
-                new_ram = getRam(isFirstPlayer)
+                newCard = newCardState,
+                newRam = getRam(player)
             )
         )
     }
 
 
-    suspend fun handleAttackPacket(packet: AttackRequestPacket, isFirstPlayer: Boolean) {
+    suspend fun handleAttackPacket(packet: AttackRequestPacket, player: Player) {
         val sendInvalid = suspend {
-            getConnection(isFirstPlayer).sendPacket(
+            getConnection(player).sendPacket(
                 packet.getResponsePacket(
-                    is_you = true,
+                    isYou = true,
                     valid = false,
-                    target_card = null,
-                    attacker_card = null,
+                    targetCard = null,
+                    attackerCard = null,
                     packet.counterattack
                 )
             )
         }
 
-        if (!isTurnOfPlayer(isFirstPlayer)) {
+        if (!isTurnOfPlayer(player)) {
             sendInvalid()
             return
         }
 
-        var attacker = getCard(isFirstPlayer, packet.attacker_position)
-        var target = getCard(!isFirstPlayer, packet.target_position)
+        var attacker = getCard(player, packet.attacker_position)
+        var target = getCard(!player, packet.target_position)
 
         if (attacker == null || target == null) {
             sendInvalid()
@@ -183,61 +197,61 @@ class BoardStateManager(
         if (target.health <= 0)
             target = null
 
-        setCard(isFirstPlayer, packet.attacker_position, attacker)
-        setCard(!isFirstPlayer, packet.target_position, target)
+        setCard(player, packet.attacker_position, attacker)
+        setCard(!player, packet.target_position, target)
 
-        getConnection(isFirstPlayer).sendPacket(
+        getConnection(player).sendPacket(
             packet.getResponsePacket(
-                is_you = true,
+                isYou = true,
                 valid = true,
-                target_card = target,
-                attacker_card = attacker,
+                targetCard = target,
+                attackerCard = attacker,
                 packet.counterattack
             )
         )
-        getConnection(!isFirstPlayer).sendPacket(
+        getConnection(!player).sendPacket(
             packet.getResponsePacket(
-                is_you = false,
+                isYou = false,
                 valid = true,
-                target_card = target,
-                attacker_card = attacker,
+                targetCard = target,
+                attackerCard = attacker,
                 packet.counterattack
             )
         )
     }
 
-    suspend fun handleSwitchPlacePacket(packet: SwitchPlaceRequestPacket, isFirstPlayer: Boolean) {
-        if (!isTurnOfPlayer(isFirstPlayer)) {
-            getConnection(isFirstPlayer).sendPacket(packet.getResponsePacket(is_you = true, valid = false))
+    suspend fun handleSwitchPlacePacket(packet: SwitchPlaceRequestPacket, player: Player) {
+        if (!isTurnOfPlayer(player)) {
+            getConnection(player).sendPacket(packet.getResponsePacket(isYou = true, valid = false))
             return
         }
         if (packet.position1 == packet.position2) {
-            getConnection(isFirstPlayer).sendPacket(packet.getResponsePacket(is_you = true, valid = false))
+            getConnection(player).sendPacket(packet.getResponsePacket(isYou = true, valid = false))
         }
 
-        val c1 = getCard(isFirstPlayer, packet.position1)
-        val c2 = getCard(!isFirstPlayer, packet.position2)
+        val c1 = getCard(player, packet.position1)
+        val c2 = getCard(!player, packet.position2)
 
-        setCard(isFirstPlayer, packet.position1, c2)
-        setCard(isFirstPlayer, packet.position2, c1)
+        setCard(player, packet.position1, c2)
+        setCard(player, packet.position2, c1)
 
-        getConnection(isFirstPlayer).sendPacket(
+        getConnection(player).sendPacket(
             packet.getResponsePacket(
-                is_you = true,
+                isYou = true,
                 valid = true
             )
         )
-        getConnection(!isFirstPlayer).sendPacket(
+        getConnection(!player).sendPacket(
             packet.getResponsePacket(
-                is_you = false,
+                isYou = false,
                 valid = true
             )
         )
     }
 
-    suspend fun handleEndTurn(isFirstPlayer: Boolean) {
-        getConnection(!isFirstPlayer).sendPacket(StartTurnPacket())
-        refreshRam(isFirstPlayer)
+    suspend fun handleEndTurn(player: Player) {
+        getConnection(!player).sendPacket(StartTurnPacket())
+        refreshRam(player)
 
         boardState.first_player_active = !boardState.first_player_active
     }
@@ -245,45 +259,45 @@ class BoardStateManager(
     private val firstQueue = mutableListOf(2, 1, 1, 1, 0, 0)
     private val secondQueue = mutableListOf(2, 1, 0, 0, 1, 1)
 
-    suspend fun handleDrawCard(isFirstPlayer: Boolean) {
-        if (!isTurnOfPlayer(isFirstPlayer)) {
-            getConnection(isFirstPlayer).sendPacket(DrawCard(-1, true))
+    suspend fun handleDrawCard(player: Player) {
+        if (!isTurnOfPlayer(player)) {
+            getConnection(player).sendPacket(DrawCard(-1, true))
             return
         }
-        if (this.boardState.hands[playerBoolToIndex(isFirstPlayer)].size > 5) {
-            getConnection(isFirstPlayer).sendPacket(DrawCard(-1, true))
+        if (this.boardState.hands[playerToIndex(player)].size > 5) {
+            getConnection(player).sendPacket(DrawCard(-1, true))
             return
         }
 
-        val cardID = if (isFirstPlayer) firstQueue.removeAt(0) else secondQueue.removeAt(0)
+        val cardID = if (player == Player.Player1) firstQueue.removeAt(0) else secondQueue.removeAt(0)
 
-        placeInHand(isFirstPlayer, cardID)
+        placeInHand(player, cardID)
 
-        getConnection(isFirstPlayer).sendPacket(DrawCard(cardID, true))
-        getConnection(!isFirstPlayer).sendPacket(DrawCard(cardID, false))
+        getConnection(player).sendPacket(DrawCard(cardID, true))
+        getConnection(!player).sendPacket(DrawCard(cardID, false))
     }
 
-    suspend fun handleUseAbilityPacket(packet: UseAbilityRequestPacket, firstPlayer: Boolean) {
+    suspend fun handleUseAbilityPacket(packet: UseAbilityRequestPacket, player: Player) {
         val sendInvalid = suspend {
-            getConnection(firstPlayer).sendPacket(packet.getResponsePacket(is_you = true, valid = false, null, null))
+            getConnection(player).sendPacket(packet.getResponsePacket(isYou = true, valid = false, null, null))
         }
 
-        if (!isTurnOfPlayer(firstPlayer)) {
+        if (!isTurnOfPlayer(player)) {
             sendInvalid()
             return
         }
 
-        val ability_card = getCard(firstPlayer, packet.ability_position)
-        if (ability_card == null) {
+        val abilityCard = getCard(player, packet.ability_position)
+        if (abilityCard == null) {
             sendInvalid()
             return
         }
 
-        val ability = CardStats.getCardByID(ability_card.id).ability
+        val ability = CardStats.getCardByID(abilityCard.id).ability
         when (ability.effect) {
             AbilityEffect.NONE -> TODO()
             AbilityEffect.ADD_HP_TO_ALLY_CARD -> {
-                val ally = getCard(firstPlayer, packet.target_position)
+                val ally = getCard(player, packet.target_position)
                 if (ally == null) {
                     sendInvalid()
                     return
@@ -292,24 +306,24 @@ class BoardStateManager(
 
                 ally.health += ability.value
                 ally.health = ally.health.coerceIn(0, CardStats.getCardByID(ally.id).max_hp)
-                setCard(firstPlayer, packet.target_position, ally)
+                setCard(player, packet.target_position, ally)
 
-                removeRam(firstPlayer, ability.cost)
+                removeRam(player, ability.cost)
 
-                getConnection(firstPlayer).sendPacket(
+                getConnection(player).sendPacket(
                     packet.getResponsePacket(
-                        is_you = true,
+                        isYou = true,
                         valid = true,
-                        target_card = ally,
-                        ability_card = ability_card
+                        targetCard = ally,
+                        abilityCard = abilityCard
                     )
                 )
-                getConnection(!firstPlayer).sendPacket(
+                getConnection(!player).sendPacket(
                     packet.getResponsePacket(
-                        is_you = false,
+                        isYou = false,
                         valid = true,
-                        target_card = ally,
-                        ability_card = ability_card
+                        targetCard = ally,
+                        abilityCard = abilityCard
                     )
                 )
             }

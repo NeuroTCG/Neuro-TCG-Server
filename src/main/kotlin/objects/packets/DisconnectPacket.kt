@@ -9,6 +9,7 @@ class DisconnectPacket(
     @Required val message: String,
 ) : Packet() {
     @Serializable
+    @Suppress("EnumEntryName")
     enum class Reason {
         auth_invalid,
         auth_user_banned,

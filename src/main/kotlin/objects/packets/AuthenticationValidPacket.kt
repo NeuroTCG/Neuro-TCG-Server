@@ -5,7 +5,8 @@ import objects.packets.objects.*
 
 @Serializable
 @SerialName(PacketType.AUTHENTICATION_VALID)
+@Suppress("PropertyName")
 class AuthenticationValidPacket(
     @Required val has_running_game: Boolean,
     @Required val you: UserInfo
-) : Packet() {}
+) : Packet()

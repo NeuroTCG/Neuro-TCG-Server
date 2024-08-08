@@ -4,7 +4,7 @@ import kotlinx.serialization.*
 
 @Serializable
 @SerialName(PacketType.START_TURN)
-class StartTurnPacket : Packet() {}
+class StartTurnPacket : Packet()
 
 @Serializable
 @SerialName(PacketType.END_TURN)

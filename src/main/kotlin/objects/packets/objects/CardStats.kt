@@ -18,6 +18,7 @@ enum class CardType {
 }
 
 @Serializable
+@Suppress("PropertyName")
 class CardStats(
     @Required val graphics: String,
     @Required val max_hp: Int,

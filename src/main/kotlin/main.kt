@@ -15,7 +15,7 @@ fun main() {
         db.createTables()
     }
 
-    val player_queue: Queue<Pair<GameConnection, CompletableFuture<Pair<Game, Boolean>>>> = LinkedList()
+    val playerQueue: Queue<Pair<GameConnection, CompletableFuture<Pair<Game, Player>>>> = LinkedList()
 
     println("Listening for clients...")
     embeddedServer(Netty, port = 9933) {
@@ -25,24 +25,24 @@ fun main() {
                 println("New connection established")
                 val connection = GameConnection(this)
                 connection.connect()
-                val gameFuture = CompletableFuture<Pair<Game, Boolean>>()
-                player_queue.add(Pair(connection, gameFuture))
+                val gameFuture = CompletableFuture<Pair<Game, Player>>()
+                playerQueue.add(Pair(connection, gameFuture))
 
-                while (player_queue.count() >= 2) {
-                    val (p1c, p1gf) = player_queue.remove()
-                    val (p2c, p2gf) = player_queue.remove()
-                    val new_game = Game(p1c, p2c, db)
-                    println("Starting game ${new_game.id}")
-                    p1gf.complete(Pair(new_game, true))
-                    p2gf.complete(Pair(new_game, false))
+                while (playerQueue.count() >= 2) {
+                    val (p1c, p1gf) = playerQueue.remove()
+                    val (p2c, p2gf) = playerQueue.remove()
+                    val newGame = Game(p1c, p2c, db)
+                    println("Starting game ${newGame.id}")
+                    p1gf.complete(Pair(newGame, Player.Player1))
+                    p2gf.complete(Pair(newGame, Player.Player2))
 
                     println("Game finished")
                 }
 
                 println("Waiting for opponent")
                 try {
-                    val (game, isFirstPlayer) = gameFuture.await()
-                    game.mainLoop(isFirstPlayer)
+                    val (game, player) = gameFuture.await()
+                    game.mainLoop(player)
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }

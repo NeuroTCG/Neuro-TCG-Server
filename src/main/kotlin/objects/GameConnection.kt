@@ -34,7 +34,7 @@ class GameConnection(socket: DefaultWebSocketServerSession) {
                     sendPacket(
                         DisconnectPacket(
                             DisconnectPacket.Reason.protocol_too_old,
-                            "Protocol version ${clientInfo.protocol_version} isn't supported anymore, please update to version ${currentProtocolVersion}"
+                            "Protocol version ${clientInfo.protocol_version} isn't supported anymore, please update to version $currentProtocolVersion"
                         )
                     )
                 } else {

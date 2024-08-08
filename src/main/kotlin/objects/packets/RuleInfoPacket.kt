@@ -5,6 +5,7 @@ import objects.packets.objects.*
 
 @Serializable
 @SerialName(PacketType.RULE_INFO)
+@Suppress("PropertyName")
 class RuleInfoPacket(
     @Required val card_id_mapping: HashMap<Int, CardStats> = CardStats.cardIDMapping
-) : Packet() {}
+) : Packet()

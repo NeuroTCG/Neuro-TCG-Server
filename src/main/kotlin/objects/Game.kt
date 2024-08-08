@@ -3,22 +3,22 @@ package objects
 import objects.packets.*
 
 class Game(val p1Connection: GameConnection, val p2connection: GameConnection, db: GameDatabase) {
-    val boardManager = BoardStateManager(db, p1Connection, p2connection)
+    private val boardManager = BoardStateManager(db, p1Connection, p2connection)
 
     val id = boardManager.gameID
 
-    suspend fun mainLoop(firstPlayer: Boolean) {
-        val prefix = "[Game ${id}][Player ${if (firstPlayer) 1 else 2}] "
-        val connection = if (firstPlayer) p1Connection else p2connection
-        val otherConnection = if (firstPlayer) p2connection else p1Connection
+    suspend fun mainLoop(player: Player) {
+        val prefix = "[Game ${id}][Player ${if (player == Player.Player1) 1 else 2}] "
+        val connection = if (player == Player.Player1) p1Connection else p2connection
+        val otherConnection = if (player == Player.Player1) p2connection else p1Connection
 
         println(prefix + "Starting game")
         println(prefix + "Sending game rules to client")
         connection.sendPacket(RuleInfoPacket())
         println(prefix + "Sending match to client")
-        connection.sendPacket(MatchFoundPacket(otherConnection.getUserInfo(), id, false, firstPlayer))
+        connection.sendPacket(MatchFoundPacket(otherConnection.getUserInfo(), id, false, player == Player.Player1))
 
-        if (firstPlayer)
+        if (player == Player.Player1)
             connection.sendPacket(StartTurnPacket())
         while (connection.isOpen) {
             when (val packet = connection.receivePacket()) {
@@ -45,27 +45,27 @@ class Game(val p1Connection: GameConnection, val p2connection: GameConnection, d
                 }
 
                 is AttackRequestPacket -> {
-                    boardManager.handleAttackPacket(packet, firstPlayer)
+                    boardManager.handleAttackPacket(packet, player)
                 }
 
                 is SummonRequestPacket -> {
-                    boardManager.handleSummonPacket(packet, firstPlayer)
+                    boardManager.handleSummonPacket(packet, player)
                 }
 
                 is SwitchPlaceRequestPacket -> {
-                    boardManager.handleSwitchPlacePacket(packet, firstPlayer)
+                    boardManager.handleSwitchPlacePacket(packet, player)
                 }
 
                 is EndTurnPacket -> {
-                    boardManager.handleEndTurn(firstPlayer)
+                    boardManager.handleEndTurn(player)
                 }
 
                 is DrawCardRequestPacket -> {
-                    boardManager.handleDrawCard(firstPlayer)
+                    boardManager.handleDrawCard(player)
                 }
 
                 is UseAbilityRequestPacket -> {
-                    boardManager.handleUseAbilityPacket(packet, firstPlayer)
+                    boardManager.handleUseAbilityPacket(packet, player)
                 }
 
                 else -> {

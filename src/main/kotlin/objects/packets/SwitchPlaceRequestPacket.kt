@@ -10,14 +10,15 @@ class SwitchPlaceRequestPacket(
     @Required val position2: CardPosition
 ) : Packet() {
 
-    fun getResponsePacket(is_you: Boolean, valid: Boolean): SwitchPlacePacket {
-        return SwitchPlacePacket(is_you, valid, position1, position2)
+    fun getResponsePacket(isYou: Boolean, valid: Boolean): SwitchPlacePacket {
+        return SwitchPlacePacket(isYou, valid, position1, position2)
     }
 
 }
 
 @Serializable
 @SerialName(PacketType.SWITCH_PLACE)
+@Suppress("PropertyName")
 class SwitchPlacePacket(
     @Required val is_you: Boolean,
     @Required val valid: Boolean,

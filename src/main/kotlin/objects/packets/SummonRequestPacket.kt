@@ -5,19 +5,21 @@ import objects.packets.objects.*
 
 @Serializable
 @SerialName(PacketType.SUMMON_REQUEST)
+@Suppress("PropertyName")
 class SummonRequestPacket(
     @Required val card_id: Int,
     @Required val position: CardPosition
 ) : Packet() {
 
-    fun getResponsePacket(is_you: Boolean, valid: Boolean, new_card: CardState?, new_ram: Int): SummonPacket {
-        return SummonPacket(is_you, valid, position, new_card, new_ram)
+    fun getResponsePacket(isYou: Boolean, valid: Boolean, newCard: CardState?, newRam: Int): SummonPacket {
+        return SummonPacket(isYou, valid, position, newCard, newRam)
     }
 
 }
 
 @Serializable
 @SerialName(PacketType.SUMMON)
+@Suppress("PropertyName")
 class SummonPacket(
     @Required val is_you: Boolean,
     @Required val valid: Boolean,

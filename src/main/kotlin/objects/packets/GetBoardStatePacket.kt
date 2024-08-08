@@ -10,6 +10,7 @@ class GetBoardStatePacket(
 ) : Packet() {
 
 
+    @Suppress("EnumEntryName")
     enum class Reason {
         state_conflict,
         reconnect,
@@ -22,4 +23,4 @@ class GetBoardStatePacket(
 @SerialName(PacketType.GET_BOARD_STATE_RESPONSE)
 class GetBoardStateResponse(
     @Required val board: BoardState
-) : Packet() {}
+) : Packet()

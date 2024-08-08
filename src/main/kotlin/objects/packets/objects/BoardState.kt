@@ -4,6 +4,7 @@ import kotlinx.serialization.*
 import objects.shared.*
 
 @Serializable
+@Suppress("PropertyName")
 class BoardState {
     // Initial Board State:
     // [
@@ -34,7 +35,8 @@ class BoardState {
     var hands = arrayOf<MutableList<Int>>(mutableListOf(), mutableListOf())
 
     @Required
-    var ram = arrayOf<Int>(1, 1)
+    var ram = arrayOf(1, 1)
 
-    var max_ram = arrayOf<Int>(1, 1)
+    @Required
+    var max_ram = arrayOf(1, 1)
 }

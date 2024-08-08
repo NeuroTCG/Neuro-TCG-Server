@@ -6,4 +6,4 @@ import kotlinx.serialization.*
 @SerialName(PacketType.UNKNOWN_PACKET)
 class UnknownPacketPacket(
     @Required val message: String,
-) : Packet() {}
+) : Packet()
