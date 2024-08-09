@@ -172,7 +172,6 @@ class BoardStateManager(
                     valid = false,
                     targetCard = null,
                     attackerCard = null,
-                    packet.counterattack
                 )
             )
         }
@@ -190,8 +189,16 @@ class BoardStateManager(
             return
         }
 
+        if (!isSlotReachable(player, packet.attacker_position, packet.target_position)) {
+            sendInvalid()
+            return
+        }
+
+        val canAttackBack = isSlotReachable(!player, packet.target_position, packet.attacker_position)
+
         target.health -= CardStats.getCardByID(attacker.id).base_atk
-        attacker.health -= max(CardStats.getCardByID(target.id).base_atk - 1, 0)
+        if (canAttackBack)
+            attacker.health -= max(CardStats.getCardByID(target.id).base_atk - 1, 0)
         if (attacker.health <= 0)
             attacker = null
         if (target.health <= 0)
@@ -206,7 +213,6 @@ class BoardStateManager(
                 valid = true,
                 targetCard = target,
                 attackerCard = attacker,
-                packet.counterattack
             )
         )
         getConnection(!player).sendPacket(
@@ -215,9 +221,31 @@ class BoardStateManager(
                 valid = true,
                 targetCard = target,
                 attackerCard = attacker,
-                packet.counterattack
             )
         )
+    }
+
+    private fun isSlotReachable(player: Player, attackerPosition: CardPosition, targetPosition: CardPosition): Boolean {
+        val isFrontEmpty = getCard(!player, CardPosition(CardPosition.FRONT_ROW, 0)) == null
+            && getCard(!player, CardPosition(CardPosition.FRONT_ROW, 1)) == null
+            && getCard(!player, CardPosition(CardPosition.FRONT_ROW, 2)) == null
+            && getCard(!player, CardPosition(CardPosition.FRONT_ROW, 3)) == null
+
+        val attackerReach = CardStats.getCardByID(getCard(player, attackerPosition)!!.id).attack_range
+
+        assert(attackerPosition.row in 0..1)
+        assert(targetPosition.row in 0..1)
+
+        return when (attackerPosition.row to targetPosition.row) {
+            CardPosition.FRONT_ROW to CardPosition.FRONT_ROW -> true
+            CardPosition.FRONT_ROW to CardPosition.BACK_ROW -> isFrontEmpty || attackerReach == AttackRange.REACH
+            CardPosition.BACK_ROW to CardPosition.FRONT_ROW -> attackerReach == AttackRange.REACH
+            CardPosition.BACK_ROW to CardPosition.BACK_ROW -> false
+            else -> {
+                assert(false) { "unreachable" }
+                false
+            }
+        }
     }
 
     suspend fun handleSwitchPlacePacket(packet: SwitchPlaceRequestPacket, player: Player) {

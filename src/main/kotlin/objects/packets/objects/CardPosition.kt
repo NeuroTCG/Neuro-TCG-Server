@@ -32,6 +32,11 @@ data class CardPosition(val row: Int, val column: Int) {
             else -> require(false)
         }
     }
+
+    companion object {
+        const val FRONT_ROW = 0
+        const val BACK_ROW = 1
+    }
 }
 
 class BoardPositionSerializer : KSerializer<CardPosition> {
