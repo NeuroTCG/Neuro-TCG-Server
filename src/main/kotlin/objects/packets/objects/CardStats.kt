@@ -19,6 +19,9 @@ enum class CardType {
 
 @Serializable
 @Suppress("PropertyName")
+/**
+ * The stats, name, etc. for all instances of one card. IDs are not given out in order.
+ */
 class CardStats(
     @Required val graphics: String,
     @Required val max_hp: Int,

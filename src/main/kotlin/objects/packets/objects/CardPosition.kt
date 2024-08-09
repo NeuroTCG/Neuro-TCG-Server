@@ -6,6 +6,23 @@ import kotlinx.serialization.descriptors.*
 import kotlinx.serialization.encoding.*
 
 @Serializable(with = BoardPositionSerializer::class)
+/**
+ *
+ * Card positions are always relative to the side of the board, which is usually inferred.
+ * The numbering looks like this:
+ *
+ * ```
+ *           opponent
+ *
+ *     [1, 2] [1, 1] [1, 0]
+ * [0, 3] [0, 2] [0, 1] [0, 0]
+ * ---------------------------
+ * [0, 0] [0, 1] [0, 2] [0, 3]
+ *    [1, 0] [1, 1] [1, 2]
+ *
+ *            you
+ * ```
+ */
 data class CardPosition(val row: Int, val column: Int) {
     init {
         require(row in 0..1)
