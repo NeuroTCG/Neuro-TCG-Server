@@ -184,7 +184,14 @@ class BoardStateManager(
         var attacker = getCard(player, packet.attacker_position)
         var target = getCard(!player, packet.target_position)
 
+
+
         if (attacker == null || target == null) {
+            sendInvalid()
+            return
+        }
+
+        if (attacker.phase < CardTurnPhase.Action) {
             sendInvalid()
             return
         }
@@ -196,6 +203,7 @@ class BoardStateManager(
 
         val canAttackBack = isSlotReachable(!player, packet.target_position, packet.attacker_position)
 
+        attacker.phase = CardTurnPhase.Done
         target.health -= CardStats.getCardByID(attacker.id).base_atk
         if (canAttackBack)
             attacker.health -= max(CardStats.getCardByID(target.id).base_atk - 1, 0)
@@ -203,6 +211,7 @@ class BoardStateManager(
             attacker = null
         if (target.health <= 0)
             target = null
+
 
         setCard(player, packet.attacker_position, attacker)
         setCard(!player, packet.target_position, target)
@@ -249,16 +258,28 @@ class BoardStateManager(
     }
 
     suspend fun handleSwitchPlacePacket(packet: SwitchPlaceRequestPacket, player: Player) {
-        if (!isTurnOfPlayer(player)) {
+        val sendInvalid = suspend {
             getConnection(player).sendPacket(packet.getResponsePacket(isYou = true, valid = false))
+        }
+        if (!isTurnOfPlayer(player)) {
+            sendInvalid()
             return
         }
         if (packet.position1 == packet.position2) {
-            getConnection(player).sendPacket(packet.getResponsePacket(isYou = true, valid = false))
+            sendInvalid()
+            return
         }
 
         val c1 = getCard(player, packet.position1)
         val c2 = getCard(!player, packet.position2)
+
+        if ((c1 != null && c1.phase < CardTurnPhase.MoveOrAction) || (c2 != null && c2.phase < CardTurnPhase.MoveOrAction)) {
+            sendInvalid()
+            return
+        }
+
+        c1?.phase = CardTurnPhase.Action
+        c2?.phase = CardTurnPhase.Action
 
         setCard(player, packet.position1, c2)
         setCard(player, packet.position2, c1)
@@ -278,10 +299,30 @@ class BoardStateManager(
     }
 
     suspend fun handleEndTurn(player: Player) {
+        if (!isTurnOfPlayer(player)) {
+            return
+        }
+
         getConnection(!player).sendPacket(StartTurnPacket())
         refreshRam(player)
 
+        foreachSlot(player, ::resetCard)
+
         boardState.first_player_active = !boardState.first_player_active
+    }
+
+    private fun foreachSlot(player: Player, f: (Player, CardPosition) -> Unit) {
+        for (i in 0..<4) {
+            f(player, CardPosition(CardPosition.FRONT_ROW, i))
+        }
+        for (i in 0..<3) {
+            f(player, CardPosition(CardPosition.BACK_ROW, i))
+        }
+    }
+
+    private fun resetCard(player: Player, position: CardPosition) {
+        val card = getCard(player, position)
+        card?.phase = CardTurnPhase.MoveOrAction
     }
 
     private val firstQueue = mutableListOf(2, 1, 1, 1, 0, 0)
@@ -316,7 +357,7 @@ class BoardStateManager(
         }
 
         val abilityCard = getCard(player, packet.ability_position)
-        if (abilityCard == null) {
+        if (abilityCard == null || abilityCard.phase < CardTurnPhase.Action || abilityCard.ability_was_used) {
             sendInvalid()
             return
         }
@@ -327,6 +368,10 @@ class BoardStateManager(
             AbilityEffect.ADD_HP_TO_ALLY_CARD -> {
                 val ally = getCard(player, packet.target_position)
                 if (ally == null) {
+                    sendInvalid()
+                    return
+                }
+                if (getRam(player) < ability.cost) {
                     sendInvalid()
                     return
                 }
@@ -360,6 +405,9 @@ class BoardStateManager(
             AbilityEffect.ATTACK -> TODO()
             AbilityEffect.ATTACK_ROW -> TODO()
         }
+
+        abilityCard.phase = CardTurnPhase.Done
+        abilityCard.ability_was_used = true
     }
 
 

@@ -27,14 +27,21 @@ data class CardPosition(val row: Int, val column: Int) {
     init {
         require(row in 0..1)
         when (row) {
-            0 -> require(column in 0..<4)
-            1 -> require(column in 0..<3)
+            FRONT_ROW -> require(column in 0..<4)
+            BACK_ROW -> require(column in 0..<3)
             else -> require(false)
         }
     }
 
     companion object {
+        /**
+         * The one with 4 spaces
+         */
         const val FRONT_ROW = 0
+
+        /**
+         * The one with 3 spaces
+         */
         const val BACK_ROW = 1
     }
 }

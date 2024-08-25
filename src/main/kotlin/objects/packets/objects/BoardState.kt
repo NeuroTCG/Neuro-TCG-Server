@@ -3,6 +3,7 @@ package objects.packets.objects
 import kotlinx.serialization.*
 import objects.shared.*
 
+
 @Serializable
 @Suppress("PropertyName")
 class BoardState {
