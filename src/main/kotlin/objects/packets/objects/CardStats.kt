@@ -63,6 +63,16 @@ class CardStats(
                 AttackRange.STANDARD,
                 CardType.DECK_MASTER,
                 Ability(AbilityEffect.ADD_HP_TO_ALLY_CARD, 3, AbilityRange.ALLY_CARD, 4)
+            )), // Twatch
+            Pair(3, CardStats(
+                "res://assets/game/cards/the_streaming_site_she_uses.png",
+                3,
+                4,
+                4,
+                AttackRange.STANDARD,
+                CardType.CREATURE,
+                Ability(AbilityEffect.SEAL_ENEMY_CARD, 1, AbilityRange.ENEMY_CARD, 0)
+
             ))
         )
 

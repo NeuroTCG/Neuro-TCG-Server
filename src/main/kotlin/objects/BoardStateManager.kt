@@ -325,8 +325,8 @@ class BoardStateManager(
         card?.phase = CardTurnPhase.MoveOrAction
     }
 
-    private val firstQueue = mutableListOf(2, 1, 1, 1, 0, 0)
-    private val secondQueue = mutableListOf(2, 1, 0, 0, 1, 1)
+    private val firstQueue = mutableListOf(2, 1, 3, 1, 0, 0)
+    private val secondQueue = mutableListOf(2, 1, 3, 0, 1, 1)
 
     suspend fun handleDrawCard(player: Player) {
         if (!isTurnOfPlayer(player)) {
@@ -401,7 +401,27 @@ class BoardStateManager(
                 )
             }
 
-            AbilityEffect.SEAL_ENEMY_CARD -> TODO()
+            AbilityEffect.SEAL_ENEMY_CARD -> {
+                // TODO: Seal card in server for server verification of client actions. Sealed card cannot do anything.
+                val ally = getCard(player, packet.target_position)
+
+                getConnection(player).sendPacket(
+                    packet.getResponsePacket(
+                        isYou = true,
+                        valid = true,
+                        targetCard = ally,
+                        abilityCard = abilityCard
+                    )
+                )
+                getConnection(!player).sendPacket(
+                    packet.getResponsePacket(
+                        isYou = false,
+                        valid = true,
+                        targetCard = ally,
+                        abilityCard = abilityCard
+                    )
+                )
+            }
             AbilityEffect.ATTACK -> TODO()
             AbilityEffect.ATTACK_ROW -> TODO()
         }
