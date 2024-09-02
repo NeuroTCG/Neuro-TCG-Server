@@ -385,7 +385,7 @@ class BoardStateManager(
                 }
 
                 val ally = getCard(player, packet.target_position)
-                if (ally == null && ability.range == AbilityRange.ALLY_FIELD) {
+                if (ally == null && ability.range == AbilityRange.ALLY_CARD) {
                     sendInvalid()
                     return
                 }
@@ -417,7 +417,12 @@ class BoardStateManager(
             }
 
             AbilityEffect.SEAL -> {
-                if (!arrayOf(AbilityRange.ENEMY_ROW, AbilityRange.ENEMY_FIELD, AbilityRange.ENEMY_CARD).contains(ability.range)) {
+                if (!arrayOf(
+                        AbilityRange.ENEMY_ROW,
+                        AbilityRange.ENEMY_FIELD,
+                        AbilityRange.ENEMY_CARD
+                    ).contains(ability.range)
+                ) {
                     sendInvalid()
                     return
                 }
@@ -455,7 +460,34 @@ class BoardStateManager(
                 )
             }
 
-            AbilityEffect.ATTACK -> TODO()
+            AbilityEffect.ATTACK -> {
+                if (!arrayOf(
+                        AbilityRange.ENEMY_ROW,
+                        AbilityRange.ENEMY_FIELD,
+                        AbilityRange.ENEMY_CARD
+                    ).contains(ability.range)
+                ) {
+                    sendInvalid()
+                    return
+                }
+
+                val target = getCard(player, packet.target_position)
+                if (target == null && ability.range == AbilityRange.ENEMY_CARD) {
+                    sendInvalid()
+                    return
+                }
+
+                foreachInRange(player, packet.target_position, ability.range) { p, pos ->
+                    var card = getCard(p, pos)
+                    if (card != null) {
+                        card.health -= ability.value
+                        if (card.health <= 0) {
+                            card = null
+                        }
+                    }
+                    setCard(player, pos, card)
+                }
+            }
         }
 
         removeRam(player, ability.cost)
@@ -463,7 +495,12 @@ class BoardStateManager(
         abilityCard.ability_was_used = true
     }
 
-    fun foreachInRange(player: Player, target: CardPosition, range: AbilityRange, f: (Player, CardPosition) -> Unit) {
+    private fun foreachInRange(
+        player: Player,
+        target: CardPosition,
+        range: AbilityRange,
+        f: (Player, CardPosition) -> Unit
+    ) {
         when (range) {
             AbilityRange.NONE -> {}
             AbilityRange.ALLY_FIELD -> foreachSlot(player, f)
