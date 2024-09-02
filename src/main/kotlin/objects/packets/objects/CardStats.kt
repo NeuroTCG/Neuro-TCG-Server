@@ -65,7 +65,7 @@ class CardStats(
                 0,
                 AttackRange.STANDARD,
                 CardType.DECK_MASTER,
-                Ability(AbilityEffect.ADD_HP_TO_ALLY_CARD, 3, AbilityRange.ALLY_CARD, 4),
+                Ability(AbilityEffect.ADD_HP, 3, AbilityRange.ALLY_CARD, 4),
                 true
             )), // Twitch
             Pair(3, CardStats(
@@ -75,7 +75,7 @@ class CardStats(
                 4,
                 AttackRange.STANDARD,
                 CardType.CREATURE,
-                Ability(AbilityEffect.SEAL_ENEMY_CARD, 1, AbilityRange.ENEMY_CARD, 0),
+                Ability(AbilityEffect.SEAL, 1, AbilityRange.ENEMY_CARD, 0),
                 true,
             ))
         )

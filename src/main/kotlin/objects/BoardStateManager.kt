@@ -375,19 +375,28 @@ class BoardStateManager(
             return
         }
 
+
         when (ability.effect) {
             AbilityEffect.NONE -> TODO()
-            AbilityEffect.ADD_HP_TO_ALLY_CARD -> {
-                val ally = getCard(player, packet.target_position)
-                if (ally == null) {
+            AbilityEffect.ADD_HP -> {
+                if (ability.range != AbilityRange.ALLY_CARD && ability.range != AbilityRange.ALLY_FIELD) {
                     sendInvalid()
                     return
                 }
 
-                assert(ability.range == AbilityRange.ALLY_CARD)
+                val ally = getCard(player, packet.target_position)
+                if (ally == null && ability.range == AbilityRange.ALLY_FIELD) {
+                    sendInvalid()
+                    return
+                }
 
-                ally.health += ability.value // isn't capped by design
-                setCard(player, packet.target_position, ally)
+                foreachInRange(player, packet.target_position, ability.range) { p, pos ->
+                    val card = getCard(p, pos)
+                    if (card != null) {
+                        card.health += ability.value // isn't capped by design
+                    }
+                    setCard(player, pos, card)
+                }
 
                 getConnection(player).sendPacket(
                     packet.getResponsePacket(
@@ -407,16 +416,26 @@ class BoardStateManager(
                 )
             }
 
-            AbilityEffect.SEAL_ENEMY_CARD -> {
-                // TODO: Seal card in server for server verification of client actions. Sealed card cannot do anything.
+            AbilityEffect.SEAL -> {
+                if (!arrayOf(AbilityRange.ENEMY_ROW, AbilityRange.ENEMY_FIELD, AbilityRange.ENEMY_CARD).contains(ability.range)) {
+                    sendInvalid()
+                    return
+                }
+
                 val target = getCard(player, packet.target_position)
-                if (target == null) {
+                if (target == null && ability.range == AbilityRange.ENEMY_CARD) {
                     sendInvalid()
                     return
                 }
 
                 // effectively seals this card until the end of the opponents turn. no idea if this causes problems later
-                target.phase = CardTurnPhase.Done
+                foreachInRange(player, packet.target_position, ability.range) { p, pos ->
+                    val card = getCard(p, pos)
+                    if (card != null) {
+                        card.phase = CardTurnPhase.Done
+                    }
+                    setCard(player, pos, card)
+                }
 
                 getConnection(player).sendPacket(
                     packet.getResponsePacket(
@@ -437,7 +456,6 @@ class BoardStateManager(
             }
 
             AbilityEffect.ATTACK -> TODO()
-            AbilityEffect.ATTACK_ROW -> TODO()
         }
 
         removeRam(player, ability.cost)
@@ -445,5 +463,26 @@ class BoardStateManager(
         abilityCard.ability_was_used = true
     }
 
+    fun foreachInRange(player: Player, target: CardPosition, range: AbilityRange, f: (Player, CardPosition) -> Unit) {
+        when (range) {
+            AbilityRange.NONE -> {}
+            AbilityRange.ALLY_FIELD -> foreachSlot(player, f)
+            AbilityRange.ENEMY_FIELD -> foreachSlot(!player, f)
+            AbilityRange.ALLY_CARD -> f(player, target)
+            AbilityRange.ENEMY_CARD -> f(!player, target)
+            AbilityRange.ENEMY_ROW -> {
+                if (target.row == CardPosition.BACK_ROW) {
+                    for (i in 0..<3) {
+                        f(!player, CardPosition(CardPosition.BACK_ROW, i))
+                    }
+                } else {
+                    for (i in 0..<4) {
+                        f(!player, CardPosition(CardPosition.FRONT_ROW, i))
+                    }
+                }
+            }
 
+            AbilityRange.PLAYER_DECK -> TODO()
+        }
+    }
 }
