@@ -29,7 +29,8 @@ class CardStats(
     @Required val summoning_cost: Int,
     @Required val attack_range: AttackRange,
     @Required val card_type: CardType,
-    @Required val ability: Ability
+    @Required val ability: Ability,
+    @Required val has_summoning_sickness: Boolean,
 ) {
     init{
         assert(summoning_cost in 0..10)
@@ -44,7 +45,8 @@ class CardStats(
                 2,
                 AttackRange.STANDARD,
                 CardType.CREATURE,
-                Ability()
+                Ability(),
+                true
             )), // Pirate Evil / Neuro
             Pair(1, CardStats(
                 "res://assets/game/cards/filipino_boy.png",
@@ -53,7 +55,8 @@ class CardStats(
                 5,
                 AttackRange.REACH,
                 CardType.CREATURE,
-                Ability()
+                Ability(),
+                true
             )), // Filipino Boy
             Pair(2, CardStats(
                 "res://assets/game/cards/angel_neuro.png",
@@ -62,8 +65,9 @@ class CardStats(
                 0,
                 AttackRange.STANDARD,
                 CardType.DECK_MASTER,
-                Ability(AbilityEffect.ADD_HP_TO_ALLY_CARD, 3, AbilityRange.ALLY_CARD, 4)
-            )), // Twatch
+                Ability(AbilityEffect.ADD_HP_TO_ALLY_CARD, 3, AbilityRange.ALLY_CARD, 4),
+                true
+            )), // Twitch
             Pair(3, CardStats(
                 "res://assets/game/cards/the_streaming_site_she_uses.png",
                 3,
@@ -71,8 +75,8 @@ class CardStats(
                 4,
                 AttackRange.STANDARD,
                 CardType.CREATURE,
-                Ability(AbilityEffect.SEAL_ENEMY_CARD, 1, AbilityRange.ENEMY_CARD, 0)
-
+                Ability(AbilityEffect.SEAL_ENEMY_CARD, 1, AbilityRange.ENEMY_CARD, 0),
+                true,
             ))
         )
 

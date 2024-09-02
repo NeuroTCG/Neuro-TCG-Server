@@ -19,6 +19,6 @@ data class CardState(
     @Required var id: Int,
     @Required var health: Int,
 
-    @Required var ability_was_used: Boolean = false,
-    @Required var phase: CardTurnPhase = CardTurnPhase.MoveOrAction,
+    @Required var ability_was_used: Boolean,
+    @Required var phase: CardTurnPhase,
 )
