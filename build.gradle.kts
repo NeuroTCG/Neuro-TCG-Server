@@ -1,4 +1,5 @@
 plugins {
+    application
     kotlin("jvm") version "1.9.21"
     kotlin("plugin.serialization") version "1.9.23"
 }
@@ -23,6 +24,10 @@ dependencies {
     implementation("org.xerial:sqlite-jdbc:3.44.1.0")
     implementation("io.ktor:ktor-server-netty:1.6.4")
     implementation("io.ktor:ktor-websockets:1.6.4")
+}
+
+application {
+    mainClass.set("MainKt")
 }
 
 tasks.test {
