@@ -1,3 +1,4 @@
+# Intellij stuff
 /.gradle
 /.idea
 /build
@@ -7,13 +8,4 @@
 *.iml
 *.hprof
 *.log
-korge.keystore
 .DS_Store
-
-
-# Project exclude paths
-/gradle/wrapper/
-/kotlin-js-store/
-
-/data/*
-!/data/.keep

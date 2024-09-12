@@ -1,1 +1,0 @@
-This ensures the /data directory exists because git doesn't handle empty directories.
