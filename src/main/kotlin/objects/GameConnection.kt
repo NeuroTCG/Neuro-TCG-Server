@@ -69,30 +69,27 @@ class GameConnection(socket: DefaultWebSocketServerSession) {
         }
     }
 
-    var isOpen = true
-        private set
+    val isOpen: Boolean
+        get() = clientSocket.outgoing.isClosedForSend
 
     suspend fun receivePacket(): Packet? {
-        val text = try {
-            (clientSocket.incoming.receive() as Frame.Text).readText()
-        } catch (e: SocketException) {
-            isOpen = false
-            return null
-        } catch (e: EOFException) {
-            isOpen = false
-            return null
-        } catch (e: ClosedReceiveChannelException) {
-            isOpen = false
-            return null
-        } catch (e: Exception) {
-            isOpen = false
-            e.printStackTrace()
-            return null
-        }
+        val text =
+            try {
+                (clientSocket.incoming.receive() as Frame.Text).readText()
+            } catch (e: SocketException) {
+                return null
+            } catch (e: EOFException) {
+                return null
+            } catch (e: ClosedReceiveChannelException) {
+                return null
+            } catch (e: Exception) {
+                e.printStackTrace()
+                return null
+            }
 
         return try {
             val packet = Json.decodeFromString<Packet>(text)
-            println("Received '${packet}'")
+            println("Received '$packet'")
             packet
         } catch (e: IllegalArgumentException) {
             e.printStackTrace()
@@ -118,6 +115,5 @@ class GameConnection(socket: DefaultWebSocketServerSession) {
     suspend fun close() {
         println("closing connection")
         clientSocket.close(CloseReason(CloseReason.Codes.NORMAL, "Bye"))
-        isOpen = false
     }
 }
