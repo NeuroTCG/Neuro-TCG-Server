@@ -70,7 +70,7 @@ class GameConnection(socket: DefaultWebSocketServerSession) {
     }
 
     val isOpen: Boolean
-        get() = clientSocket.outgoing.isClosedForSend
+        get() = !clientSocket.outgoing.isClosedForSend
 
     suspend fun receivePacket(): Packet? {
         val text =
