@@ -241,7 +241,12 @@ class BoardStateManager(
     }
 
     private fun isSlotReachable(player: Player, attackerPosition: CardPosition, targetPosition: CardPosition): Boolean {
-        val isFrontEmpty = getCard(!player, CardPosition(CardPosition.FRONT_ROW, 0)) == null
+        val isPlayerFrontEmpty = getCard(player, CardPosition(CardPosition.FRONT_ROW, 0)) == null
+            && getCard(player, CardPosition(CardPosition.FRONT_ROW, 1)) == null
+            && getCard(player, CardPosition(CardPosition.FRONT_ROW, 2)) == null
+            && getCard(player, CardPosition(CardPosition.FRONT_ROW, 3)) == null
+
+        val isOppoonentFrontEmpty = getCard(!player, CardPosition(CardPosition.FRONT_ROW, 0)) == null
             && getCard(!player, CardPosition(CardPosition.FRONT_ROW, 1)) == null
             && getCard(!player, CardPosition(CardPosition.FRONT_ROW, 2)) == null
             && getCard(!player, CardPosition(CardPosition.FRONT_ROW, 3)) == null
@@ -253,9 +258,9 @@ class BoardStateManager(
 
         return when (attackerPosition.row to targetPosition.row) {
             CardPosition.FRONT_ROW to CardPosition.FRONT_ROW -> true
-            CardPosition.FRONT_ROW to CardPosition.BACK_ROW -> isFrontEmpty || attackerReach == AttackRange.REACH
-            CardPosition.BACK_ROW to CardPosition.FRONT_ROW -> attackerReach == AttackRange.REACH
-            CardPosition.BACK_ROW to CardPosition.BACK_ROW -> false
+            CardPosition.FRONT_ROW to CardPosition.BACK_ROW -> isOppoonentFrontEmpty || attackerReach == AttackRange.REACH
+            CardPosition.BACK_ROW to CardPosition.FRONT_ROW -> isPlayerFrontEmpty || attackerReach == AttackRange.REACH
+            CardPosition.BACK_ROW to CardPosition.BACK_ROW -> attackerReach == AttackRange.REACH
             else -> {
                 assert(false) { "unreachable" }
                 false
