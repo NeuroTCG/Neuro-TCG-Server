@@ -140,7 +140,8 @@ class BoardStateManager(
             packet.card_id,
             cardStats.max_hp,
             false,
-            if (cardStats.has_summoning_sickness) CardTurnPhase.Done else CardTurnPhase.MoveOrAction
+            if (cardStats.has_summoning_sickness) CardTurnPhase.Done else CardTurnPhase.MoveOrAction,
+            0
         )
         setCard(
             player,
@@ -210,9 +211,21 @@ class BoardStateManager(
         val canAttackBack = isSlotReachable(!player, packet.target_position, packet.attacker_position)
 
         attacker.phase = CardTurnPhase.Done
-        target.health -= CardStats.getCardByID(attacker.id).base_atk
-        if (canAttackBack)
-            attacker.health -= max(CardStats.getCardByID(target.id).base_atk - 1, 0)
+
+        if (target.shield == 0) {
+            target.health -= CardStats.getCardByID(attacker.id).base_atk
+        } else {
+            target.shield -= 1
+        }
+
+        if (canAttackBack) {
+            if (attacker.shield == 0) {
+                attacker.health -= max(CardStats.getCardByID(target.id).base_atk - 1, 0)
+            } else {
+                attacker.shield -= 1
+            }
+        }
+
         if (attacker.health <= 0)
             attacker = null
         if (target.health <= 0)
@@ -492,6 +505,48 @@ class BoardStateManager(
                     }
                     setCard(player, pos, card)
                 }
+            }
+
+            AbilityEffect.SHIELD -> {
+                if (!arrayOf(
+                        AbilityRange.ALLY_FIELD,
+                        AbilityRange.ALLY_CARD
+                    ).contains(ability.range)
+                ) {
+                    sendInvalid()
+                    return
+                }
+
+                val target = getCard(player, packet.target_position)
+                if (target == null && ability.range == AbilityRange.ENEMY_CARD) {
+                    sendInvalid()
+                    return
+                }
+
+                foreachInRange(player, packet.target_position, ability.range) { p, pos ->
+                    var card = getCard(p, pos)
+                    card?.let {
+                        it.shield += 1
+                    }
+                    setCard(player, pos, card)
+                }
+
+                getConnection(player).sendPacket(
+                    packet.getResponsePacket(
+                        isYou = true,
+                        valid = true,
+                        targetCard = target,
+                        abilityCard = abilityCard
+                    )
+                )
+                getConnection(!player).sendPacket(
+                    packet.getResponsePacket(
+                        isYou = false,
+                        valid = true,
+                        targetCard = target,
+                        abilityCard = abilityCard
+                    )
+                )
             }
         }
 

@@ -21,4 +21,5 @@ data class CardState(
 
     @Required var ability_was_used: Boolean,
     @Required var phase: CardTurnPhase,
+    @Required var shield: Int,
 )

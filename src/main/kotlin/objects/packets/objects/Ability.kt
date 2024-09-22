@@ -8,6 +8,7 @@ enum class AbilityEffect {
     ADD_HP,
     SEAL,
     ATTACK,
+    SHIELD,
 }
 
 @Serializable
