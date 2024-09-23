@@ -141,6 +141,7 @@ class BoardStateManager(
             cardStats.max_hp,
             false,
             if (cardStats.has_summoning_sickness) CardTurnPhase.Done else CardTurnPhase.MoveOrAction,
+            0,
             0
         )
         setCard(
@@ -327,12 +328,16 @@ class BoardStateManager(
             return
         }
 
-        getConnection(!player).sendPacket(StartTurnPacket())
         refreshRam(player)
 
-        foreachSlot(player, ::resetCard)
+        foreachSlot(player, ::endTurnForCard)
 
         boardState.first_player_active = !boardState.first_player_active
+        // we are now in the new turn
+
+        foreachSlot(player, ::startTurnForCard)
+
+        getConnection(!player).sendPacket(StartTurnPacket())
     }
 
     private fun foreachSlot(player: Player, f: (Player, CardPosition) -> Unit) {
@@ -344,9 +349,31 @@ class BoardStateManager(
         }
     }
 
-    private fun resetCard(player: Player, position: CardPosition) {
+    private fun endTurnForCard(player: Player, position: CardPosition) {
         val card = getCard(player, position)
-        card?.phase = CardTurnPhase.MoveOrAction
+        if (card == null) {
+            return
+        }
+
+        if (card.sealed_turns_left > 0) {
+            card.phase = CardTurnPhase.Done
+        } else {
+            card.phase = CardTurnPhase.MoveOrAction
+        }
+    }
+
+    private fun startTurnForCard(player: Player, position: CardPosition) {
+        val card = getCard(player, position)
+        if (card == null) {
+            return
+        }
+
+        card.sealed_turns_left = maxOf(0, card.sealed_turns_left - 1)
+        if (card.sealed_turns_left > 0) {
+            card.phase = CardTurnPhase.Done
+        } else {
+            card.phase = CardTurnPhase.MoveOrAction
+        }
     }
 
     private val firstQueue = mutableListOf(2, 1, 3, 1, 0, 0)
@@ -445,20 +472,22 @@ class BoardStateManager(
                     return
                 }
 
-                val target = getCard(player, packet.target_position)
+                var target = getCard(!player, packet.target_position)
                 if (target == null && ability.range == AbilityRange.ENEMY_CARD) {
                     sendInvalid()
                     return
                 }
 
-                // effectively seals this card until the end of the opponents turn. no idea if this causes problems later
                 foreachInRange(player, packet.target_position, ability.range) { p, pos ->
                     val card = getCard(p, pos)
                     if (card != null) {
-                        card.phase = CardTurnPhase.Done
+                        card.sealed_turns_left = ability.value
+                        card.phase = CardTurnPhase.Done // is renewed in startTurnForCard
                     }
-                    setCard(player, pos, card)
+                    setCard(p, pos, card)
                 }
+
+                target = getCard(!player, packet.target_position)
 
                 getConnection(player).sendPacket(
                     packet.getResponsePacket(
@@ -517,7 +546,7 @@ class BoardStateManager(
                     return
                 }
 
-                val target = getCard(player, packet.target_position)
+                var target = getCard(player, packet.target_position)
                 if (target == null && ability.range == AbilityRange.ENEMY_CARD) {
                     sendInvalid()
                     return
@@ -530,6 +559,8 @@ class BoardStateManager(
                     }
                     setCard(player, pos, card)
                 }
+
+                target = getCard(player, packet.target_position)
 
                 getConnection(player).sendPacket(
                     packet.getResponsePacket(

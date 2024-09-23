@@ -32,13 +32,14 @@ class CardStats(
     @Required val ability: Ability,
     @Required val has_summoning_sickness: Boolean,
 ) {
-    init{
+    init {
         assert(summoning_cost in 0..10)
     }
+
     companion object {
         // TODO: maybe move this out of here since it isn't networking related
         val cardIDMapping: HashMap<Int, CardStats> = hashMapOf(
-            Pair(0, CardStats(
+            0 to CardStats(
                 "res://assets/game/cards/pirate_evil.jpg",
                 2,
                 2,
@@ -47,8 +48,8 @@ class CardStats(
                 CardType.CREATURE,
                 Ability(),
                 true
-            )), // Pirate Evil / Neuro
-            Pair(1, CardStats(
+            ), // Pirate Evil / Neuro
+            1 to CardStats(
                 "res://assets/game/cards/filipino_boy.png",
                 3,
                 3,
@@ -57,8 +58,8 @@ class CardStats(
                 CardType.CREATURE,
                 Ability(),
                 true
-            )), // Filipino Boy
-            Pair(2, CardStats(
+            ), // Filipino Boy
+            2 to CardStats(
                 "res://assets/game/cards/angel_neuro.png",
                 24,
                 2,
@@ -67,8 +68,8 @@ class CardStats(
                 CardType.DECK_MASTER,
                 Ability(AbilityEffect.ADD_HP, 3, AbilityRange.ALLY_CARD, 4),
                 true
-            )), // Twitch
-            Pair(3, CardStats(
+            ), // Twitch
+            3 to CardStats(
                 "res://assets/game/cards/the_streaming_site_she_uses.png",
                 3,
                 4,
@@ -77,7 +78,7 @@ class CardStats(
                 CardType.CREATURE,
                 Ability(AbilityEffect.SEAL, 1, AbilityRange.ENEMY_CARD, 0),
                 true,
-            ))
+            )
         )
 
         fun getCardByID(id: Int): CardStats {

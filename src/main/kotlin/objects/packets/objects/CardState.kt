@@ -10,7 +10,7 @@ enum class CardTurnPhase {
     Action,
     MoveOrAction;
 
-    object Serializer: EnumOrdinalSerializer<CardTurnPhase>("CardTurnPhase", entries.toTypedArray())
+    object Serializer : EnumOrdinalSerializer<CardTurnPhase>("CardTurnPhase", entries.toTypedArray())
 }
 
 @Suppress("PropertyName")
@@ -22,4 +22,5 @@ data class CardState(
     @Required var ability_was_used: Boolean,
     @Required var phase: CardTurnPhase,
     @Required var shield: Int,
+    @Required var sealed_turns_left: Int,
 )
