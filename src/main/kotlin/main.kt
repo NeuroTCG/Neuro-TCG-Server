@@ -1,3 +1,4 @@
+import io.github.cdimascio.dotenv.*
 import io.ktor.application.*
 import io.ktor.routing.*
 import io.ktor.server.engine.*
@@ -20,6 +21,8 @@ fun getFirstOpenConnection(
     }
     return null
 }
+
+//val dotenv = dotenv() //usage: dotenv[key: String]
 
 fun main() {
     val db = GameDatabase()
