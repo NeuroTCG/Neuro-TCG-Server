@@ -6,6 +6,7 @@ import io.ktor.server.netty.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.future.*
 import objects.*
+import objects.accounts.*
 import java.io.*
 import java.util.*
 import java.util.concurrent.*
@@ -22,7 +23,9 @@ fun getFirstOpenConnection(
     return null
 }
 
-//val dotenv = dotenv() //usage: dotenv[key: String]
+val dotenv = dotenv() //usage: dotenv[key: String]
+val discordLoginManager = DiscordLogin(dotenv["DISCORD_TOKEN"]!!, dotenv["DISCORD_CLIENT_ID"]!!, dotenv["DISCORD_REDIRECT_URI"]!!)
+//TODO: add .env file with secrets
 
 fun main() {
     val db = GameDatabase()

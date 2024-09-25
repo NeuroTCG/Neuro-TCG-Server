@@ -4,9 +4,12 @@ import kotlinx.serialization.json.*
 import okhttp3.*
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.*
+import java.time.*
 import java.util.concurrent.*
+import kotlin.jvm.Throws
 
-class Discord(
+//TODO: make a function or something to integrate this with the main socket
+class DiscordLogin(
     private val discordAppToken: String,
     private val clientId: String,
     private val redirectUri: String
@@ -18,6 +21,7 @@ class Discord(
         .readTimeout(1, TimeUnit.DAYS)
         .callTimeout(1, TimeUnit.DAYS)
         .build()
+    private val allTokens = mutableMapOf<String, Pair<String, Instant>>()
 
     fun getAccessToken(authCode: String): String {
         val discordTokenUrl = "$discordUrl/oauth2/token"
@@ -61,7 +65,8 @@ class Discord(
         return sendRequest(tokenRevokeUrl, requestBody, contentType)
     }
 
-    fun getUserData(token: String): String {
+    @Throws(IOException::class)
+    fun getUserData(token: String): DiscordAccount {
         val userDataUrl = "$discordUrl/users/@me"
 
         val request = Request.Builder()
@@ -73,11 +78,26 @@ class Discord(
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) {
                 println("Failed to get user data. Code: ${response.code}")
-                return ""
+                throw IOException("Failed to get user data. Code: ${response.code}")
             }
-            val responseJson = response.body!!.string()
-            return responseJson
+            val responseJson = Json.decodeFromString<JsonObject>(response.body!!.string())
+            val username = responseJson["username"]!!.jsonPrimitive.content
+            val avatarId = responseJson["avatar"]?.jsonPrimitive?.content
+            val userId = responseJson["id"]?.jsonPrimitive?.content
+            val avatarUrl = if (avatarId != null && userId != null) {
+                "https://cdn.discordapp.com/avatars/$userId/$avatarId"
+            } else {
+                null
+            }
+            return DiscordAccount(username, userId!!, avatarUrl, generateUID(userId))
         }
+    }
+
+    private fun generateUID(discordUID: String): String {
+        //TODO: check for already made accounts and fetch the uID for that if found
+        return (1..18)
+            .map { ('0'..'9').random() }
+            .joinToString("")
     }
 
     private fun sendRequest(url: String, data: String, contentType: String): String {
@@ -92,5 +112,26 @@ class Discord(
             val responseJson = response.body!!.string()
             return responseJson
         }
+    }
+
+    fun addToken(state: String, response: String) {
+        allTokens[state.take(16)] = response to (Instant.now().plusSeconds(3 * 60))
+        for (i in allTokens) {
+            if (i.value.second.isBefore(Instant.now())) {
+                allTokens.remove(i.key)
+            }
+        }
+    }
+
+    fun getAccessTokenFromState(state: String): String? {
+        //returns null if the state is invalid, someone can handle that
+        if (!allTokens.containsKey(state)) {
+            return null
+        }
+
+        val response = allTokens[state]!!.first
+        allTokens.remove(state)
+
+        return response
     }
 }
