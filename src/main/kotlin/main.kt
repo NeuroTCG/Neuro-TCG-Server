@@ -24,7 +24,7 @@ fun getFirstOpenConnection(
 }
 
 val dotenv = dotenv() //usage: dotenv[key: String]
-val discordLoginManager = DiscordLogin(dotenv["DISCORD_TOKEN"]!!, dotenv["DISCORD_CLIENT_ID"]!!, dotenv["DISCORD_REDIRECT_URI"]!!)
+val discordLoginManager = DiscordLogin(dotenv["DISCORD_CLIENT_SECRET"]!!, dotenv["DISCORD_CLIENT_ID"]!!, dotenv["DISCORD_REDIRECT_URI"]!!)
 //TODO: add .env file with secrets
 
 fun main() {

@@ -10,7 +10,7 @@ import kotlin.jvm.Throws
 
 //TODO: make a function or something to integrate this with the main socket
 class DiscordLogin(
-    private val discordAppToken: String,
+    private val clientSecret: String,
     private val clientId: String,
     private val redirectUri: String
 ) {
@@ -31,7 +31,7 @@ class DiscordLogin(
             put("code", authCode)
             put("redirect_uri", redirectUri)
             put("client_id", clientId)
-            put("client_secret", discordAppToken)
+            put("client_secret", clientSecret)
         }
 
         var requestBody = ""
@@ -51,7 +51,7 @@ class DiscordLogin(
             put("token_type_hint", "access_token")
             put("token", token)
             put("client_id", clientId)
-            put("client_secret", discordAppToken)
+            put("client_secret", clientSecret)
         }
 
         var requestBody = ""

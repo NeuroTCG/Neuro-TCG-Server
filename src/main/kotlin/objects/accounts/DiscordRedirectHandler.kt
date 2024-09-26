@@ -10,6 +10,7 @@ class DiscordRedirectHandler : HttpHandler {
     private val page = File("./resources/redirectPage.html")
 
     override fun handle(exchange: HttpExchange) {
+        // the actual url doesn't matter, this just allows us to use builtin parsing functions
         val url = ("http://localhost" + exchange.requestURI).toHttpUrlOrNull()!!
         val state = url.queryParameter("state")
         val code = url.queryParameter("code")
