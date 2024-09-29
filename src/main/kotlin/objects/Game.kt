@@ -28,60 +28,61 @@ class Game(val p1Connection: GameConnection, val p2connection: GameConnection, d
         }
 
         while (connection.isOpen) {
-            when (val packet = connection.receivePacket()) {
-                null -> {
-                    if (connection.isOpen)
-                        connection.close()
-                    println(prefix + "Connection was closed unexpectedly")
+            boardManager.withGameOverHandler {
+                when (val packet = connection.receivePacket()) {
+                    null -> {
+                        if (connection.isOpen)
+                            connection.close()
+                        println(prefix + "Connection was closed unexpectedly")
 
-                    if (otherConnection.isOpen) {
-                        println(prefix + "Informing opponent")
-                        otherConnection.sendPacket(
-                            DisconnectPacket(
-                                DisconnectPacket.Reason.opponent_disconnect,
-                                "The opponent has closed it's connection"
+                        if (otherConnection.isOpen) {
+                            println(prefix + "Informing opponent")
+                            otherConnection.sendPacket(
+                                DisconnectPacket(
+                                    DisconnectPacket.Reason.opponent_disconnect,
+                                    "The opponent has closed it's connection"
+                                )
                             )
-                        )
-                        //otherConnection.close()
+                            //otherConnection.close()
+                        }
                     }
-                }
 
-                is GetBoardStatePacket -> {
-                    println(prefix + "getboardstate")
-                    connection.sendPacket(GetBoardStateResponse(boardManager.getBoardState()))
-                }
+                    is GetBoardStatePacket -> {
+                        println(prefix + "getboardstate")
+                        connection.sendPacket(GetBoardStateResponse(boardManager.getBoardState()))
+                    }
 
-                is AttackRequestPacket -> {
-                    boardManager.handleAttackPacket(packet, player)
-                }
+                    is AttackRequestPacket -> {
+                        boardManager.handleAttackPacket(packet, player)
+                    }
 
-                is SummonRequestPacket -> {
-                    boardManager.handleSummonPacket(packet, player)
-                }
+                    is SummonRequestPacket -> {
+                        boardManager.handleSummonPacket(packet, player)
+                    }
 
-                is SwitchPlaceRequestPacket -> {
-                    boardManager.handleSwitchPlacePacket(packet, player)
-                }
+                    is SwitchPlaceRequestPacket -> {
+                        boardManager.handleSwitchPlacePacket(packet, player)
+                    }
 
-                is EndTurnPacket -> {
-                    boardManager.handleEndTurn(player)
-                }
+                    is EndTurnPacket -> {
+                        boardManager.handleEndTurn(player)
+                    }
 
-                is DrawCardRequestPacket -> {
-                    boardManager.handleDrawCard(player)
-                }
+                    is DrawCardRequestPacket -> {
+                        boardManager.handleDrawCard(player)
+                    }
 
-                is UseAbilityRequestPacket -> {
-                    boardManager.handleUseAbilityPacket(packet, player)
-                }
+                    is UseAbilityRequestPacket -> {
+                        boardManager.handleUseAbilityPacket(packet, player)
+                    }
 
-                else -> {
-                    connection.sendPacket(UnknownPacketPacket("unknown packet type received"))
-                    println(prefix + "Received unknown packet")
+                    else -> {
+                        connection.sendPacket(UnknownPacketPacket("unknown packet type received"))
+                        println(prefix + "Received unknown packet")
+                    }
                 }
             }
             println(prefix + "new ram: ${boardManager.getBoardState().ram[0]}, ${boardManager.getBoardState().ram[1]}  max: ${boardManager.getBoardState().max_ram[0]}, ${boardManager.getBoardState().max_ram[1]}")
         }
     }
 }
-
