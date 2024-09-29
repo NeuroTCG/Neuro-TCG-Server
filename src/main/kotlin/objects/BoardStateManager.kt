@@ -92,7 +92,7 @@ class BoardStateManager(
     // TODO: remove this function after deck masters are no longer null
     // This is here to encapsulate code that doesn't need to be in the
     // final server
-    suspend fun temporarySpecialLogicWithGameOverHandler(
+    private suspend fun temporarySpecialLogicWithGameOverHandler(
         deckMasterPlayer1: CardState?,
         deckMasterPlayer2: CardState?,
     ): Boolean {
@@ -120,7 +120,7 @@ class BoardStateManager(
     suspend fun withGameOverHandler(handler: suspend () -> Unit) {
         handler()
 
-        if (this.boardState.deck_masters.all { (it?.run { health > 0 }) ?: true }) {
+        if (this.boardState.deck_masters.all { (it?.run { health > 0 }) != false }) {
             return
         }
 
@@ -132,8 +132,8 @@ class BoardStateManager(
 
         // TODO: These are temporary after we consider that deck_masters must exist
         // TODO: Hence, when they do exist, remove the next few lines
-        var deckMasterPlayer1Opt = this.boardState.deck_masters[playerToIndex(Player.Player1)]
-        var deckMasterPlayer2Opt = this.boardState.deck_masters[playerToIndex(Player.Player2)]
+        val deckMasterPlayer1Opt = this.boardState.deck_masters[playerToIndex(Player.Player1)]
+        val deckMasterPlayer2Opt = this.boardState.deck_masters[playerToIndex(Player.Player2)]
 
         if (temporarySpecialLogicWithGameOverHandler(deckMasterPlayer1Opt, deckMasterPlayer2Opt)) {
             return
@@ -144,9 +144,13 @@ class BoardStateManager(
         val deckMasterPlayer2 = deckMasterPlayer2Opt!!
 
         val isPlayer1Empty =
-            isHandEmpty(player1) && isBoardEmptyForPlayerExceptFor(player1, deckMasterPlayer1) && isDeckEmptyForPlayer(player1)
+            isHandEmpty(player1) && isBoardEmptyForPlayerExceptFor(player1, deckMasterPlayer1) && isDeckEmptyForPlayer(
+                player1
+            )
         val isPlayer2Empty =
-            isHandEmpty(player2) && isBoardEmptyForPlayerExceptFor(player2, deckMasterPlayer2) && isDeckEmptyForPlayer(player2)
+            isHandEmpty(player2) && isBoardEmptyForPlayerExceptFor(player2, deckMasterPlayer2) && isDeckEmptyForPlayer(
+                player2
+            )
 
         if (isPlayer1Empty && isPlayer2Empty) {
             if (deckMasterPlayer1.health == deckMasterPlayer2.health) {
@@ -264,7 +268,7 @@ class BoardStateManager(
 
         // If it's a deck master, we put it in the board state
         if (cardStats.card_type == CardType.DECK_MASTER) {
-            this.boardState.deck_masters[playerToIndex(player)] = newCardState;
+            this.boardState.deck_masters[playerToIndex(player)] = newCardState
         }
 
         getConnection(player).sendPacket(
