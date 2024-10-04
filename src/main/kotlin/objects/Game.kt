@@ -18,8 +18,15 @@ class Game(val p1Connection: GameConnection, val p2connection: GameConnection, d
         println(prefix + "Sending match to client")
         connection.sendPacket(MatchFoundPacket(otherConnection.getUserInfo(), id, false, player == Player.Player1))
 
-        if (player == Player.Player1)
+        for (i in 0..<4) {
+            boardManager.drawCard(player)
+        }
+
+        if (player == Player.Player1){
             connection.sendPacket(StartTurnPacket())
+            boardManager.drawCard(player)
+        }
+
         while (connection.isOpen) {
             when (val packet = connection.receivePacket()) {
                 null -> {

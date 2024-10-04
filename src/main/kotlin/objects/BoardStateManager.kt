@@ -335,9 +335,12 @@ class BoardStateManager(
         boardState.first_player_active = !boardState.first_player_active
         // we are now in the new turn
 
-        foreachSlot(player, ::startTurnForCard)
+        foreachSlot(!player, ::startTurnForCard)
 
         getConnection(!player).sendPacket(StartTurnPacket())
+        if (this.boardState.hands[playerToIndex(!player)].size < 5){
+            drawCard(!player)
+        }
     }
 
     private fun foreachSlot(player: Player, f: (Player, CardPosition) -> Unit) {
@@ -376,8 +379,7 @@ class BoardStateManager(
         }
     }
 
-    private val firstQueue = mutableListOf(2, 1, 3, 1, 0, 0)
-    private val secondQueue = mutableListOf(2, 1, 3, 0, 1, 1)
+    private val cardDecks = listOf(CardDeck(), CardDeck())
 
     suspend fun handleDrawCard(player: Player) {
         if (!isTurnOfPlayer(player)) {
@@ -389,7 +391,11 @@ class BoardStateManager(
             return
         }
 
-        val cardID = if (player == Player.Player1) firstQueue.removeAt(0) else secondQueue.removeAt(0)
+        drawCard(player)
+    }
+
+    suspend fun drawCard(player: Player){
+        val cardID = cardDecks[playerToIndex(player)].drawCard()
 
         placeInHand(player, cardID)
 
