@@ -39,6 +39,11 @@ class DisconnectPacket(
         /**
          * the opponent has disconnected
          */
-        opponent_disconnect
+        opponent_disconnect,
+
+        /**
+         * game over
+         */
+        game_over,
     }
 }

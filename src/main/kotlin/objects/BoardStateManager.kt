@@ -92,111 +92,71 @@ class BoardStateManager(
     // TODO: remove this function after deck masters are no longer null
     // This is here to encapsulate code that doesn't need to be in the
     // final server
-    private suspend fun temporarySpecialLogicWithGameOverHandler(
+    private suspend fun isGameOverTemporarySpecialLogic(
         deckMasterPlayer1: CardState?,
         deckMasterPlayer2: CardState?,
-    ): Boolean {
+    ): Player? {
         val player1Died = (deckMasterPlayer1?.run { health < 0 }) ?: false
         val player2Died = (deckMasterPlayer2?.run { health < 0 }) ?: false
         if (player1Died && player2Died) {
-            return false
+            return null
         }
 
         if (player1Died) {
-            getConnection(Player.Player1).sendPacket(GameOverPacket(false))
-            getConnection(Player.Player2).sendPacket(GameOverPacket(true))
-            return true
+            return Player.Player2
         }
 
         if (player2Died) {
-            getConnection(Player.Player1).sendPacket(GameOverPacket(true))
-            getConnection(Player.Player2).sendPacket(GameOverPacket(false))
-            return true
+            return Player.Player1
         }
 
-        return false
+        return null
     }
 
-    suspend fun withGameOverHandler(handler: suspend () -> Unit) {
-        handler()
-
+    private suspend fun getGameWinner(): Player? {
         if (this.boardState.deck_masters.all { (it?.run { health > 0 }) != false }) {
-            return
+            return null
         }
 
         val player1 = Player.Player1
         val player2 = Player.Player2
 
-        val player1Connection = getConnection(player1)
-        val player2Connection = getConnection(player2)
-
         // TODO: These are temporary after we consider that deck_masters must exist
         // TODO: Hence, when they do exist, remove the next few lines
         val deckMasterPlayer1Opt = this.boardState.deck_masters[playerToIndex(Player.Player1)]
         val deckMasterPlayer2Opt = this.boardState.deck_masters[playerToIndex(Player.Player2)]
+        val temporarySpecialGameOver =
+            isGameOverTemporarySpecialLogic(deckMasterPlayer1Opt, deckMasterPlayer2Opt)
 
-        if (temporarySpecialLogicWithGameOverHandler(deckMasterPlayer1Opt, deckMasterPlayer2Opt)) {
-            return
+        if (temporarySpecialGameOver != null) {
+            return temporarySpecialGameOver
         }
 
         // NOTE: at this point, deckMasterPlayer1 & 2 are guaranteed to exist
         val deckMasterPlayer1 = deckMasterPlayer1Opt!!
         val deckMasterPlayer2 = deckMasterPlayer2Opt!!
 
-        val isPlayer1Empty =
-            isHandEmpty(player1) && isBoardEmptyForPlayerExceptFor(player1, deckMasterPlayer1) && isDeckEmptyForPlayer(
-                player1
-            )
-        val isPlayer2Empty =
-            isHandEmpty(player2) && isBoardEmptyForPlayerExceptFor(player2, deckMasterPlayer2) && isDeckEmptyForPlayer(
-                player2
-            )
-
-        if (isPlayer1Empty && isPlayer2Empty) {
-            if (deckMasterPlayer1.health == deckMasterPlayer2.health) {
-                // tie
-                val winner = arrayOf(player1, player2).random()
-                print("tie condition")
-                print(winner.name)
-                getConnection(winner).sendPacket(
-                    GameOverPacket(true),
-                )
-
-                getConnection(!winner).sendPacket(
-                    GameOverPacket(false),
-                )
-                return
-            } else {
-                player1Connection.sendPacket(
-                    GameOverPacket(deckMasterPlayer1.health > deckMasterPlayer2.health),
-                )
-
-                player2Connection.sendPacket(
-                    GameOverPacket(deckMasterPlayer1.health < deckMasterPlayer2.health),
-                )
-            }
-
-            // TODO: is there a better way to close the connection?
-            player1Connection.close()
-            player2Connection.close()
-
-            return
-        }
-
         if (deckMasterPlayer1.health > 0 && deckMasterPlayer2.health > 0) {
+            return null
+        }
+
+        return if (deckMasterPlayer1.health > deckMasterPlayer2.health) player1 else player2
+    }
+
+    suspend fun gameOverHandler() {
+        val winner = getGameWinner()
+        if (winner == null) {
             return
         }
 
-        player1Connection.sendPacket(
-            GameOverPacket(deckMasterPlayer1.health > 0),
-        )
-
-        player2Connection.sendPacket(
-            GameOverPacket(deckMasterPlayer2.health > 0),
-        )
-
-        player1Connection.close()
-        player2Connection.close()
+        getConnection(winner).let {
+            it.sendPacket(GameOverPacket(true))
+            it.sendPacket(DisconnectPacket(DisconnectPacket.Reason.game_over, "Game is over"))
+        }
+        getConnection(!winner).let {
+            it.sendPacket(GameOverPacket(false))
+            it.sendPacket(DisconnectPacket(DisconnectPacket.Reason.game_over, "Game is over"))
+        }
     }
 
     suspend fun handleSummonPacket(
@@ -335,6 +295,11 @@ class BoardStateManager(
             target.health -= CardStats.getCardByID(attacker.id).base_atk
         } else {
             target.shield -= 1
+        }
+
+        // NOTE: if the game is already over, we don't have to process anything else
+        if (getGameWinner() != null) {
+            return
         }
 
         if (canAttackBack) {
@@ -498,24 +463,6 @@ class BoardStateManager(
     }
 
     private val cardDecks = listOf(CardDeck(), CardDeck())
-
-    suspend fun isDeckEmptyForPlayer(player: Player): Boolean =
-        when (player) {
-            Player.Player1 -> firstQueue.isEmpty()
-            Player.Player2 -> secondQueue.isEmpty()
-        }
-
-    suspend fun isHandEmpty(player: Player): Boolean = this.boardState.hands[playerToIndex(player)].isEmpty()
-
-    suspend fun isBoardEmptyForPlayerExceptFor(
-        player: Player,
-        excluded_card: CardState,
-    ): Boolean =
-        this.boardState.cards[playerToIndex(player)]
-            .flatten()
-            .filter {
-                it != excluded_card
-            }.all { it == null }
 
     suspend fun handleDrawCard(player: Player) {
         if (!isTurnOfPlayer(player)) {

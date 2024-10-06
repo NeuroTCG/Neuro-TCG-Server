@@ -109,11 +109,15 @@ class GameConnection(socket: DefaultWebSocketServerSession) {
         println(x)
         clientSocket.send(x)
         clientSocket.flush()
-        println("Sent '${packet}'")
+        println("Sent '$packet'")
     }
 
     suspend fun close() {
-        println("closing connection")
-        clientSocket.close(CloseReason(CloseReason.Codes.NORMAL, "Bye"))
+        if (isOpen) {
+            println("closing connection")
+            clientSocket.close(CloseReason(CloseReason.Codes.NORMAL, "Bye"))
+            return
+        }
+        println("connection was already closed")
     }
 }
