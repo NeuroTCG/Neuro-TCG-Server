@@ -1,9 +1,9 @@
 import io.github.cdimascio.dotenv.*
-import io.ktor.application.*
-import io.ktor.routing.*
+import io.ktor.server.application.*
+import io.ktor.server.routing.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
-import io.ktor.websocket.*
+import io.ktor.server.websocket.*
 import kotlinx.coroutines.future.*
 import objects.*
 import objects.accounts.*

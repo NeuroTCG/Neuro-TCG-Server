@@ -1,13 +1,13 @@
 plugins {
     application
-    kotlin("jvm") version "2.0.0"
+    kotlin("jvm") version "2.0.20"
     kotlin("plugin.serialization") version "2.0.0"
 }
 
 group = "org.example"
 version = "1.0-SNAPSHOT"
 val exposedVersion = "0.49.0"
-val ktorVersion = "1.6.8" //goal: change this to 2.3.12
+val ktorVersion = "2.3.12"
 
 repositories {
     mavenCentral()
@@ -24,7 +24,7 @@ dependencies {
     implementation("org.jetbrains.exposed", "exposed-java-time", exposedVersion)
     implementation("org.xerial:sqlite-jdbc:3.44.1.0")
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
-    implementation("io.ktor:ktor-websockets:$ktorVersion")
+    implementation("io.ktor:ktor-server-websockets:$ktorVersion")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("io.github.cdimascio:dotenv-kotlin:6.4.1")
 }

@@ -1,6 +1,6 @@
 package objects
 
-import io.ktor.http.cio.websocket.*
+import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.channels.*
 import kotlinx.serialization.*
