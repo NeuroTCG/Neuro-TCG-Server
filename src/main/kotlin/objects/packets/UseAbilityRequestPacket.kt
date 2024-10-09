@@ -10,11 +10,12 @@ class UseAbilityRequestPacket(
     @Required val target_position: CardPosition,
     @Required val ability_position: CardPosition,
 ) : Packet() {
-
-    fun getResponsePacket(isYou: Boolean, valid: Boolean, targetCard: CardState?, abilityCard: CardState?): UseAbilityPacket {
-        return UseAbilityPacket(isYou, valid, target_position, ability_position, targetCard, abilityCard)
-    }
-
+    fun getResponsePacket(
+        isYou: Boolean,
+        valid: Boolean,
+        targetCard: CardState?,
+        abilityCard: CardState?,
+    ): UseAbilityPacket = UseAbilityPacket(isYou, valid, target_position, ability_position, targetCard, abilityCard)
 }
 
 @Serializable

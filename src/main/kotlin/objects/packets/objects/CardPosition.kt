@@ -23,7 +23,10 @@ import kotlinx.serialization.encoding.*
  *            you
  * ```
  */
-data class CardPosition(val row: Int, val column: Int) {
+data class CardPosition(
+    val row: Int,
+    val column: Int,
+) {
     init {
         require(row in 0..1)
         when (row) {
@@ -57,7 +60,10 @@ class BoardPositionSerializer : KSerializer<CardPosition> {
         return CardPosition(array[0], array[1])
     }
 
-    override fun serialize(encoder: Encoder, value: CardPosition) {
+    override fun serialize(
+        encoder: Encoder,
+        value: CardPosition,
+    ) {
         encoder.encodeSerializableValue(delegateSerializer, intArrayOf(value.row, value.column))
     }
 }

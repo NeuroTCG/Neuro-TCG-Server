@@ -1,8 +1,8 @@
 import io.github.cdimascio.dotenv.*
 import io.ktor.server.application.*
-import io.ktor.server.routing.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
+import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import kotlinx.coroutines.future.*
 import objects.*
@@ -23,9 +23,9 @@ fun getFirstOpenConnection(
     return null
 }
 
-val dotenv = dotenv() //usage: dotenv[key: String]
+val dotenv = dotenv() // usage: dotenv[key: String]
 val discordLoginManager = DiscordLogin(dotenv["DISCORD_CLIENT_SECRET"]!!, dotenv["DISCORD_CLIENT_ID"]!!, dotenv["DISCORD_REDIRECT_URI"]!!)
-//TODO: add .env file with secrets
+// TODO: add .env file with secrets
 
 fun main() {
     val db = GameDatabase()

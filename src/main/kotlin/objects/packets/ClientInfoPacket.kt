@@ -2,9 +2,6 @@ package objects.packets
 
 import kotlinx.serialization.*
 
-@Serializable
-@SerialName(PacketType.CLIENT_INFO)
-@Suppress("PropertyName")
 /**
  * Sent by: Client
  *
@@ -16,10 +13,13 @@ import kotlinx.serialization.*
  * @param client_version Can be up to 40 characters long (only used for statistics)
  * @param protocol_version the latest version that the client supports
  */
+@Serializable
+@SerialName(PacketType.CLIENT_INFO)
+@Suppress("PropertyName")
 class ClientInfoPacket(
     @Required val client_name: String,
     @Required val client_version: String,
-    @Required val protocol_version: Int
+    @Required val protocol_version: Int,
 ) : Packet() {
     init {
         require(client_name.length <= 25)

@@ -2,8 +2,6 @@ package objects.packets
 
 import kotlinx.serialization.*
 
-@Serializable
-@SerialName(PacketType.UNKNOWN_PACKET)
 /**
  * Sent by: Both
  *
@@ -17,6 +15,8 @@ import kotlinx.serialization.*
  *
  * This is the only packet that is valid in both the init phase and the gameplay phase.
  */
+@Serializable
+@SerialName(PacketType.UNKNOWN_PACKET)
 class UnknownPacketPacket(
     @Required val message: String,
 ) : Packet()

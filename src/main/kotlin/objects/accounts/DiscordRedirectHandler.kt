@@ -5,7 +5,7 @@ import discordLoginManager
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import java.io.*
 
-//TODO: make the page more interesting looking and host this with HTTPS on the redirect URI
+// TODO: make the page more interesting looking and host this with HTTPS on the redirect URI
 class DiscordRedirectHandler : HttpHandler {
     private val page = File("./resources/redirectPage.html")
 

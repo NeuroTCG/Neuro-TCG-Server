@@ -19,7 +19,7 @@ enum class AbilityRange {
     ALLY_CARD,
     ENEMY_CARD,
     ENEMY_ROW,
-    PLAYER_DECK
+    PLAYER_DECK,
 }
 
 @Serializable
@@ -27,5 +27,5 @@ data class Ability(
     @Required var effect: AbilityEffect = AbilityEffect.NONE,
     @Required var value: Int = 0,
     @Required val range: AbilityRange = AbilityRange.NONE,
-    @Required val cost: Int = 0
+    @Required val cost: Int = 0,
 )

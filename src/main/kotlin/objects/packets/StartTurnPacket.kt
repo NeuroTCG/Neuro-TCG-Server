@@ -2,16 +2,16 @@ package objects.packets
 
 import kotlinx.serialization.*
 
-@Serializable
-@SerialName(PacketType.START_TURN)
 /**
  * Sent by: Server
  */
+@Serializable
+@SerialName(PacketType.START_TURN)
 class StartTurnPacket : Packet()
 
-@Serializable
-@SerialName(PacketType.END_TURN)
 /**
  * Sent by: Server or Client
  */
+@Serializable
+@SerialName(PacketType.END_TURN)
 class EndTurnPacket : Packet()

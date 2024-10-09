@@ -2,8 +2,6 @@ package objects.packets
 
 import kotlinx.serialization.*
 
-@Serializable
-@SerialName(PacketType.DISCONNECT)
 /**
  * Sent by: Server
  *
@@ -14,6 +12,8 @@ import kotlinx.serialization.*
  *
  * @param message a human-readable string explaining the disconnect.
  */
+@Serializable
+@SerialName(PacketType.DISCONNECT)
 class DisconnectPacket(
     @Required val reason: Reason,
     @Required val message: String,

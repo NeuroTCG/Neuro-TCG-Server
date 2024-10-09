@@ -2,8 +2,6 @@ package objects.packets
 
 import kotlinx.serialization.*
 
-@Serializable
-@SerialName(PacketType.AUTHENTICATE)
 /**
  * Sent by: Client
  *
@@ -11,4 +9,8 @@ import kotlinx.serialization.*
  *
  * If authentication fails, a [DisconnectPacket] is sent.
  */
-class AuthenticatePacket(@Required val username: String) : Packet()
+@Serializable
+@SerialName(PacketType.AUTHENTICATE)
+class AuthenticatePacket(
+    @Required val username: String,
+) : Packet()

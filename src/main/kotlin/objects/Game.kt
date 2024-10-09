@@ -2,13 +2,17 @@ package objects
 
 import objects.packets.*
 
-class Game(val p1Connection: GameConnection, val p2connection: GameConnection, db: GameDatabase) {
+class Game(
+    val p1Connection: GameConnection,
+    val p2connection: GameConnection,
+    db: GameDatabase,
+) {
     private val boardManager = BoardStateManager(db, p1Connection, p2connection)
 
     val id = boardManager.gameID
 
     suspend fun mainLoop(player: Player) {
-        val prefix = "[Game ${id}][Player ${if (player == Player.Player1) 1 else 2}] "
+        val prefix = "[Game $id][Player ${if (player == Player.Player1) 1 else 2}] "
         val connection = if (player == Player.Player1) p1Connection else p2connection
         val otherConnection = if (player == Player.Player1) p2connection else p1Connection
 
@@ -24,7 +28,7 @@ class Game(val p1Connection: GameConnection, val p2connection: GameConnection, d
             boardManager.drawCard(player)
         }
 
-        if (player == Player.Player1){
+        if (player == Player.Player1) {
             connection.sendPacket(StartTurnPacket())
             boardManager.drawCard(player)
         }

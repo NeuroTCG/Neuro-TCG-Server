@@ -14,6 +14,7 @@ class GameDatabase {
 
     @OptIn(ExperimentalSerializationApi::class)
     private val json = Json
+
     fun createTables() {
         TransactionManager.defaultDatabase = db
         TransactionManager.manager.defaultIsolationLevel = Connection.TRANSACTION_SERIALIZABLE
@@ -24,7 +25,10 @@ class GameDatabase {
     }
 
     @OptIn(ExperimentalSerializationApi::class)
-    fun createGame(player1ID: Int, player2ID: Int): Int {
+    fun createGame(
+        player1ID: Int,
+        player2ID: Int,
+    ): Int {
         val startingGameState: String =
             """
                 |[
@@ -50,22 +54,31 @@ class GameDatabase {
                 |           [0], [0]
                 |       ]
                 |   ],
-                |]""".trimMargin()
+                |]
+            """.trimMargin()
 
         return transaction {
-            val gameId = CurrentGames.insert {
-                it[player1_ID] = player1ID
-                it[player2_ID] = player2ID
-                it[current_game_state] = startingGameState
-                it[incremental_moves] = ""
-            }.resultedValues!!.last()[CurrentGames.game_ID]
+            val gameId =
+                CurrentGames
+                    .insert {
+                        it[player1_ID] = player1ID
+                        it[player2_ID] = player2ID
+                        it[current_game_state] = startingGameState
+                        it[incremental_moves] = ""
+                    }.resultedValues!!
+                    .last()[CurrentGames.game_ID]
             commit()
             gameId
         }
     }
 
     @OptIn(ExperimentalSerializationApi::class)
-    fun updateGame(gameID: Int, givenMoveList: String? = null, givenGameState: String? = null, givenChange: String) {
+    fun updateGame(
+        gameID: Int,
+        givenMoveList: String? = null,
+        givenGameState: String? = null,
+        givenChange: String,
+    ) {
         // Like: [[[Player], [field], [change]], [[Player], [field], [change]]...]
         // Not completely sure how exactly, but the idea is that we pass in a list of lists integers that represent a change in the game state.
         // Something like:
@@ -81,21 +94,26 @@ class GameDatabase {
             val currentGameState: MutableList<MutableList<MutableList<MutableList<Int>>>> =
                 if (givenGameState.isNullOrEmpty()) {
                     json.decodeFromString<MutableList<MutableList<MutableList<MutableList<Int>>>>>(
-                        CurrentGames.select(
-                            CurrentGames.current_game_state
-                        ).where { CurrentGames.game_ID eq gameID }.firstOrNull() as String
+                        CurrentGames
+                            .select(
+                                CurrentGames.current_game_state,
+                            ).where { CurrentGames.game_ID eq gameID }
+                            .firstOrNull() as String,
                     )
                 } else {
                     json.decodeFromString<MutableList<MutableList<MutableList<MutableList<Int>>>>>(givenGameState)
                 }
-            val moveList: MutableList<MutableList<Int>> = if (givenMoveList.isNullOrEmpty()) {
-                json.decodeFromString<MutableList<MutableList<Int>>>(
-                    CurrentGames.select(CurrentGames.incremental_moves).where { CurrentGames.game_ID eq gameID }
-                        .firstOrNull() as String
-                )
-            } else {
-                json.decodeFromString<MutableList<MutableList<Int>>>(givenMoveList)
-            }
+            val moveList: MutableList<MutableList<Int>> =
+                if (givenMoveList.isNullOrEmpty()) {
+                    json.decodeFromString<MutableList<MutableList<Int>>>(
+                        CurrentGames
+                            .select(CurrentGames.incremental_moves)
+                            .where { CurrentGames.game_ID eq gameID }
+                            .firstOrNull() as String,
+                    )
+                } else {
+                    json.decodeFromString<MutableList<MutableList<Int>>>(givenMoveList)
+                }
             // givenGameState and givenMoveList are just there for better performance. If they are null, we will get the game state and move list from the database and decode them using CBOR.
             // If they are passed in, however, the server will use them instead and won't have to waste time and resources decoding them from the database every turn.
             val change: MutableList<MutableList<Int>> =
@@ -104,7 +122,8 @@ class GameDatabase {
             CurrentGames.update({ CurrentGames.game_ID eq gameID }) {
                 it[incremental_moves] = newMoveList.toString()
             }
-            currentGameState[change[0][0] /* Player */][change[1][0]/* row */][change[1][1] /* column */] =
+            // Player row column
+            currentGameState[change[0][0] ][change[1][0]][change[1][1] ] =
                 change[2] // TODO: Gotta figure out how we want to handle changes. For now, it's a List of Integers.
             CurrentGames.update({ CurrentGames.game_ID eq gameID }) {
                 it[current_game_state] = currentGameState.toString()
@@ -121,7 +140,7 @@ class GameDatabase {
         player2Deck: ByteArray,
         gameWinner: Boolean,
         gameLength: Int,
-        moveList: ByteArray
+        moveList: ByteArray,
     ) {
         transaction {
             PreviousGames.insert {
@@ -138,7 +157,6 @@ class GameDatabase {
         }
     }
 }
-
 
 object CurrentGames : Table() {
     val game_ID: Column<Int> = integer("game_id").autoIncrement()
@@ -189,7 +207,9 @@ object DeckMasters : Table("deck_masters") {
 }
 
 enum class DeckMasterTactics {
-    REACH, NIMBLE, BOTH
+    REACH,
+    NIMBLE,
+    BOTH,
 }
 
 object Creatures : Table("creatures") {
@@ -202,7 +222,9 @@ object Creatures : Table("creatures") {
 }
 
 enum class CreatureTactics {
-    REACH, NIMBLE, BOTH
+    REACH,
+    NIMBLE,
+    BOTH,
 }
 
 object MagicCards : Table("magic_cards") {

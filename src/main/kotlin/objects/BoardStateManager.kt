@@ -6,77 +6,85 @@ import kotlin.math.*
 
 enum class Player {
     Player1,
-    Player2;
+    Player2,
+    ;
 
-    operator fun not(): Player {
-        return if (this == Player1)
+    operator fun not(): Player =
+        if (this == Player1) {
             Player2
-        else
+        } else {
             Player1
-    }
+        }
 }
 
 class BoardStateManager(
     private val db: GameDatabase,
     private val player1Connection: GameConnection,
-    private val player2Connection: GameConnection
+    private val player2Connection: GameConnection,
 ) {
     private var boardState = BoardState()
     private val player1ID: Int = 1
     private val player2ID: Int = 2
     val gameID = db.createGame(player1ID, player2ID)
 
-    fun getBoardState(): BoardState {
-        return this.boardState
-    }
+    fun getBoardState(): BoardState = this.boardState
 
-    private fun isTurnOfPlayer(player: Player): Boolean {
-        return boardState.first_player_active == (player == Player.Player1)
-    }
+    private fun isTurnOfPlayer(player: Player): Boolean = boardState.first_player_active == (player == Player.Player1)
 
-    private fun playerToIndex(player: Player): Int {
-        return if (player == Player.Player1)
+    private fun playerToIndex(player: Player): Int =
+        if (player == Player.Player1) {
             0
-        else
+        } else {
             1
-    }
+        }
 
-    private fun getConnection(player: Player): GameConnection {
-        return if (player == Player.Player1)
+    private fun getConnection(player: Player): GameConnection =
+        if (player == Player.Player1) {
             player1Connection
-        else
+        } else {
             player2Connection
-    }
+        }
 
-    private fun handContains(player: Player, id: Int): Boolean {
-        return this.boardState.hands[playerToIndex(player)].contains(id)
-    }
+    private fun handContains(
+        player: Player,
+        id: Int,
+    ): Boolean = this.boardState.hands[playerToIndex(player)].contains(id)
 
-    private fun getCard(player: Player, position: CardPosition): CardState? {
-        return this.boardState.cards[playerToIndex(player)][position.row][position.column]
-    }
+    private fun getCard(
+        player: Player,
+        position: CardPosition,
+    ): CardState? = this.boardState.cards[playerToIndex(player)][position.row][position.column]
 
-    private fun setCard(player: Player, position: CardPosition, card: CardState?) {
+    private fun setCard(
+        player: Player,
+        position: CardPosition,
+        card: CardState?,
+    ) {
         this.boardState.cards[playerToIndex(player)][position.row][position.column] = card
     }
 
-    private fun placeInHand(player: Player, cardID: Int) {
+    private fun placeInHand(
+        player: Player,
+        cardID: Int,
+    ) {
         this.boardState.hands[playerToIndex(player)].add(cardID)
     }
 
-    private fun removeFromHand(player: Player, cardID: Int) {
+    private fun removeFromHand(
+        player: Player,
+        cardID: Int,
+    ) {
         this.boardState.hands[playerToIndex(player)].remove(cardID)
     }
 
-    private fun getRam(player: Player): Int {
-        return this.boardState.ram[playerToIndex(player)]
-    }
+    private fun getRam(player: Player): Int = this.boardState.ram[playerToIndex(player)]
 
-    private fun getMaxRam(player: Player): Int {
-        return this.boardState.max_ram[playerToIndex(player)]
-    }
+    private fun getMaxRam(player: Player): Int = this.boardState.max_ram[playerToIndex(player)]
 
-    private fun removeRam(player: Player, amount: Int) {
+    private fun removeRam(
+        player: Player,
+        amount: Int,
+    ) {
         assert(amount > 0)
         this.boardState.ram[playerToIndex(player)] -= amount
         assert(this.boardState.ram[playerToIndex(player)] in 0..getMaxRam(player))
@@ -180,8 +188,8 @@ class BoardStateManager(
                     true,
                     valid = false,
                     newCard = null,
-                    newRam = -1
-                )
+                    newRam = -1,
+                ),
             )
             return
         }
@@ -191,8 +199,8 @@ class BoardStateManager(
                     true,
                     valid = false,
                     newCard = null,
-                    newRam = -1
-                )
+                    newRam = -1,
+                ),
             )
             return
         }
@@ -202,25 +210,26 @@ class BoardStateManager(
                     true,
                     valid = false,
                     newCard = null,
-                    newRam = -1
-                )
+                    newRam = -1,
+                ),
             )
             return
         }
 
         val cardStats = CardStats.getCardByID(packet.card_id)
-        val newCardState = CardState(
-            packet.card_id,
-            cardStats.max_hp,
-            false,
-            if (cardStats.has_summoning_sickness) CardTurnPhase.Done else CardTurnPhase.MoveOrAction,
-            0,
-            0
-        )
+        val newCardState =
+            CardState(
+                packet.card_id,
+                cardStats.max_hp,
+                false,
+                if (cardStats.has_summoning_sickness) CardTurnPhase.Done else CardTurnPhase.MoveOrAction,
+                0,
+                0,
+            )
         setCard(
             player,
             packet.position,
-            newCardState
+            newCardState,
         )
 
         removeFromHand(player, packet.card_id)
@@ -236,31 +245,34 @@ class BoardStateManager(
                 true,
                 valid = true,
                 newCard = newCardState,
-                newRam = getRam(player)
-            )
+                newRam = getRam(player),
+            ),
         )
         getConnection(!player).sendPacket(
             packet.getResponsePacket(
                 isYou = false,
                 valid = true,
                 newCard = newCardState,
-                newRam = getRam(player)
-            )
+                newRam = getRam(player),
+            ),
         )
     }
 
-
-    suspend fun handleAttackPacket(packet: AttackRequestPacket, player: Player) {
-        val sendInvalid = suspend {
-            getConnection(player).sendPacket(
-                packet.getResponsePacket(
-                    isYou = true,
-                    valid = false,
-                    targetCard = null,
-                    attackerCard = null,
+    suspend fun handleAttackPacket(
+        packet: AttackRequestPacket,
+        player: Player,
+    ) {
+        val sendInvalid =
+            suspend {
+                getConnection(player).sendPacket(
+                    packet.getResponsePacket(
+                        isYou = true,
+                        valid = false,
+                        targetCard = null,
+                        attackerCard = null,
+                    ),
                 )
-            )
-        }
+            }
 
         if (!isTurnOfPlayer(player)) {
             sendInvalid()
@@ -269,8 +281,6 @@ class BoardStateManager(
 
         var attacker = getCard(player, packet.attacker_position)
         var target = getCard(!player, packet.target_position)
-
-
 
         if (attacker == null || target == null) {
             sendInvalid()
@@ -310,11 +320,12 @@ class BoardStateManager(
             }
         }
 
-        if (attacker.health <= 0)
+        if (attacker.health <= 0) {
             attacker = null
-        if (target.health <= 0)
+        }
+        if (target.health <= 0) {
             target = null
-
+        }
 
         setCard(player, packet.attacker_position, attacker)
         setCard(!player, packet.target_position, target)
@@ -325,7 +336,7 @@ class BoardStateManager(
                 valid = true,
                 targetCard = target,
                 attackerCard = attacker,
-            )
+            ),
         )
         getConnection(!player).sendPacket(
             packet.getResponsePacket(
@@ -333,20 +344,26 @@ class BoardStateManager(
                 valid = true,
                 targetCard = target,
                 attackerCard = attacker,
-            )
+            ),
         )
     }
 
-    private fun isSlotReachable(player: Player, attackerPosition: CardPosition, targetPosition: CardPosition): Boolean {
-        val isPlayerFrontEmpty = getCard(player, CardPosition(CardPosition.FRONT_ROW, 0)) == null
-            && getCard(player, CardPosition(CardPosition.FRONT_ROW, 1)) == null
-            && getCard(player, CardPosition(CardPosition.FRONT_ROW, 2)) == null
-            && getCard(player, CardPosition(CardPosition.FRONT_ROW, 3)) == null
+    private fun isSlotReachable(
+        player: Player,
+        attackerPosition: CardPosition,
+        targetPosition: CardPosition,
+    ): Boolean {
+        val isPlayerFrontEmpty =
+            getCard(player, CardPosition(CardPosition.FRONT_ROW, 0)) == null &&
+                getCard(player, CardPosition(CardPosition.FRONT_ROW, 1)) == null &&
+                getCard(player, CardPosition(CardPosition.FRONT_ROW, 2)) == null &&
+                getCard(player, CardPosition(CardPosition.FRONT_ROW, 3)) == null
 
-        val isOppoonentFrontEmpty = getCard(!player, CardPosition(CardPosition.FRONT_ROW, 0)) == null
-            && getCard(!player, CardPosition(CardPosition.FRONT_ROW, 1)) == null
-            && getCard(!player, CardPosition(CardPosition.FRONT_ROW, 2)) == null
-            && getCard(!player, CardPosition(CardPosition.FRONT_ROW, 3)) == null
+        val isOppoonentFrontEmpty =
+            getCard(!player, CardPosition(CardPosition.FRONT_ROW, 0)) == null &&
+                getCard(!player, CardPosition(CardPosition.FRONT_ROW, 1)) == null &&
+                getCard(!player, CardPosition(CardPosition.FRONT_ROW, 2)) == null &&
+                getCard(!player, CardPosition(CardPosition.FRONT_ROW, 3)) == null
 
         val attackerReach = CardStats.getCardByID(getCard(player, attackerPosition)!!.id).attack_range
 
@@ -365,10 +382,14 @@ class BoardStateManager(
         }
     }
 
-    suspend fun handleSwitchPlacePacket(packet: SwitchPlaceRequestPacket, player: Player) {
-        val sendInvalid = suspend {
-            getConnection(player).sendPacket(packet.getResponsePacket(isYou = true, valid = false))
-        }
+    suspend fun handleSwitchPlacePacket(
+        packet: SwitchPlaceRequestPacket,
+        player: Player,
+    ) {
+        val sendInvalid =
+            suspend {
+                getConnection(player).sendPacket(packet.getResponsePacket(isYou = true, valid = false))
+            }
         if (!isTurnOfPlayer(player)) {
             sendInvalid()
             return
@@ -395,14 +416,14 @@ class BoardStateManager(
         getConnection(player).sendPacket(
             packet.getResponsePacket(
                 isYou = true,
-                valid = true
-            )
+                valid = true,
+            ),
         )
         getConnection(!player).sendPacket(
             packet.getResponsePacket(
                 isYou = false,
-                valid = true
-            )
+                valid = true,
+            ),
         )
     }
 
@@ -421,12 +442,15 @@ class BoardStateManager(
         foreachSlot(!player, ::startTurnForCard)
 
         getConnection(!player).sendPacket(StartTurnPacket())
-        if (this.boardState.hands[playerToIndex(!player)].size < 5){
+        if (this.boardState.hands[playerToIndex(!player)].size < 5) {
             drawCard(!player)
         }
     }
 
-    private fun foreachSlot(player: Player, f: (Player, CardPosition) -> Unit) {
+    private fun foreachSlot(
+        player: Player,
+        f: (Player, CardPosition) -> Unit,
+    ) {
         for (i in 0..<4) {
             f(player, CardPosition(CardPosition.FRONT_ROW, i))
         }
@@ -435,7 +459,10 @@ class BoardStateManager(
         }
     }
 
-    private fun endTurnForCard(player: Player, position: CardPosition) {
+    private fun endTurnForCard(
+        player: Player,
+        position: CardPosition,
+    ) {
         val card = getCard(player, position)
         if (card == null) {
             return
@@ -448,7 +475,10 @@ class BoardStateManager(
         }
     }
 
-    private fun startTurnForCard(player: Player, position: CardPosition) {
+    private fun startTurnForCard(
+        player: Player,
+        position: CardPosition,
+    ) {
         val card = getCard(player, position)
         if (card == null) {
             return
@@ -477,7 +507,7 @@ class BoardStateManager(
         drawCard(player)
     }
 
-    suspend fun drawCard(player: Player){
+    suspend fun drawCard(player: Player) {
         val cardID = cardDecks[playerToIndex(player)].drawCard()
 
         placeInHand(player, cardID)
@@ -486,10 +516,14 @@ class BoardStateManager(
         getConnection(!player).sendPacket(DrawCard(cardID, false))
     }
 
-    suspend fun handleUseAbilityPacket(packet: UseAbilityRequestPacket, player: Player) {
-        val sendInvalid = suspend {
-            getConnection(player).sendPacket(packet.getResponsePacket(isYou = true, valid = false, null, null))
-        }
+    suspend fun handleUseAbilityPacket(
+        packet: UseAbilityRequestPacket,
+        player: Player,
+    ) {
+        val sendInvalid =
+            suspend {
+                getConnection(player).sendPacket(packet.getResponsePacket(isYou = true, valid = false, null, null))
+            }
 
         if (!isTurnOfPlayer(player)) {
             sendInvalid()
@@ -508,7 +542,6 @@ class BoardStateManager(
             sendInvalid()
             return
         }
-
 
         when (ability.effect) {
             AbilityEffect.NONE -> TODO()
@@ -537,16 +570,16 @@ class BoardStateManager(
                         isYou = true,
                         valid = true,
                         targetCard = ally,
-                        abilityCard = abilityCard
-                    )
+                        abilityCard = abilityCard,
+                    ),
                 )
                 getConnection(!player).sendPacket(
                     packet.getResponsePacket(
                         isYou = false,
                         valid = true,
                         targetCard = ally,
-                        abilityCard = abilityCard
-                    )
+                        abilityCard = abilityCard,
+                    ),
                 )
             }
 
@@ -554,7 +587,7 @@ class BoardStateManager(
                 if (!arrayOf(
                         AbilityRange.ENEMY_ROW,
                         AbilityRange.ENEMY_FIELD,
-                        AbilityRange.ENEMY_CARD
+                        AbilityRange.ENEMY_CARD,
                     ).contains(ability.range)
                 ) {
                     sendInvalid()
@@ -583,16 +616,16 @@ class BoardStateManager(
                         isYou = true,
                         valid = true,
                         targetCard = target,
-                        abilityCard = abilityCard
-                    )
+                        abilityCard = abilityCard,
+                    ),
                 )
                 getConnection(!player).sendPacket(
                     packet.getResponsePacket(
                         isYou = false,
                         valid = true,
                         targetCard = target,
-                        abilityCard = abilityCard
-                    )
+                        abilityCard = abilityCard,
+                    ),
                 )
             }
 
@@ -600,7 +633,7 @@ class BoardStateManager(
                 if (!arrayOf(
                         AbilityRange.ENEMY_ROW,
                         AbilityRange.ENEMY_FIELD,
-                        AbilityRange.ENEMY_CARD
+                        AbilityRange.ENEMY_CARD,
                     ).contains(ability.range)
                 ) {
                     sendInvalid()
@@ -628,7 +661,7 @@ class BoardStateManager(
             AbilityEffect.SHIELD -> {
                 if (!arrayOf(
                         AbilityRange.ALLY_FIELD,
-                        AbilityRange.ALLY_CARD
+                        AbilityRange.ALLY_CARD,
                     ).contains(ability.range)
                 ) {
                     sendInvalid()
@@ -656,16 +689,16 @@ class BoardStateManager(
                         isYou = true,
                         valid = true,
                         targetCard = target,
-                        abilityCard = abilityCard
-                    )
+                        abilityCard = abilityCard,
+                    ),
                 )
                 getConnection(!player).sendPacket(
                     packet.getResponsePacket(
                         isYou = false,
                         valid = true,
                         targetCard = target,
-                        abilityCard = abilityCard
-                    )
+                        abilityCard = abilityCard,
+                    ),
                 )
             }
         }
@@ -679,7 +712,7 @@ class BoardStateManager(
         player: Player,
         target: CardPosition,
         range: AbilityRange,
-        f: (Player, CardPosition) -> Unit
+        f: (Player, CardPosition) -> Unit,
     ) {
         when (range) {
             AbilityRange.NONE -> {}

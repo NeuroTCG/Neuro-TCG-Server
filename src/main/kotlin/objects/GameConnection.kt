@@ -10,13 +10,13 @@ import objects.packets.objects.*
 import java.io.*
 import java.net.*
 
-class GameConnection(socket: DefaultWebSocketServerSession) {
+class GameConnection(
+    socket: DefaultWebSocketServerSession,
+) {
     private val clientSocket = socket
     private var userInfo: UserInfo? = null
 
-    fun getUserInfo(): UserInfo {
-        return userInfo!!
-    }
+    fun getUserInfo(): UserInfo = userInfo!!
 
     suspend fun connect() {
         println("Waiting for client info")
@@ -34,11 +34,13 @@ class GameConnection(socket: DefaultWebSocketServerSession) {
                     sendPacket(
                         DisconnectPacket(
                             DisconnectPacket.Reason.protocol_too_old,
-                            "Protocol version ${clientInfo.protocol_version} isn't supported anymore, please update to version $currentProtocolVersion"
-                        )
+                            "Protocol version ${clientInfo.protocol_version} isn't supported anymore, please update to version $currentProtocolVersion",
+                        ),
                     )
                 } else {
-                    println("Client '${clientInfo.client_name}' v${clientInfo.client_version} connected using protocol v${clientInfo.protocol_version}")
+                    println(
+                        "Client '${clientInfo.client_name}' v${clientInfo.client_version} connected using protocol v${clientInfo.protocol_version}",
+                    )
                     sendPacket(ClientInfoAcceptPacket())
                 }
             }

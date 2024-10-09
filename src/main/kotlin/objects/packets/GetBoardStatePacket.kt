@@ -3,16 +3,14 @@ package objects.packets
 import kotlinx.serialization.*
 import objects.packets.objects.*
 
-@Serializable
-@SerialName(PacketType.GET_BOARD_STATE)
 /**
  * Sent by: Client
  */
+@Serializable
+@SerialName(PacketType.GET_BOARD_STATE)
 class GetBoardStatePacket(
-    @Required val reason: Reason
+    @Required val reason: Reason,
 ) : Packet() {
-
-
     @Suppress("EnumEntryName")
     enum class Reason {
         /**
@@ -38,13 +36,13 @@ class GetBoardStatePacket(
     }
 }
 
-@Serializable
-@SerialName(PacketType.GET_BOARD_STATE_RESPONSE)
 /*
  * Sent by: Server
  *
  * Contains the full game state. The client should validate that this matches its own state and/or replace it.
  */
+@Serializable
+@SerialName(PacketType.GET_BOARD_STATE_RESPONSE)
 class GetBoardStateResponse(
-    @Required val board: BoardState
+    @Required val board: BoardState,
 ) : Packet()
