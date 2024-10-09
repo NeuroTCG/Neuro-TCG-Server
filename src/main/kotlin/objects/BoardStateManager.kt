@@ -89,15 +89,88 @@ class BoardStateManager(
         this.boardState.ram[playerToIndex(player)] = getMaxRam(player)
     }
 
-    suspend fun handleSummonPacket(packet: SummonRequestPacket, player: Player) {
+    // TODO: remove this function after deck masters are no longer null
+    // This is here to encapsulate code that doesn't need to be in the
+    // final server
+    private suspend fun isGameOverTemporarySpecialLogic(
+        deckMasterPlayer1: CardState?,
+        deckMasterPlayer2: CardState?,
+    ): Player? {
+        val player1Died = (deckMasterPlayer1?.run { health < 0 }) ?: false
+        val player2Died = (deckMasterPlayer2?.run { health < 0 }) ?: false
+        if (player1Died && player2Died) {
+            return null
+        }
+
+        if (player1Died) {
+            return Player.Player2
+        }
+
+        if (player2Died) {
+            return Player.Player1
+        }
+
+        return null
+    }
+
+    private suspend fun getGameWinner(): Player? {
+        if (this.boardState.deck_masters.all { (it?.run { health > 0 }) != false }) {
+            return null
+        }
+
+        val player1 = Player.Player1
+        val player2 = Player.Player2
+
+        // TODO: These are temporary after we consider that deck_masters must exist
+        // TODO: Hence, when they do exist, remove the next few lines
+        val deckMasterPlayer1Opt = this.boardState.deck_masters[playerToIndex(Player.Player1)]
+        val deckMasterPlayer2Opt = this.boardState.deck_masters[playerToIndex(Player.Player2)]
+        val temporarySpecialGameOver =
+            isGameOverTemporarySpecialLogic(deckMasterPlayer1Opt, deckMasterPlayer2Opt)
+
+        if (temporarySpecialGameOver != null) {
+            return temporarySpecialGameOver
+        }
+
+        // NOTE: at this point, deckMasterPlayer1 & 2 are guaranteed to exist
+        val deckMasterPlayer1 = deckMasterPlayer1Opt!!
+        val deckMasterPlayer2 = deckMasterPlayer2Opt!!
+
+        if (deckMasterPlayer1.health > 0 && deckMasterPlayer2.health > 0) {
+            return null
+        }
+
+        return if (deckMasterPlayer1.health > deckMasterPlayer2.health) player1 else player2
+    }
+
+    suspend fun gameOverHandler() {
+        val winner = getGameWinner()
+        if (winner == null) {
+            return
+        }
+
+        getConnection(winner).let {
+            it.sendPacket(GameOverPacket(true))
+            it.sendPacket(DisconnectPacket(DisconnectPacket.Reason.game_over, "Game is over"))
+        }
+        getConnection(!winner).let {
+            it.sendPacket(GameOverPacket(false))
+            it.sendPacket(DisconnectPacket(DisconnectPacket.Reason.game_over, "Game is over"))
+        }
+    }
+
+    suspend fun handleSummonPacket(
+        packet: SummonRequestPacket,
+        player: Player,
+    ) {
         if (!isTurnOfPlayer(player)) {
             getConnection(player).sendPacket(
                 packet.getResponsePacket(
                     isYou = true,
                     valid = false,
                     newCard = null,
-                    newRam = -1
-                )
+                    newRam = -1,
+                ),
             )
             return
         }
@@ -152,6 +225,11 @@ class BoardStateManager(
 
         removeFromHand(player, packet.card_id)
         removeRam(player, CardStats.getCardByID(packet.card_id).summoning_cost)
+
+        // If it's a deck master, we put it in the board state
+        if (cardStats.card_type == CardType.DECK_MASTER) {
+            this.boardState.deck_masters[playerToIndex(player)] = newCardState
+        }
 
         getConnection(player).sendPacket(
             packet.getResponsePacket(
@@ -217,6 +295,11 @@ class BoardStateManager(
             target.health -= CardStats.getCardByID(attacker.id).base_atk
         } else {
             target.shield -= 1
+        }
+
+        // NOTE: if the game is already over, we don't have to process anything else
+        if (getGameWinner() != null) {
+            return
         }
 
         if (canAttackBack) {
