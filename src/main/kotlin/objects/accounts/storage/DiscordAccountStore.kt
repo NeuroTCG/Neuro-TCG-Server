@@ -4,7 +4,6 @@ import kotlinx.serialization.*
 import kotlinx.serialization.json.*
 import objects.accounts.*
 import java.io.*
-import kotlin.jvm.Throws
 
 class DiscordAccountStore(
     path: String,
@@ -29,9 +28,9 @@ class DiscordAccountStore(
         return DiscordAccount(account.first, discordUID, account.third, account.second)
     }
 
-    @Throws(UserIDAlreadyUsedException::class)
-    fun addAccount(account: DiscordAccount) {
-        accountDataHandler.addAccount(account)
+    fun addAccount(account: DiscordAccount): Boolean {
+        val result = accountDataHandler.addAccount(account)
         storeFile.writeText(Json.encodeToString(accountDataHandler))
+        return result
     }
 }

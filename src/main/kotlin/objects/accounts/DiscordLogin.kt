@@ -74,7 +74,7 @@ class DiscordLogin(
     }
 
     @Throws(IOException::class)
-    fun getUserData(token: String): DiscordAccount {
+    fun getUserData(token: String): DiscordAccount? {
         val userDataUrl = "$discordUrl/users/@me"
 
         val request =
@@ -104,26 +104,24 @@ class DiscordLogin(
         }
     }
 
-    @Throws(UserIDGenerationFailedException::class)
     private fun getUser(
         discordUID: String,
         username: String,
         avatarUrl: String?,
-    ): DiscordAccount {
+    ): DiscordAccount? {
         return accountStore[discordUID] ?: run {
             var newAccount: DiscordAccount
             var attempts = 0
             while (true) {
                 if (attempts >= maxAttemptUIDRetry) {
                     println("Error: failed to generate user ID, user ID generation retry maximum reached!")
-                    throw UserIDGenerationFailedException()
+                    return null
                 }
                 newAccount = DiscordAccount(username, discordUID, avatarUrl, generateUID())
                 attempts++
-                try {
-                    accountStore.addAccount(newAccount)
+                if (accountStore.addAccount(newAccount)) {
                     break
-                } catch (e: UserIDAlreadyUsedException) {
+                } else {
                     println("Warning: encountered already used user ID")
                     continue
                 }

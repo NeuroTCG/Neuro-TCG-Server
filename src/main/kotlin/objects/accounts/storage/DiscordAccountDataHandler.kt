@@ -2,7 +2,6 @@ package objects.accounts.storage
 
 import kotlinx.serialization.Serializable
 import objects.accounts.*
-import kotlin.jvm.Throws
 
 @Serializable
 data class DiscordAccountDataHandler(
@@ -13,13 +12,12 @@ data class DiscordAccountDataHandler(
         return DiscordAccount(accountData.first, accountData.second, accountData.third, uID)
     }
 
-    @Throws(UserIDAlreadyUsedException::class)
-    fun addAccount(account: DiscordAccount) {
-        if (!this.containsKey(account.uID)) {
-            accounts[account.uID] = Triple(account.username, account.discordUID, account.avatarUrl)
-            return
+    fun addAccount(account: DiscordAccount): Boolean {
+        if (this.containsKey(account.uID)) {
+            return false
         }
-        throw UserIDAlreadyUsedException()
+        accounts[account.uID] = Triple(account.username, account.discordUID, account.avatarUrl)
+        return true
     }
 
     fun toDiscordUIDMap(): Map<String, Triple<String, String, String?>> =
