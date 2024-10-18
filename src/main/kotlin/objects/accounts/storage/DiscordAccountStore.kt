@@ -32,5 +32,6 @@ class DiscordAccountStore(
     @Throws(UserIDAlreadyUsedException::class)
     fun addAccount(account: DiscordAccount) {
         accountDataHandler.addAccount(account)
+        storeFile.writeText(Json.encodeToString(accountDataHandler))
     }
 }
