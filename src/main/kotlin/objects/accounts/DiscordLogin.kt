@@ -1,12 +1,14 @@
 package objects.accounts
 
 import kotlinx.serialization.json.*
+import objects.accounts.storage.*
 import okhttp3.*
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.*
 import java.time.*
 import java.util.concurrent.*
-import kotlin.jvm.Throws
+import kotlin.Throws
+import kotlin.run
 
 // TODO: make a function or something to integrate this with the main socket
 class DiscordLogin(
@@ -24,6 +26,8 @@ class DiscordLogin(
             .callTimeout(1, TimeUnit.DAYS)
             .build()
     private val allTokens = mutableMapOf<String, Pair<String, Instant>>()
+    private val accountStore = DiscordAccountStore("./DiscordAccountDatabase")
+    private val maxAttemptUIDRetry = 5
 
     fun getAccessToken(authCode: String): String {
         val discordTokenUrl = "$discordUrl/oauth2/token"
@@ -96,16 +100,42 @@ class DiscordLogin(
                 } else {
                     null
                 }
-            return DiscordAccount(username, userId!!, avatarUrl, generateUID(userId))
+            return getUser(userId!!, username, avatarUrl)
         }
     }
 
-    private fun generateUID(discordUID: String): String {
-        // TODO: check for already made accounts and fetch the uID for that if found
-        return (1..18)
+    @Throws(UserIDGenerationFailedException::class)
+    private fun getUser(
+        discordUID: String,
+        username: String,
+        avatarUrl: String?,
+    ): DiscordAccount {
+        return accountStore[discordUID] ?: run {
+            var newAccount: DiscordAccount
+            var attempts = 0
+            while (true) {
+                if (attempts >= maxAttemptUIDRetry) {
+                    println("Error: failed to generate user ID, user ID generation retry maximum reached!")
+                    throw UserIDGenerationFailedException()
+                }
+                newAccount = DiscordAccount(username, discordUID, avatarUrl, generateUID())
+                attempts++
+                try {
+                    accountStore.addAccount(newAccount)
+                    break
+                } catch (e: UserIDAlreadyUsedException) {
+                    println("Warning: encountered already used user ID")
+                    continue
+                }
+            }
+            return newAccount
+        }
+    }
+
+    private fun generateUID(): String =
+        (1..18)
             .map { ('0'..'9').random() }
             .joinToString("")
-    }
 
     private fun sendRequest(
         url: String,
