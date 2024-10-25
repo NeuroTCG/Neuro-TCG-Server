@@ -60,8 +60,25 @@ class GameConnection(
             }
 
             is AuthenticatePacket -> {
-                userInfo = UserInfo(authPacket.username, "somewhere, idk")
-                sendPacket(AuthenticationValidPacket(false, userInfo!!))
+                val newTokens: Pair<String, String>?
+                userInfo =
+                    if (authPacket.hasOAuth) {
+                        val fromOauthOutput = UserInfo.fromOauth(authPacket.oAuthData)
+                        newTokens = fromOauthOutput?.second
+                        fromOauthOutput?.first
+                    } else {
+                        newTokens = null
+                        UserInfo(authPacket.username, "somewhere, idk")
+                    }
+                sendPacket(
+                    if (newTokens ==
+                        null
+                    ) {
+                        AuthenticationValidPacket(false, userInfo!!)
+                    } else {
+                        AuthenticationValidPacket(false, userInfo!!, true, newTokens.first, newTokens.second)
+                    },
+                )
                 println("User '${authPacket.username}' has connected")
             }
 

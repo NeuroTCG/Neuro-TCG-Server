@@ -1,5 +1,6 @@
 package objects.accounts
 
+import kotlinx.serialization.*
 import kotlinx.serialization.json.*
 import objects.accounts.storage.*
 import okhttp3.*
@@ -130,6 +131,39 @@ class DiscordLogin(
         }
     }
 
+    fun refreshToken(refreshToken: String): Pair<String, String>? {
+        val refreshUrl = "$discordUrl/oauth2/token"
+
+        val jsonBody =
+            buildJsonObject {
+                put("client_id", clientId)
+                put("client_secret", clientSecret)
+                put("refresh_token", refreshToken)
+                put("grant_type", "refresh_token")
+            }
+
+        var requestBody = ""
+        for (i in jsonBody) {
+            requestBody += "${i.key}=${i.value.jsonPrimitive.content}&"
+        }
+        requestBody.dropLast(1)
+
+        return try {
+            val discordAPIResponse =
+                Json.decodeFromString<JsonObject>(
+                    sendRequest(refreshUrl, requestBody, "application/x-www-form-urlencoded"),
+                )
+            Pair(
+                discordAPIResponse["access_token"]!!.jsonPrimitive.content,
+                discordAPIResponse["refresh_token"]!!.jsonPrimitive.content,
+            )
+        } catch (e: NullPointerException) {
+            return null
+        } catch (e: SerializationException) {
+            return null
+        }
+    }
+
     private fun generateUID(): String =
         (1..18)
             .map { ('0'..'9').random() }
@@ -167,7 +201,7 @@ class DiscordLogin(
         }
     }
 
-    fun getAccessTokenFromState(state: String): String? {
+    fun getAccessTokenFromState(state: String): Pair<String, String>? {
         // returns null if the state is invalid, someone can handle that
         if (!allTokens.containsKey(state)) {
             return null
@@ -176,6 +210,13 @@ class DiscordLogin(
         val response = allTokens[state]!!.first
         allTokens.remove(state)
 
-        return response
+        val jsonResponse = Json.decodeFromString<JsonObject>(response)
+        val accessToken = jsonResponse["access_token"]?.jsonPrimitive?.content
+        val refreshToken = jsonResponse["refresh_token"]?.jsonPrimitive?.content
+        return if (accessToken != null && refreshToken != null) {
+            Pair(accessToken, refreshToken)
+        } else {
+            null
+        }
     }
 }

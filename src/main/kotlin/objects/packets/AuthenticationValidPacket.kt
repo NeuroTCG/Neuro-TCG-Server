@@ -18,4 +18,7 @@ import objects.packets.objects.*
 class AuthenticationValidPacket(
     @Required val has_running_game: Boolean,
     @Required val you: UserInfo,
+    val hasNewTokens: Boolean = false,
+    val newAccessToken: String = "",
+    val newRefreshToken: String = "",
 ) : Packet()

@@ -1,13 +1,16 @@
+import com.sun.net.httpserver.*
 import io.github.cdimascio.dotenv.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
+import kotlinx.coroutines.*
 import kotlinx.coroutines.future.*
 import objects.*
 import objects.accounts.*
 import java.io.*
+import java.net.*
 import java.util.*
 import java.util.concurrent.*
 
@@ -35,44 +38,56 @@ fun main() {
 
     val playerQueue: Queue<Pair<GameConnection, CompletableFuture<Pair<Game, Player>>>> =
         LinkedList()
-
-    println("Listening for clients...")
-    embeddedServer(Netty, port = 9933) {
-        install(WebSockets)
-        routing {
-            webSocket("/game") {
-                println("New connection established")
-                val connection = GameConnection(this)
-                connection.connect()
-                val gameFuture = CompletableFuture<Pair<Game, Player>>()
-                playerQueue.add(Pair(connection, gameFuture))
-
-                while (playerQueue.count() >= 2) {
-                    val (p1c, p1gf) = getFirstOpenConnection(playerQueue) ?: break
-                    val p2 = getFirstOpenConnection(playerQueue)
-                    if (p2 == null) {
-                        playerQueue.add(Pair(p1c, p1gf))
-                        break
-                    }
-                    val (p2c, p2gf) = p2
-
-                    val newGame = Game(p1c, p2c, db)
-                    println("Starting game ${newGame.id}")
-                    p1gf.complete(Pair(newGame, Player.Player1))
-                    p2gf.complete(Pair(newGame, Player.Player2))
-
-                    println("Game finished")
-                }
-
-                println("Waiting for opponent")
-                try {
-                    val (game, player) = gameFuture.await()
-                    game.mainLoop(player)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-                println("Game finished")
-            }
+    runBlocking {
+        // TODO: (IMPORTANT) implement HTTPS mode before using across a network, Discord access tokens should not be sent unencrypted
+        launch {
+            val port = 9934
+            val server = HttpServer.create(InetSocketAddress(port), 0)
+            server.createContext("/redirect/discord", DiscordRedirectHandler())
+            server.executor = null
+            server.start()
+            println("Redirect running on port $port (Warning: HTTPS disabled)")
         }
-    }.start(wait = true)
+        launch {
+            println("Listening for clients...")
+            embeddedServer(Netty, port = 9933) {
+                install(WebSockets)
+                routing {
+                    webSocket("/game") {
+                        println("New connection established")
+                        val connection = GameConnection(this)
+                        connection.connect()
+                        val gameFuture = CompletableFuture<Pair<Game, Player>>()
+                        playerQueue.add(Pair(connection, gameFuture))
+
+                        while (playerQueue.count() >= 2) {
+                            val (p1c, p1gf) = getFirstOpenConnection(playerQueue) ?: break
+                            val p2 = getFirstOpenConnection(playerQueue)
+                            if (p2 == null) {
+                                playerQueue.add(Pair(p1c, p1gf))
+                                break
+                            }
+                            val (p2c, p2gf) = p2
+
+                            val newGame = Game(p1c, p2c, db)
+                            println("Starting game ${newGame.id}")
+                            p1gf.complete(Pair(newGame, Player.Player1))
+                            p2gf.complete(Pair(newGame, Player.Player2))
+
+                            println("Game finished")
+                        }
+
+                        println("Waiting for opponent")
+                        try {
+                            val (game, player) = gameFuture.await()
+                            game.mainLoop(player)
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                        println("Game finished")
+                    }
+                }
+            }.start(wait = true)
+        }
+    }
 }

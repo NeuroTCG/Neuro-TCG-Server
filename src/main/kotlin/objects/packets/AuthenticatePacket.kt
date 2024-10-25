@@ -13,4 +13,6 @@ import kotlinx.serialization.*
 @SerialName(PacketType.AUTHENTICATE)
 class AuthenticatePacket(
     @Required val username: String,
+    val hasOAuth: Boolean = false,
+    val oAuthData: String = "",
 ) : Packet()
