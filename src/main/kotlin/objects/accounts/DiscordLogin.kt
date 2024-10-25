@@ -26,7 +26,7 @@ class DiscordLogin(
             .callTimeout(1, TimeUnit.DAYS)
             .build()
     private val allTokens = mutableMapOf<String, Pair<String, Instant>>()
-    private val accountStore = DiscordAccountStore("./DiscordAccountDatabase")
+    private val accountStore = DiscordAccountStore("./data/DiscordAccountDatabase")
     private val maxAttemptUIDRetry = 5
 
     fun getAccessToken(authCode: String): String {
