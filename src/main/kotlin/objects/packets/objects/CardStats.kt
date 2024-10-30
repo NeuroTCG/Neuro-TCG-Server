@@ -45,7 +45,7 @@ class CardStats(
                         "res://assets/game/cards/pirate_evil.jpg",
                         2,
                         2,
-                        2,
+                        0,
                         AttackRange.STANDARD,
                         CardType.CREATURE,
                         Ability(),
@@ -57,7 +57,7 @@ class CardStats(
                         "res://assets/game/cards/filipino_boy.png",
                         3,
                         3,
-                        5,
+                        0,
                         AttackRange.REACH,
                         CardType.CREATURE,
                         Ability(),
@@ -67,7 +67,7 @@ class CardStats(
                 2 to
                     CardStats(
                         "res://assets/game/cards/angel_neuro.png",
-                        24,
+                        2,
                         2,
                         0,
                         AttackRange.STANDARD,
@@ -81,14 +81,26 @@ class CardStats(
                         "res://assets/game/cards/the_streaming_site_she_uses.png",
                         3,
                         4,
-                        4,
+                        0,
                         AttackRange.STANDARD,
                         CardType.CREATURE,
                         Ability(AbilityEffect.SEAL, 1, AbilityRange.ENEMY_CARD, 0),
                         true,
                     ),
+                // 10 Tin Cans 1 Stream card (magic card)
+                4 to
+                    CardStats(
+                        "res://assets/game/cards/template.png",
+                        0,
+                        0,
+                        4,
+                        AttackRange.STANDARD,
+                        CardType.MAGIC,
+                        Ability(AbilityEffect.ATTACK, 5, AbilityRange.ENEMY_CARD, 0),
+                        true,
+                    ),
             )
 
-        fun getCardByID(id: Int): CardStats = cardIDMapping.getValue(id)
+        fun getCardByID(id: Int): CardStats? = cardIDMapping.get(id)
     }
 }

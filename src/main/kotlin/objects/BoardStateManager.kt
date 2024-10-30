@@ -171,40 +171,38 @@ class BoardStateManager(
         packet: SummonRequestPacket,
         player: Player,
     ) {
+        val sendInvalid =
+            suspend {
+                getConnection(player).sendPacket(
+                    packet.getResponsePacket(
+                        isYou = true,
+                        valid = false,
+                        newCard = null,
+                        newRam = -1,
+                    ),
+                )
+            }
+
         if (!isTurnOfPlayer(player)) {
-            getConnection(player).sendPacket(
-                packet.getResponsePacket(
-                    isYou = true,
-                    valid = false,
-                    newCard = null,
-                    newRam = -1,
-                ),
-            )
+            sendInvalid()
             return
         }
         if (getCard(player, packet.position) != null) {
-            getConnection(player).sendPacket(
-                packet.getResponsePacket(
-                    true,
-                    valid = false,
-                    newCard = null,
-                    newRam = -1,
-                ),
-            )
+            sendInvalid()
             return
         }
         if (!handContains(player, packet.card_id)) {
-            getConnection(player).sendPacket(
-                packet.getResponsePacket(
-                    true,
-                    valid = false,
-                    newCard = null,
-                    newRam = -1,
-                ),
-            )
+            sendInvalid()
             return
         }
-        if (getRam(player) < CardStats.getCardByID(packet.card_id).summoning_cost) {
+
+        val cardStat = CardStats.getCardByID(packet.card_id)
+        if (cardStat == null) {
+            sendInvalid()
+            return
+        }
+
+        if (getRam(player) < cardStat.summoning_cost) {
             getConnection(player).sendPacket(
                 packet.getResponsePacket(
                     true,
@@ -216,13 +214,12 @@ class BoardStateManager(
             return
         }
 
-        val cardStats = CardStats.getCardByID(packet.card_id)
         val newCardState =
             CardState(
                 packet.card_id,
-                cardStats.max_hp,
+                cardStat.max_hp,
                 false,
-                if (cardStats.has_summoning_sickness) CardTurnPhase.Done else CardTurnPhase.MoveOrAction,
+                if (cardStat.has_summoning_sickness) CardTurnPhase.Done else CardTurnPhase.MoveOrAction,
                 0,
                 0,
             )
@@ -233,10 +230,10 @@ class BoardStateManager(
         )
 
         removeFromHand(player, packet.card_id)
-        removeRam(player, CardStats.getCardByID(packet.card_id).summoning_cost)
+        removeRam(player, cardStat.summoning_cost)
 
         // If it's a deck master, we put it in the board state
-        if (cardStats.card_type == CardType.DECK_MASTER) {
+        if (cardStat.card_type == CardType.DECK_MASTER) {
             this.boardState.deck_masters[playerToIndex(player)] = newCardState
         }
 
@@ -301,8 +298,15 @@ class BoardStateManager(
 
         attacker.phase = CardTurnPhase.Done
 
+        val attackerCardStat = CardStats.getCardByID(attacker.id)
+        val targetCardStat = CardStats.getCardByID(target.id)
+        if (attackerCardStat == null || targetCardStat == null) {
+            sendInvalid()
+            return
+        }
+
         if (target.shield == 0) {
-            target.health -= CardStats.getCardByID(attacker.id).base_atk
+            target.health -= attackerCardStat.base_atk
         } else {
             target.shield -= 1
         }
@@ -314,7 +318,7 @@ class BoardStateManager(
 
         if (canAttackBack) {
             if (attacker.shield == 0) {
-                attacker.health -= max(CardStats.getCardByID(target.id).base_atk - 1, 0)
+                attacker.health -= max(targetCardStat.base_atk - 1, 0)
             } else {
                 attacker.shield -= 1
             }
@@ -365,7 +369,10 @@ class BoardStateManager(
                 getCard(!player, CardPosition(CardPosition.FRONT_ROW, 2)) == null &&
                 getCard(!player, CardPosition(CardPosition.FRONT_ROW, 3)) == null
 
-        val attackerReach = CardStats.getCardByID(getCard(player, attackerPosition)!!.id).attack_range
+        val cardStat = CardStats.getCardByID(getCard(player, attackerPosition)!!.id)
+        if (cardStat == null) return false
+
+        val attackerReach = cardStat.attack_range
 
         assert(attackerPosition.row in 0..1)
         assert(targetPosition.row in 0..1)
@@ -516,6 +523,198 @@ class BoardStateManager(
         getConnection(!player).sendPacket(DrawCard(cardID, false))
     }
 
+    suspend fun useAbility(
+        player: Player,
+        ability: Ability,
+        target_position: CardPosition?,
+    ): Boolean {
+        when (ability.effect) {
+            AbilityEffect.NONE -> TODO()
+            AbilityEffect.ADD_HP -> {
+                if (ability.range != AbilityRange.ALLY_CARD && ability.range != AbilityRange.ALLY_FIELD) {
+                    return false
+                }
+
+                if (target_position == null) {
+                    return false
+                }
+
+                val ally = getCard(player, target_position)
+                if (ally == null && ability.range == AbilityRange.ALLY_CARD) {
+                    return false
+                }
+
+                foreachInRange(player, target_position, ability.range) { p, pos ->
+                    val card = getCard(p, pos)
+                    if (card != null) {
+                        card.health += ability.value // isn't capped by design
+                    }
+                    setCard(player, pos, card)
+                }
+
+                return true
+            }
+
+            AbilityEffect.SEAL -> {
+                if (!arrayOf(
+                        AbilityRange.ENEMY_ROW,
+                        AbilityRange.ENEMY_FIELD,
+                        AbilityRange.ENEMY_CARD,
+                    ).contains(ability.range)
+                ) {
+                    return false
+                }
+
+                if (target_position == null) {
+                    return false
+                }
+
+                var target = getCard(!player, target_position)
+                if (target == null && ability.range == AbilityRange.ENEMY_CARD) {
+                    return false
+                }
+
+                foreachInRange(player, target_position, ability.range) { p, pos ->
+                    val card = getCard(p, pos)
+                    if (card != null) {
+                        card.sealed_turns_left = ability.value
+                        card.phase = CardTurnPhase.Done // is renewed in startTurnForCard
+                    }
+                    setCard(p, pos, card)
+                }
+
+                return true
+            }
+
+            AbilityEffect.ATTACK -> {
+                if (!arrayOf(
+                        AbilityRange.ENEMY_ROW,
+                        AbilityRange.ENEMY_FIELD,
+                        AbilityRange.ENEMY_CARD,
+                    ).contains(ability.range)
+                ) {
+                    return false
+                }
+
+                if (target_position == null) {
+                    return false
+                }
+
+                val target = getCard(!player, target_position)
+                if (target == null && ability.range == AbilityRange.ENEMY_CARD) {
+                    return false
+                }
+
+                foreachInRange(player, target_position, ability.range) { p, pos ->
+                    var card = getCard(p, pos)
+                    if (card != null) {
+                        card.health -= ability.value
+                        if (card.health <= 0) {
+                            card = null
+                        }
+                    }
+                    setCard(player, pos, card)
+                }
+
+                return true
+            }
+
+            AbilityEffect.SHIELD -> {
+                if (!arrayOf(
+                        AbilityRange.ALLY_FIELD,
+                        AbilityRange.ALLY_CARD,
+                    ).contains(ability.range)
+                ) {
+                    return false
+                }
+
+                if (target_position == null) {
+                    return false
+                }
+
+                var target = getCard(player, target_position)
+                if (target == null && ability.range == AbilityRange.ENEMY_CARD) {
+                    return false
+                }
+
+                foreachInRange(player, target_position, ability.range) { p, pos ->
+                    var card = getCard(p, pos)
+                    card?.let {
+                        it.shield += 1
+                    }
+                    setCard(player, pos, card)
+                }
+
+                return true
+            }
+        }
+
+        return false
+    }
+
+    suspend fun handleUseMagicCardPacket(
+        packet: UseMagicCardRequestPacket,
+        player: Player,
+    ) {
+        val sendInvalid =
+            suspend {
+                getConnection(player).sendPacket(packet.getResponsePacket(isYou = true, valid = false, null, null))
+            }
+
+        if (!isTurnOfPlayer(player)) {
+            sendInvalid()
+            return
+        }
+
+        if (!handContains(player, packet.card_id)) {
+            sendInvalid()
+            return
+        }
+
+        val cardStat = CardStats.getCardByID(packet.card_id)
+        if (cardStat == null) {
+            sendInvalid()
+            return
+        }
+
+        val ability = cardStat.ability
+        val targetCards = useAbility(player, ability, packet.target_position)
+
+        if (!targetCards) {
+            sendInvalid()
+            return
+        }
+
+        if (getRam(player) < ability.cost) {
+            sendInvalid()
+            return
+        }
+
+        val target =
+            packet.target_position?.let {
+                getCard(!player, it)
+            }
+
+        getConnection(player).sendPacket(
+            packet.getResponsePacket(
+                isYou = true,
+                valid = true,
+                ability = ability,
+                target_card = target,
+            ),
+        )
+        getConnection(!player).sendPacket(
+            packet.getResponsePacket(
+                isYou = false,
+                valid = true,
+                ability = ability,
+                target_card = target,
+            ),
+        )
+
+        removeRam(player, ability.cost)
+    }
+
     suspend fun handleUseAbilityPacket(
         packet: UseAbilityRequestPacket,
         player: Player,
@@ -536,172 +735,43 @@ class BoardStateManager(
             return
         }
 
-        val ability = CardStats.getCardByID(abilityCard.id).ability
+        val cardStat = CardStats.getCardByID(abilityCard.id)
+        if (cardStat == null) {
+            sendInvalid()
+            return
+        }
+
+        val ability = cardStat.ability
+        val targetCards = useAbility(player, ability, packet.target_position)
+
+        if (!targetCards) {
+            sendInvalid()
+            return
+        }
 
         if (getRam(player) < ability.cost) {
             sendInvalid()
             return
         }
 
-        when (ability.effect) {
-            AbilityEffect.NONE -> TODO()
-            AbilityEffect.ADD_HP -> {
-                if (ability.range != AbilityRange.ALLY_CARD && ability.range != AbilityRange.ALLY_FIELD) {
-                    sendInvalid()
-                    return
-                }
+        val target = getCard(player, packet.target_position)
 
-                val ally = getCard(player, packet.target_position)
-                if (ally == null && ability.range == AbilityRange.ALLY_CARD) {
-                    sendInvalid()
-                    return
-                }
-
-                foreachInRange(player, packet.target_position, ability.range) { p, pos ->
-                    val card = getCard(p, pos)
-                    if (card != null) {
-                        card.health += ability.value // isn't capped by design
-                    }
-                    setCard(player, pos, card)
-                }
-
-                getConnection(player).sendPacket(
-                    packet.getResponsePacket(
-                        isYou = true,
-                        valid = true,
-                        targetCard = ally,
-                        abilityCard = abilityCard,
-                    ),
-                )
-                getConnection(!player).sendPacket(
-                    packet.getResponsePacket(
-                        isYou = false,
-                        valid = true,
-                        targetCard = ally,
-                        abilityCard = abilityCard,
-                    ),
-                )
-            }
-
-            AbilityEffect.SEAL -> {
-                if (!arrayOf(
-                        AbilityRange.ENEMY_ROW,
-                        AbilityRange.ENEMY_FIELD,
-                        AbilityRange.ENEMY_CARD,
-                    ).contains(ability.range)
-                ) {
-                    sendInvalid()
-                    return
-                }
-
-                var target = getCard(!player, packet.target_position)
-                if (target == null && ability.range == AbilityRange.ENEMY_CARD) {
-                    sendInvalid()
-                    return
-                }
-
-                foreachInRange(player, packet.target_position, ability.range) { p, pos ->
-                    val card = getCard(p, pos)
-                    if (card != null) {
-                        card.sealed_turns_left = ability.value
-                        card.phase = CardTurnPhase.Done // is renewed in startTurnForCard
-                    }
-                    setCard(p, pos, card)
-                }
-
-                target = getCard(!player, packet.target_position)
-
-                getConnection(player).sendPacket(
-                    packet.getResponsePacket(
-                        isYou = true,
-                        valid = true,
-                        targetCard = target,
-                        abilityCard = abilityCard,
-                    ),
-                )
-                getConnection(!player).sendPacket(
-                    packet.getResponsePacket(
-                        isYou = false,
-                        valid = true,
-                        targetCard = target,
-                        abilityCard = abilityCard,
-                    ),
-                )
-            }
-
-            AbilityEffect.ATTACK -> {
-                if (!arrayOf(
-                        AbilityRange.ENEMY_ROW,
-                        AbilityRange.ENEMY_FIELD,
-                        AbilityRange.ENEMY_CARD,
-                    ).contains(ability.range)
-                ) {
-                    sendInvalid()
-                    return
-                }
-
-                val target = getCard(player, packet.target_position)
-                if (target == null && ability.range == AbilityRange.ENEMY_CARD) {
-                    sendInvalid()
-                    return
-                }
-
-                foreachInRange(player, packet.target_position, ability.range) { p, pos ->
-                    var card = getCard(p, pos)
-                    if (card != null) {
-                        card.health -= ability.value
-                        if (card.health <= 0) {
-                            card = null
-                        }
-                    }
-                    setCard(player, pos, card)
-                }
-            }
-
-            AbilityEffect.SHIELD -> {
-                if (!arrayOf(
-                        AbilityRange.ALLY_FIELD,
-                        AbilityRange.ALLY_CARD,
-                    ).contains(ability.range)
-                ) {
-                    sendInvalid()
-                    return
-                }
-
-                var target = getCard(player, packet.target_position)
-                if (target == null && ability.range == AbilityRange.ENEMY_CARD) {
-                    sendInvalid()
-                    return
-                }
-
-                foreachInRange(player, packet.target_position, ability.range) { p, pos ->
-                    var card = getCard(p, pos)
-                    card?.let {
-                        it.shield += 1
-                    }
-                    setCard(player, pos, card)
-                }
-
-                target = getCard(player, packet.target_position)
-
-                getConnection(player).sendPacket(
-                    packet.getResponsePacket(
-                        isYou = true,
-                        valid = true,
-                        targetCard = target,
-                        abilityCard = abilityCard,
-                    ),
-                )
-                getConnection(!player).sendPacket(
-                    packet.getResponsePacket(
-                        isYou = false,
-                        valid = true,
-                        targetCard = target,
-                        abilityCard = abilityCard,
-                    ),
-                )
-            }
-        }
+        getConnection(player).sendPacket(
+            packet.getResponsePacket(
+                isYou = true,
+                valid = true,
+                targetCard = target,
+                abilityCard = abilityCard,
+            ),
+        )
+        getConnection(!player).sendPacket(
+            packet.getResponsePacket(
+                isYou = false,
+                valid = true,
+                targetCard = target,
+                abilityCard = abilityCard,
+            ),
+        )
 
         removeRam(player, ability.cost)
         abilityCard.phase = CardTurnPhase.Done

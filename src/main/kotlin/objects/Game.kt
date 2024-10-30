@@ -72,6 +72,9 @@ class Game(
                 is UseAbilityRequestPacket -> {
                     boardManager.handleUseAbilityPacket(packet, player)
                 }
+                is UseMagicCardRequestPacket -> {
+                    boardManager.handleUseMagicCardPacket(packet, player)
+                }
                 else -> {
                     connection.sendPacket(UnknownPacketPacket("unknown packet type received"))
                     println(prefix + "Received unknown packet")
