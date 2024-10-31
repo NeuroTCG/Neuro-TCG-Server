@@ -26,7 +26,7 @@ class CardStats(
     @Required val graphics: String,
     @Required val max_hp: Int,
     @Required val base_atk: Int,
-    @Required val summoning_cost: Int,
+    @Required var summoning_cost: Int,
     @Required val attack_range: AttackRange,
     @Required val card_type: CardType,
     @Required val ability: Ability,
@@ -34,9 +34,15 @@ class CardStats(
 ) {
     init {
         assert(summoning_cost in 0..10)
+
+        if (FREE_EVERYTHING) {
+            summoning_cost = 0
+        }
     }
 
     companion object {
+        val FREE_EVERYTHING = false
+
         // TODO: maybe move this out of here since it isn't networking related
         val cardIDMapping: HashMap<Int, CardStats> =
             hashMapOf(

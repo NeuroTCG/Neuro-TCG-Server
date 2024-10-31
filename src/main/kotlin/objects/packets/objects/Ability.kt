@@ -27,5 +27,11 @@ data class Ability(
     @Required var effect: AbilityEffect = AbilityEffect.NONE,
     @Required var value: Int = 0,
     @Required val range: AbilityRange = AbilityRange.NONE,
-    @Required val cost: Int = 0,
-)
+    @Required var cost: Int = 0,
+) {
+    init {
+        if (CardStats.FREE_EVERYTHING) {
+            cost = 0
+        }
+    }
+}
