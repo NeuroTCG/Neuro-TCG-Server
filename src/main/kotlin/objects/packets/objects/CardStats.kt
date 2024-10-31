@@ -87,8 +87,20 @@ class CardStats(
                         Ability(AbilityEffect.SEAL, 1, AbilityRange.ENEMY_CARD, 0),
                         true,
                     ),
+                // 10 Tin Cans 1 Stream card (magic card)
+                4 to
+                    CardStats(
+                        "res://assets/game/cards/template.png",
+                        0,
+                        0,
+                        4,
+                        AttackRange.STANDARD,
+                        CardType.MAGIC,
+                        Ability(AbilityEffect.ATTACK, 5, AbilityRange.ENEMY_CARD, 0),
+                        true,
+                    ),
             )
 
-        fun getCardByID(id: Int): CardStats = cardIDMapping.getValue(id)
+        fun getCardByID(id: Int): CardStats? = cardIDMapping.get(id)
     }
 }

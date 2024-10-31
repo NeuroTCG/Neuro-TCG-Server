@@ -7,7 +7,7 @@ class CardDeck {
     private val queue = mutableListOf(2)
 
     // gets repeated after `queue` is empty
-    private val loop = mutableListOf(0, 1, 3)
+    private val loop = mutableListOf(0, 1, 4, 3)
 
     fun drawCard(): Int {
         if (queue.size > 0) {

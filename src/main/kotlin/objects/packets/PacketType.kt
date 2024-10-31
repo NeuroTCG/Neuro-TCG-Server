@@ -28,6 +28,8 @@ class PacketType {
 
         const val USE_ABILITY_REQUEST = "use_ability_request"
         const val USE_ABILITY = "use_ability"
+        const val USE_MAGIC_CARD_REQUEST = "use_magic_card_request"
+        const val USE_MAGIC_CARD = "use_magic_card"
 
         const val GAME_OVER = "game_over"
     }
