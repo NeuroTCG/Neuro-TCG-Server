@@ -31,6 +31,8 @@ class PacketType {
         const val USE_MAGIC_CARD_REQUEST = "use_magic_card_request"
         const val USE_MAGIC_CARD = "use_magic_card"
 
+        const val PASSIVE_UPDATE = "passive_update"
+
         const val GAME_OVER = "game_over"
     }
 }
