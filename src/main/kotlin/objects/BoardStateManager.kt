@@ -53,12 +53,12 @@ class BoardStateManager(
     private fun getCard(
         player: Player,
         position: CardPosition,
-    ): CardState? = this.boardState.cards[playerToIndex(player)][position.row][position.column]
+    ): Card? = this.boardState.cards[playerToIndex(player)][position.row][position.column]
 
     private fun setCard(
         player: Player,
         position: CardPosition,
-        card: CardState?,
+        card: Card?,
     ) {
         this.boardState.cards[playerToIndex(player)][position.row][position.column] = card
     }
@@ -223,10 +223,18 @@ class BoardStateManager(
                 0,
                 0,
             )
+
+        val newCard =
+            Card (
+                packet.card_id,
+                packet.position,
+                newCardState
+            )
+
         setCard(
             player,
             packet.position,
-            newCardState,
+            newCard,
         )
 
         removeFromHand(player, packet.card_id)
@@ -284,7 +292,10 @@ class BoardStateManager(
             return
         }
 
-        if (attacker.phase < CardTurnPhase.Action) {
+        val attackerState = attacker.state
+        val targetState = target.state
+
+        if (attackerState.phase < CardTurnPhase.Action) {
             sendInvalid()
             return
         }
@@ -296,7 +307,7 @@ class BoardStateManager(
 
         val canAttackBack = isSlotReachable(!player, packet.target_position, packet.attacker_position)
 
-        attacker.phase = CardTurnPhase.Done
+        attackerState.phase = CardTurnPhase.Done
 
         val attackerCardStat = CardStats.getCardByID(attacker.id)
         val targetCardStat = CardStats.getCardByID(target.id)
@@ -305,10 +316,10 @@ class BoardStateManager(
             return
         }
 
-        if (target.shield == 0) {
-            target.health -= attackerCardStat.base_atk
+        if (targetState.shield == 0) {
+            targetState.health -= attackerCardStat.base_atk
         } else {
-            target.shield -= 1
+            targetState.shield -= 1
         }
 
         // NOTE: if the game is already over, we don't have to process anything else
@@ -317,17 +328,17 @@ class BoardStateManager(
         }
 
         if (canAttackBack) {
-            if (attacker.shield == 0) {
-                attacker.health -= max(targetCardStat.base_atk - 1, 0)
+            if (attackerState.shield == 0) {
+                attackerState.health -= max(targetCardStat.base_atk - 1, 0)
             } else {
-                attacker.shield -= 1
+                attackerState.shield -= 1
             }
         }
 
-        if (attacker.health <= 0) {
+        if (attackerState.health <= 0) {
             attacker = null
         }
-        if (target.health <= 0) {
+        if (targetState.health <= 0) {
             target = null
         }
 
@@ -338,16 +349,16 @@ class BoardStateManager(
             packet.getResponsePacket(
                 isYou = true,
                 valid = true,
-                targetCard = target,
-                attackerCard = attacker,
+                targetCard = targetState,
+                attackerCard = attackerState,
             ),
         )
         getConnection(!player).sendPacket(
             packet.getResponsePacket(
                 isYou = false,
                 valid = true,
-                targetCard = target,
-                attackerCard = attacker,
+                targetCard = targetState,
+                attackerCard = attackerState,
             ),
         )
     }
@@ -409,16 +420,19 @@ class BoardStateManager(
         val c1 = getCard(player, packet.position1)
         val c2 = getCard(!player, packet.position2)
 
-        if ((c1 != null && c1.phase < CardTurnPhase.MoveOrAction) || (c2 != null && c2.phase < CardTurnPhase.MoveOrAction)) {
+        if ((c1 != null && c1.state.phase < CardTurnPhase.MoveOrAction) || (c2 != null && c2.state!!.phase < CardTurnPhase.MoveOrAction)) {
             sendInvalid()
             return
         }
 
-        c1?.phase = CardTurnPhase.Action
-        c2?.phase = CardTurnPhase.Action
+        c1?.state?.phase = CardTurnPhase.Action
+        c2?.state?.phase = CardTurnPhase.Action
 
         setCard(player, packet.position1, c2)
         setCard(player, packet.position2, c1)
+
+        c2?.position = packet.position1;
+        c1?.position = packet.position2;
 
         getConnection(player).sendPacket(
             packet.getResponsePacket(
@@ -475,10 +489,12 @@ class BoardStateManager(
             return
         }
 
-        if (card.sealed_turns_left > 0) {
-            card.phase = CardTurnPhase.Done
+        val cardState = card.state!!
+
+        if (cardState.sealed_turns_left > 0) {
+            cardState.phase = CardTurnPhase.Done
         } else {
-            card.phase = CardTurnPhase.MoveOrAction
+            cardState.phase = CardTurnPhase.MoveOrAction
         }
     }
 
@@ -491,11 +507,13 @@ class BoardStateManager(
             return
         }
 
-        card.sealed_turns_left = maxOf(0, card.sealed_turns_left - 1)
-        if (card.sealed_turns_left > 0) {
-            card.phase = CardTurnPhase.Done
+        val cardState = card.state
+
+        cardState.sealed_turns_left = maxOf(0, cardState.sealed_turns_left - 1)
+        if (cardState.sealed_turns_left > 0) {
+            cardState.phase = CardTurnPhase.Done
         } else {
-            card.phase = CardTurnPhase.MoveOrAction
+            cardState.phase = CardTurnPhase.MoveOrAction
         }
     }
 
@@ -547,7 +565,7 @@ class BoardStateManager(
                 foreachInRange(player, target_position, ability.range) { p, pos ->
                     val card = getCard(p, pos)
                     if (card != null) {
-                        card.health += ability.value // isn't capped by design
+                        card.state!!.health += ability.value // isn't capped by design
                     }
                     setCard(player, pos, card)
                 }
@@ -569,7 +587,7 @@ class BoardStateManager(
                     return false
                 }
 
-                var target = getCard(!player, target_position)
+                val target = getCard(!player, target_position)
                 if (target == null && ability.range == AbilityRange.ENEMY_CARD) {
                     return false
                 }
@@ -577,8 +595,8 @@ class BoardStateManager(
                 foreachInRange(player, target_position, ability.range) { p, pos ->
                     val card = getCard(p, pos)
                     if (card != null) {
-                        card.sealed_turns_left = ability.value
-                        card.phase = CardTurnPhase.Done // is renewed in startTurnForCard
+                        card.state.sealed_turns_left = ability.value
+                        card.state.phase = CardTurnPhase.Done // is renewed in startTurnForCard
                     }
                     setCard(p, pos, card)
                 }
@@ -608,8 +626,8 @@ class BoardStateManager(
                 foreachInRange(player, target_position, ability.range) { p, pos ->
                     var card = getCard(p, pos)
                     if (card != null) {
-                        card.health -= ability.value
-                        if (card.health <= 0) {
+                        card.state!!.health -= ability.value
+                        if (card.state!!.health <= 0) {
                             card = null
                         }
                     }
@@ -638,9 +656,9 @@ class BoardStateManager(
                 }
 
                 foreachInRange(player, target_position, ability.range) { p, pos ->
-                    var card = getCard(p, pos)
+                    val card = getCard(p, pos)
                     card?.let {
-                        it.shield += 1
+                        it.state.shield += 1
                     }
                     setCard(player, pos, card)
                 }
@@ -649,7 +667,6 @@ class BoardStateManager(
             }
         }
 
-        return false
     }
 
     suspend fun handleUseMagicCardPacket(
@@ -700,7 +717,7 @@ class BoardStateManager(
                 isYou = true,
                 valid = true,
                 ability = ability,
-                target_card = target,
+                target_card = target?.state,
             ),
         )
         getConnection(!player).sendPacket(
@@ -708,7 +725,7 @@ class BoardStateManager(
                 isYou = false,
                 valid = true,
                 ability = ability,
-                target_card = target,
+                target_card = target?.state,
             ),
         )
 
@@ -729,7 +746,7 @@ class BoardStateManager(
             return
         }
 
-        val abilityCard = getCard(player, packet.ability_position)
+        val abilityCard = getCard(player, packet.ability_position)?.state
         if (abilityCard == null || abilityCard.phase < CardTurnPhase.Action || abilityCard.ability_was_used) {
             sendInvalid()
             return
@@ -754,7 +771,7 @@ class BoardStateManager(
             return
         }
 
-        val target = getCard(player, packet.target_position)
+        val target = getCard(player, packet.target_position)!!.state
 
         getConnection(player).sendPacket(
             packet.getResponsePacket(

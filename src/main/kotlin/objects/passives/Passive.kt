@@ -1,6 +1,5 @@
 /*
- * Created by Matthew Clifton on 2024.11.11
- * Copyright © 2024 Osman Balci. All rights reserved.
+ * Created by BSGMatt on 2024.11.11
  */
 
 package objects.passives
@@ -9,11 +8,22 @@ import objects.*
 import objects.packets.*
 import objects.packets.objects.*
 
-open class Passive (
-    var cardId: Int,
-    var player: Player
+abstract class Passive (
+    //The passive manager
+    open val passiveManager: PassiveManager,
+
+    //The card this passive belongs to.
+    open val card: Card,
+
+    //The player that owns the card associated with this passive.
+    open val player: Player
 ) {
-    fun update(lastChange: Packet, boardState: BoardState): UpdateAction? {
-        return null;
+    abstract fun update(lastChange: Packet, boardState: BoardState): UpdateAction?
+}
+
+class DefaultPassive(passiveManager: PassiveManager, card: Card, player: Player) : Passive(passiveManager, card, player) {
+    override fun update(lastChange: Packet, boardState: BoardState): UpdateAction? {
+        print("A default passive update function was called for: " + card);
+        return null
     }
 }
