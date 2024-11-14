@@ -23,6 +23,7 @@ enum class CardType {
 @Serializable
 @Suppress("PropertyName")
 class CardStats(
+    @Required val name: String,
     @Required val graphics: String,
     @Required val max_hp: Int,
     @Required val base_atk: Int,
@@ -48,6 +49,7 @@ class CardStats(
             hashMapOf(
                 0 to
                     CardStats(
+                        "Private Evil",
                         "res://assets/game/cards/pirate_evil.jpg",
                         2,
                         2,
@@ -60,6 +62,7 @@ class CardStats(
                 // Pirate Evil / Neuro
                 1 to
                     CardStats(
+                        "Filipino Boy",
                         "res://assets/game/cards/filipino_boy.png",
                         3,
                         3,
@@ -72,6 +75,7 @@ class CardStats(
                 // Filipino Boy
                 2 to
                     CardStats(
+                        "Angel Neuro",
                         "res://assets/game/cards/angel_neuro.png",
                         24,
                         2,
@@ -84,6 +88,7 @@ class CardStats(
                 // Twitch
                 3 to
                     CardStats(
+                        "The Streaming Site She Uses",
                         "res://assets/game/cards/the_streaming_site_she_uses.png",
                         3,
                         4,
@@ -96,7 +101,8 @@ class CardStats(
                 // 10 Tin Cans 1 Stream card (magic card)
                 4 to
                     CardStats(
-                        "res://assets/game/cards/template.png",
+                        "10 Tins Cans 1 Stream",
+                        "res://assets/game/cards/10_tin_cans_1_stream.png",
                         0,
                         0,
                         4,
