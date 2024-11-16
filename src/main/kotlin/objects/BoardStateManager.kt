@@ -2,6 +2,7 @@ package objects
 
 import objects.packets.*
 import objects.packets.objects.*
+import objects.passives.*
 import kotlin.math.*
 
 enum class Player {
@@ -25,6 +26,7 @@ class BoardStateManager(
     private var boardState = BoardState()
     private val player1ID: Int = 1
     private val player2ID: Int = 2
+    val passiveManager: PassiveManager = PassiveManager(this)
     val gameID = db.createGame(player1ID, player2ID)
 
     fun getBoardState(): BoardState = this.boardState
@@ -239,6 +241,9 @@ class BoardStateManager(
 
         removeFromHand(player, packet.card_id)
         removeRam(player, cardStat.summoning_cost)
+
+
+        passiveManager.addPassive(newCard, player)
 
         // If it's a deck master, we put it in the board state
         if (cardStat.card_type == CardType.DECK_MASTER) {
@@ -536,6 +541,8 @@ class BoardStateManager(
         val cardID = cardDecks[playerToIndex(player)].drawCard()
 
         placeInHand(player, cardID)
+
+
 
         getConnection(player).sendPacket(DrawCard(cardID, true))
         getConnection(!player).sendPacket(DrawCard(cardID, false))

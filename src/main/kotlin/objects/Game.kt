@@ -1,6 +1,7 @@
 package objects
 
 import objects.packets.*
+import objects.passives.*
 
 class Game(
     val p1Connection: GameConnection,
@@ -34,7 +35,8 @@ class Game(
         }
 
         while (connection.isOpen) {
-            when (val packet = connection.receivePacket()) {
+            val packet = connection.receivePacket()
+            when (packet) {
                 null -> {
                     if (connection.isOpen) connection.close()
                     println(prefix + "Connection was closed unexpectedly")
@@ -79,6 +81,11 @@ class Game(
                     connection.sendPacket(UnknownPacketPacket("unknown packet type received"))
                     println(prefix + "Received unknown packet")
                 }
+            }
+
+            val passiveUpdates = boardManager.passiveManager.updatePassives(packet)
+            if (passiveUpdates != null) {
+                connection.sendPacket(passiveUpdates);
             }
 
             boardManager.gameOverHandler()
