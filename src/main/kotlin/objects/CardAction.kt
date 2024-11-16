@@ -9,13 +9,13 @@ import objects.packets.objects.*
 
 @Serializable
 class CardActionList (
-    @Required val user: Card,
+    @Required val user: CardData,
     @Required val actions: Array<CardAction>
 )
 
 @Serializable class CardAction (
     @Required val action_name : String,
-    @Required val targets: Array<Card>,
+    @Required val targets: Array<CardData>,
     @Required val amount: Int,
 )
 

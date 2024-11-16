@@ -6,11 +6,13 @@ package objects.packets.objects
 
 import kotlinx.serialization.Serializable
 
+/**
+ * A Container for the position and state of a card.
+ */
 @Serializable
-class Card(
+class CardData(
     val id: Int,
     var position: CardPosition,
     var state: CardState
 ) {
-
 }

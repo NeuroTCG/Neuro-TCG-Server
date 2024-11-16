@@ -13,7 +13,7 @@ abstract class Passive (
     open val passiveManager: PassiveManager,
 
     //The card this passive belongs to.
-    open val card: Card,
+    open val cardData: CardData,
 
     //The player that owns the card associated with this passive.
     open val player: Player
@@ -25,9 +25,9 @@ abstract class Passive (
     abstract fun update(lastChange: Packet?, boardState: BoardState): CardActionList?
 }
 
-class DefaultPassive(passiveManager: PassiveManager, card: Card, player: Player) : Passive(passiveManager, card, player) {
+class DefaultPassive(passiveManager: PassiveManager, cardData: CardData, player: Player) : Passive(passiveManager, cardData, player) {
     override fun update(lastChange: Packet?, boardState: BoardState): CardActionList? {
-        print("A default passive update function was called for: $card");
-        return CardActionList(card, arrayOf(CardAction(CardActionNames.TEST, arrayOf(card), 0)))
+        print("A default passive update function was called for: $cardData");
+        return CardActionList(cardData, arrayOf(CardAction(CardActionNames.TEST, arrayOf(cardData), 0)))
     }
 }

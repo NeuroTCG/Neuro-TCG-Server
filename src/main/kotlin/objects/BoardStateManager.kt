@@ -26,7 +26,7 @@ class BoardStateManager(
     private var boardState = BoardState()
     private val player1ID: Int = 1
     private val player2ID: Int = 2
-    val passiveManager: PassiveManager = PassiveManager(this)
+    private val passiveManager: PassiveManager = PassiveManager(this)
     val gameID = db.createGame(player1ID, player2ID)
 
     fun getBoardState(): BoardState = this.boardState
@@ -55,14 +55,14 @@ class BoardStateManager(
     private fun getCard(
         player: Player,
         position: CardPosition,
-    ): Card? = this.boardState.cards[playerToIndex(player)][position.row][position.column]
+    ): CardData? = this.boardState.cards[playerToIndex(player)][position.row][position.column]
 
     private fun setCard(
         player: Player,
         position: CardPosition,
-        card: Card?,
+        cardData: CardData?,
     ) {
-        this.boardState.cards[playerToIndex(player)][position.row][position.column] = card
+        this.boardState.cards[playerToIndex(player)][position.row][position.column] = cardData
     }
 
     private fun placeInHand(
@@ -78,6 +78,7 @@ class BoardStateManager(
     ) {
         this.boardState.hands[playerToIndex(player)].remove(cardID)
     }
+
 
     private fun getRam(player: Player): Int = this.boardState.ram[playerToIndex(player)]
 
@@ -226,8 +227,8 @@ class BoardStateManager(
                 0,
             )
 
-        val newCard =
-            Card (
+        val newCardData =
+            CardData (
                 packet.card_id,
                 packet.position,
                 newCardState
@@ -236,14 +237,12 @@ class BoardStateManager(
         setCard(
             player,
             packet.position,
-            newCard,
+            newCardData,
         )
 
         removeFromHand(player, packet.card_id)
         removeRam(player, cardStat.summoning_cost)
-
-
-        passiveManager.addPassive(newCard, player)
+        passiveManager.addPassive(newCardData, player)
 
         // If it's a deck master, we put it in the board state
         if (cardStat.card_type == CardType.DECK_MASTER) {
@@ -366,6 +365,17 @@ class BoardStateManager(
                 attackerCard = attackerState,
             ),
         )
+    }
+
+    suspend fun updatePassives(packet: Packet?, player: Player) {
+        if (packet == null) {
+            return
+        }
+
+        val updatePacket: PassiveUpdatePacket = passiveManager.updatePassives(packet);
+
+        getConnection(player).sendPacket(updatePacket)
+        getConnection(!player).sendPacket(updatePacket)
     }
 
     private fun isSlotReachable(
