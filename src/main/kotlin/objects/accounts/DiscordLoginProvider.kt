@@ -26,7 +26,6 @@ class DiscordLoginProvider(
 ) : LoginProvider {
     private val results: MutableMap<String, CompletableDeferred<LoginProviderResult>> = mutableMapOf()
 
-    // TODO: This might be more sensible as a ktor http client?
     private val httpClient =
         HttpClient(OkHttp) {
             engine {
@@ -85,7 +84,6 @@ class DiscordLoginProvider(
     ) {
         val deferred = results[state] ?: return
 
-        // TODO: handle failure here? (e.g. invalid code)
         try {
             val tcgUserId = getTcgUserFromOauthCodeResponse(code)
             deferred.complete(LoginSuccess(tcgUserId))
@@ -115,7 +113,6 @@ class DiscordLoginProvider(
                 .body()
         println(response)
 
-//        TODO()
         val discordUserInfo: DiscordOauthUserInfo =
             httpClient
                 .get("https://discord.com/api/v10/users/@me") {

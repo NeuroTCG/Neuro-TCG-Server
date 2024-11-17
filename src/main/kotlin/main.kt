@@ -112,7 +112,6 @@ fun runAuth(db: GameDatabase) {
                     val result = groupLoginProvider.waitForLogin(call.request.queryParameters["correlationId"]!!)
 
                     if (result is LoginSuccess) {
-                        // TODO: this should not be returning the user ID, but instead generating a token and returning that
                         val token = db.generateTokenFor(result.userId)
                         call.respondText(token!!, ContentType.Text.Plain, HttpStatusCode.OK)
                     } else {
