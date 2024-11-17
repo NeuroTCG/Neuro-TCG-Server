@@ -44,7 +44,7 @@ class DiscordLoginProvider(
             }
         }
 
-    override fun name(): String = "discord"
+    override val name: String = "discord"
 
     override suspend fun handleInitialRequest(
         correlationId: String,

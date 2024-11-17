@@ -4,7 +4,7 @@ import io.ktor.server.application.*
 import io.ktor.server.routing.*
 
 interface LoginProvider {
-    fun name(): String
+    val name: String
 
     fun registerAdditionalRoutes(route: Route) { }
 
