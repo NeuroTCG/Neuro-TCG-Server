@@ -14,6 +14,12 @@ repositories {
 }
 
 dependencies {
+    implementation("io.ktor:ktor-server-content-negotiation-jvm:2.3.12")
+    implementation("io.ktor:ktor-server-core-jvm:2.3.12")
+    implementation("io.ktor:ktor-server-core-jvm:2.3.12")
+    implementation("io.ktor:ktor-serialization-gson-jvm:2.3.12")
+    implementation("io.ktor:ktor-server-content-negotiation-jvm:2.3.12")
+    implementation("io.ktor:ktor-server-core-jvm:2.3.12")
     testImplementation("org.jetbrains.kotlin:kotlin-test")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.1")
@@ -24,6 +30,8 @@ dependencies {
     implementation("org.jetbrains.exposed", "exposed-java-time", exposedVersion)
     implementation("org.xerial:sqlite-jdbc:3.44.1.0")
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
+    implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
+    implementation("io.ktor:ktor-serialization-gson:$ktorVersion")
     implementation("io.ktor:ktor-server-websockets:$ktorVersion")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("io.github.cdimascio:dotenv-kotlin:6.4.1")

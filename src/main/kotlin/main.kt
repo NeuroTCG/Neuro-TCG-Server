@@ -1,10 +1,16 @@
 import io.github.cdimascio.dotenv.*
+import io.ktor.http.*
+import io.ktor.serialization.gson.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
+import io.ktor.server.plugins.contentnegotiation.*
+import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
+import kotlinx.coroutines.*
 import kotlinx.coroutines.future.*
+import kotlinx.serialization.json.*
 import objects.*
 import objects.accounts.*
 import java.io.*
@@ -14,7 +20,7 @@ import java.util.concurrent.*
 fun getFirstOpenConnection(
     queue: Queue<Pair<GameConnection, CompletableFuture<Pair<Game, Player>>>>,
 ): Pair<GameConnection, CompletableFuture<Pair<Game, Player>>>? {
-    while (queue.count() >= 1) {
+    while (queue.isNotEmpty()) {
         val (c, gf) = queue.remove()
         if (c.isOpen) {
             return Pair(c, gf)
@@ -22,10 +28,6 @@ fun getFirstOpenConnection(
     }
     return null
 }
-
-val dotenv = dotenv() // usage: dotenv[key: String]
-val discordLoginManager = DiscordLogin(dotenv["DISCORD_CLIENT_SECRET"]!!, dotenv["DISCORD_CLIENT_ID"]!!, dotenv["DISCORD_REDIRECT_URI"]!!)
-// TODO: add .env file with secrets
 
 fun main() {
     val db = GameDatabase()
@@ -37,6 +39,65 @@ fun main() {
         LinkedList()
 
     println("Listening for clients...")
+    runBlocking {
+        launch {
+            runAuth()
+        }
+
+        launch {
+            runWebsocket(playerQueue, db)
+        }
+    }
+}
+
+fun runAuth() {
+    // # Auth Flow Overview
+    // 1. Client sends a POST request to `/auth/begin` and gets back a JSON body with a login URL and a polling URL
+    // 2. Client opens login URL in browser
+    // 3. Client begins long polling the polling URL
+    // 4. User picks an authentication provider and logs in
+    // 5. Value being polled is set to value of user's login token
+    // 6. As the client has now successfully got a value, it stops polling
+
+    val groupLoginProvider = GroupLoginProvider(listOf(DiscordLoginProvider("dummy", "dummy", "dummy")))
+
+    embeddedServer(Netty, 9934) {
+        install(ContentNegotiation) {
+            gson {
+            }
+        }
+
+        routing {
+            route("/auth") {
+                get("/begin") {
+                    val authInfo = groupLoginProvider.beginAuth()
+
+                    call.respond(authInfo)
+                }
+
+                get("/poll") {
+                    val result = groupLoginProvider.waitForLogin(call.request.queryParameters["correlationId"]!!)
+
+                    if (result is LoginSuccess) {
+                        // TODO: this should not be returning the user ID, but instead generating a token and returning that
+                        call.respondText(result.userId, ContentType.Text.Plain, HttpStatusCode.OK)
+                    } else {
+                        // TODO: obviously `LoginFailure` should also be handled, I am just lazy
+                        println("got unexpected login result: $result")
+                    }
+                }
+
+                for (provider in groupLoginProvider.providers()) {
+                    route("/${provider.name()}") {
+                        provider.registerRoutes(this)
+                    }
+                }
+            }
+        }
+    }.start(wait = true)
+}
+
+fun runWebsocket(playerQueue: Queue<Pair<GameConnection, CompletableFuture<Pair<Game, Player>>>>, db: GameDatabase) {
     embeddedServer(Netty, port = 9933) {
         install(WebSockets)
         routing {
