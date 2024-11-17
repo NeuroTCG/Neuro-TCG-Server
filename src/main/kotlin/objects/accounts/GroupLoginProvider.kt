@@ -15,6 +15,7 @@ class GroupLoginProvider(
     fun beginAuth(): BeginLoginInfo {
         val correlationId = generateCorrelationId()
 
+        // TODO: These two URLs should not be hardcoded to localhost. We should probably pass in some info  
         val userLoginUrl = URLBuilder("http://localhost:9934/auth/login")
         userLoginUrl.parameters.append("correlationId", correlationId)
 

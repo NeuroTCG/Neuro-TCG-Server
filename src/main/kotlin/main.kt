@@ -94,6 +94,7 @@ fun runAuth(db: GameDatabase) {
                     builder.appendLine("<p>Please choose one of the following options:</p>")
                     builder.appendLine("<ul>")
                     for (provider in groupLoginProvider.providers()) {
+                        // TODO: This should not be hardcoded to localhost
                         val url = URLBuilder("http://localhost:9934/auth/providers/${provider.name()}/begin")
                         url.parameters.append("correlationId", call.request.queryParameters["correlationId"]!!)
                         // TODO: this is *not* an appropriate way to build HTML, as it (at least in the state when I wrote this)
