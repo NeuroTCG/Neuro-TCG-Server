@@ -39,25 +39,6 @@ fun main() {
         LinkedList()
 
     println("Listening for clients...")
-    runBlocking {
-        launch {
-            runAuth(db)
-        }
-
-        launch {
-            runWebsocket(playerQueue, db)
-        }
-    }
-}
-
-fun runAuth(db: GameDatabase) {
-    // # Auth Flow Overview
-    // 1. Client sends a POST request to `/auth/begin` and gets back a JSON body with a login URL and a polling URL
-    // 2. Client opens login URL in browser
-    // 3. Client begins long polling the polling URL
-    // 4. User picks an authentication provider and logs in
-    // 5. Value being polled is set to value of user's login token
-    // 6. As the client has now successfully got a value, it stops polling
     val dotenv = dotenv()
 
     val groupLoginProvider =
@@ -72,11 +53,13 @@ fun runAuth(db: GameDatabase) {
             ),
         )
 
-    embeddedServer(Netty, 9934) {
+    embeddedServer(Netty, 9933) {
         install(ContentNegotiation) {
             gson {
             }
         }
+
+        install(WebSockets)
 
         routing {
             route("/auth") {
@@ -95,7 +78,7 @@ fun runAuth(db: GameDatabase) {
                     builder.appendLine("<ul>")
                     for (provider in groupLoginProvider.providers()) {
                         // TODO: This should not be hardcoded to localhost
-                        val url = URLBuilder("http://localhost:9934/auth/providers/${provider.name()}/begin")
+                        val url = URLBuilder("http://localhost:9933/auth/providers/${provider.name()}/begin")
                         url.parameters.append("correlationId", call.request.queryParameters["correlationId"]!!)
                         // TODO: this is *not* an appropriate way to build HTML, as it (at least in the state when I wrote this)
                         // TODO: is vulnerable if the generated url is somehow executable
@@ -163,23 +146,13 @@ fun runAuth(db: GameDatabase) {
 
                     call.respond(
                         object {
-                            //                        val userId = groupLoginProvider.getUserIdFromToken(auth)
+                            // val userId = groupLoginProvider.getUserIdFromToken(auth)
                             val userId = "dummy user id :3"
                         },
                     )
                 }
             }
-        }
-    }.start(wait = true)
-}
 
-fun runWebsocket(
-    playerQueue: Queue<Pair<GameConnection, CompletableFuture<Pair<Game, Player>>>>,
-    db: GameDatabase,
-) {
-    embeddedServer(Netty, port = 9933) {
-        install(WebSockets)
-        routing {
             webSocket("/game") {
                 println("New connection established")
                 val connection = GameConnection(this)

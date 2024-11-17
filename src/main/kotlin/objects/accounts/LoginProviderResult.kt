@@ -1,17 +1,17 @@
 package objects.accounts
 
 interface LoginProviderResult {
-    fun isSuccessful(): Boolean
+    val isSuccessful: Boolean
 }
 
 class LoginSuccess(
     val userId: String,
 ) : LoginProviderResult {
-    override fun isSuccessful(): Boolean = true
+    override val isSuccessful = true
 }
 
 class LoginFailure(
     val reason: String,
 ) : LoginProviderResult {
-    override fun isSuccessful(): Boolean = false
+    override val isSuccessful = false
 }
