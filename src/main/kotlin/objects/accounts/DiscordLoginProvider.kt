@@ -114,7 +114,7 @@ class DiscordLoginProvider(
                     )
                 })
                 .body()
-        println(response)
+        println(Json.encodeToString(response))
 
         val discordUserInfo: DiscordOauthUserInfo =
             httpClient
@@ -123,15 +123,17 @@ class DiscordLoginProvider(
                         append("Authorization", "${response.tokenType} ${response.accessToken}")
                     }
                 }.body()
-        println(discordUserInfo)
+        println(Json.encodeToString(discordUserInfo))
 
         var tcgUserId = db.getUserByDiscordId(discordUserInfo.id)
+        println("mapped to $tcgUserId")
 
         if (tcgUserId == null) {
             tcgUserId = db.createNewUser()
+            db.createLinkedDiscordInfo(discordUserInfo, response, tcgUserId)
         }
 
-        db.updateDiscordUserInfo(discordUserInfo, tcgUserId)
+        db.updateDiscordUserInfo(discordUserInfo, response)
 
         return tcgUserId
     }
@@ -144,7 +146,7 @@ class DiscordLoginProvider(
     )
 
     @Serializable
-    private class DiscordOauthTokenResponse(
+    class DiscordOauthTokenResponse(
         val accessToken: String,
         val tokenType: String,
         val expiresIn: ULong,
@@ -153,7 +155,7 @@ class DiscordLoginProvider(
     )
 
     @Serializable
-    private class DiscordOauthUserInfo(
+    class DiscordOauthUserInfo(
         val username: String,
         val id: String,
     )

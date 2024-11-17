@@ -8,7 +8,7 @@ plugins {
 
 group = "org.example"
 version = "1.0-SNAPSHOT"
-val exposedVersion = "0.49.0"
+val exposedVersion = "0.56.0"
 val ktorVersion = "3.0.1"
 
 repositories {

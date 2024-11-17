@@ -12,6 +12,7 @@ import io.ktor.server.websocket.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.future.*
 import kotlinx.serialization.*
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
 import objects.*
 import objects.accounts.*
@@ -144,14 +145,25 @@ fun main() {
             route("/users") {
                 get("/@me") {
                     val auth = call.request.authorization()
-                    println(auth)
 
-                    call.respond(
-                        object {
-                            // val userId = groupLoginProvider.getUserIdFromToken(auth)
-                            val userId = "dummy user id :3"
-                        },
+                    if (auth == null) {
+                        call.respond(HttpStatusCode.Unauthorized)
+                        return@get
+                    }
+
+                    val mappedUser = db.getUserIdFromToken(auth.removePrefix("Bearer "))
+
+                    if (mappedUser == null) {
+                        call.respond(HttpStatusCode.Unauthorized)
+                        return@get
+                    }
+
+                    @Serializable
+                    class UserInfo(
+                        val userId: String,
                     )
+
+                    call.respond(UserInfo(mappedUser))
                 }
             }
 

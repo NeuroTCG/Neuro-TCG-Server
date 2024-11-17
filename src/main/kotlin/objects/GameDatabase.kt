@@ -1,13 +1,18 @@
 package objects
 
+import io.ktor.utils.io.core.*
 import kotlinx.serialization.*
 import kotlinx.serialization.json.*
+import objects.accounts.*
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.javatime.*
 import org.jetbrains.exposed.sql.statements.api.*
 import org.jetbrains.exposed.sql.transactions.*
 import java.sql.*
 import java.time.*
+import java.util.*
+import kotlin.text.toByteArray
 
 // All transactions are blocking, so use them wrapped in withContext(), if you need concurrency.
 class GameDatabase {
@@ -170,24 +175,112 @@ class GameDatabase {
     }
 
     fun getUserByDiscordId(discordId: String): String? {
-        TODO("Get a user id by checking `discord_users.linked_to_user_id`")
+        val result =
+            transaction {
+                (Users innerJoin DiscordUsers)
+                    .select(Users.userId, DiscordUsers.linkedTo)
+                    .where {
+                        DiscordUsers.userID.eq(discordId)
+                    }.singleOrNull()
+            }
+
+        if (result == null) {
+            return null
+        } else {
+            return result[Users.userId]
+        }
     }
 
     fun createNewUser(): String {
-        TODO("Create a new user and return the user id")
+        val newUserId = UUID.randomUUID().toString()
+
+        transaction {
+            Users.insert {
+                // TODO: User id generation should probably live in some kind of singleton
+                it[userId] = newUserId
+            }[Users.userId]
+
+            commit()
+        }
+
+        return newUserId
+    }
+
+    fun generateTokenFor(tcgUserId: String): String? {
+        // TODO: this is 100% not a good enough token
+        val token = UUID.randomUUID().toString()
+
+        val success =
+            transaction {
+                val success =
+                    UserTokens.insert {
+                        it[userId] = tcgUserId
+                        // TODO: THIS IS NOT A HASH
+                        it[tokenHash] = ExposedBlob(token.toByteArray())
+                    }
+
+                commit()
+
+                success
+            }
+
+        if (success.insertedCount == 0) {
+            return null
+        }
+
+        return token
+    }
+
+    // TODO: this might be better with `discordUserInfo` as a different class to decouple it from `DiscordLoginProvider`
+    // TODO: same with `discordTokenInfo`
+    fun createLinkedDiscordInfo(
+        discordUserInfo: DiscordLoginProvider.DiscordOauthUserInfo,
+        discordTokenInfo: DiscordLoginProvider.DiscordOauthTokenResponse,
+        tcgUserId: String,
+    ) {
+        transaction {
+            DiscordUsers.insert {
+                it[linkedTo] = tcgUserId
+                it[userID] = discordUserInfo.id
+                it[accessToken] = discordTokenInfo.accessToken
+                it[accessTokenExpiry] = LocalDateTime.now().plusSeconds(discordTokenInfo.expiresIn.toLong())
+                it[refreshToken] = discordTokenInfo.refreshToken
+            }
+
+            commit()
+        }
     }
 
     fun updateDiscordUserInfo(
-        discordUserInfo: Any,
-        userId: String,
+        discordUserInfo: DiscordLoginProvider.DiscordOauthUserInfo,
+        discordTokenInfo: DiscordLoginProvider.DiscordOauthTokenResponse,
     ) {
-        TODO("Update the discord user's details (username, etc)")
-        // TODO: also think about what happens if for whatever reason `userId` is different to the stored value
+        transaction {
+            DiscordUsers.update({ DiscordUsers.userID.eq(discordUserInfo.id) }) {
+                it[userID] = discordUserInfo.id
+                it[accessToken] = discordTokenInfo.accessToken
+                it[accessTokenExpiry] = LocalDateTime.now().plusSeconds(discordTokenInfo.expiresIn.toLong())
+                it[refreshToken] = discordTokenInfo.refreshToken
+            }
+
+            commit()
+        }
     }
 
-    fun generateTokenFor(userId: String): String? {
-        TODO("Create a token for the provided user id")
-        // TODO: think about what should happen if a user already has a token. do we want multiple logins?
+    fun getUserIdFromToken(token: String): String? {
+        val col =
+            transaction {
+                UserTokens
+                    .selectAll()
+                    .where(UserTokens.tokenHash.eq(ExposedBlob(token.toByteArray())))
+                    .singleOrNull()
+            }
+
+        if (col == null) {
+            return null
+        }
+
+        return col[UserTokens.userId]
     }
 }
 
@@ -277,8 +370,8 @@ object TrapCards : Table("trap_cards") {
 }
 
 object Users : Table("users") {
-    // TODO: ids probably won't be 32ch long, but I don't know what else to put
-    val userId: Column<String> = varchar("user_id", 32)
+    // TODO: ids probably won't 128ch long, but I don't know what else to put
+    val userId: Column<String> = varchar("user_id", 128)
 
     override val primaryKey = PrimaryKey(userId)
 }
@@ -291,9 +384,9 @@ object UserTokens : Table("user_tokens") {
 
 object DiscordUsers : Table("discord_users") {
     val linkedTo: Column<String> = reference("linked_to_user_id", Users.userId)
-    val userID: Column<ULong> = ulong("discord_user_id")
+    val userID: Column<String> = varchar("discord_user_id", 128)
     val accessToken: Column<String> = varchar("access_token", 1024)
-    val accessTokenExpiry: Column<LocalDate> = date("access_token_expiry")
+    val accessTokenExpiry: Column<LocalDateTime> = datetime("access_token_expiry")
     val refreshToken: Column<String> = varchar("refresh_token", 1024)
 
     override val primaryKey = PrimaryKey(linkedTo)
