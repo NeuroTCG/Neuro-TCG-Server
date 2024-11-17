@@ -1,6 +1,6 @@
 import io.github.cdimascio.dotenv.*
 import io.ktor.http.*
-import io.ktor.serialization.gson.*
+import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
@@ -11,6 +11,8 @@ import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.future.*
+import kotlinx.serialization.*
+import kotlinx.serialization.json.*
 import objects.*
 import objects.accounts.*
 import java.io.*
@@ -29,6 +31,7 @@ fun getFirstOpenConnection(
     return null
 }
 
+@OptIn(ExperimentalSerializationApi::class)
 fun main() {
     val db = GameDatabase()
     if (!File("data/data.db").exists()) {
@@ -55,8 +58,11 @@ fun main() {
 
     embeddedServer(Netty, 9933) {
         install(ContentNegotiation) {
-            gson {
-            }
+            json(
+                Json {
+                    namingStrategy = JsonNamingStrategy.SnakeCase
+                },
+            )
         }
 
         install(WebSockets)
@@ -65,7 +71,6 @@ fun main() {
             route("/auth") {
                 post("/begin") {
                     val authInfo = groupLoginProvider.beginAuth()
-
                     call.respond(authInfo)
                 }
 
@@ -114,7 +119,6 @@ fun main() {
                     route("/providers/${provider.name()}") {
                         println("registering $provider under $this")
                         get("/begin") {
-                            println("looking for correlation id")
                             val correlationId = call.request.queryParameters["correlationId"]!!
 
                             if (!groupLoginProvider.isValidCorrelation(correlationId)) {
@@ -124,8 +128,6 @@ fun main() {
                                 return@get
                             }
 
-                            // REMOVE ME
-                            println("called initial handler")
                             provider.handleInitialRequest(correlationId, call)
 
                             launch {

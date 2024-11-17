@@ -1,6 +1,5 @@
 package objects.accounts
 
-import com.google.gson.*
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.okhttp.*
@@ -8,14 +7,14 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
 import io.ktor.http.*
-import io.ktor.serialization.gson.*
+import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.*
+import kotlinx.serialization.*
+import kotlinx.serialization.json.*
 import objects.*
-import kotlin.collections.MutableMap
-import kotlin.collections.mutableMapOf
 import kotlin.collections.set
 
 class DiscordLoginProvider(
@@ -26,6 +25,7 @@ class DiscordLoginProvider(
 ) : LoginProvider {
     private val results: MutableMap<String, CompletableDeferred<LoginProviderResult>> = mutableMapOf()
 
+    @OptIn(ExperimentalSerializationApi::class)
     private val httpClient =
         HttpClient(OkHttp) {
             engine {
@@ -35,9 +35,12 @@ class DiscordLoginProvider(
             }
 
             install(ContentNegotiation) {
-                gson {
-                    setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
-                }
+                json(
+                    Json {
+                        namingStrategy = JsonNamingStrategy.SnakeCase
+                        ignoreUnknownKeys = true
+                    },
+                )
             }
         }
 
@@ -133,12 +136,14 @@ class DiscordLoginProvider(
         return tcgUserId
     }
 
+    @Serializable
     private class DiscordOauthTokenRequest(
         val grantType: String,
         val code: String,
         val redirectUri: String,
     )
 
+    @Serializable
     private class DiscordOauthTokenResponse(
         val accessToken: String,
         val tokenType: String,
@@ -147,6 +152,7 @@ class DiscordLoginProvider(
         val scope: String,
     )
 
+    @Serializable
     private class DiscordOauthUserInfo(
         val username: String,
         val id: String,

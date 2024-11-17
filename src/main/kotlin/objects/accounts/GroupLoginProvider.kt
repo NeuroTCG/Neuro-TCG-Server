@@ -2,6 +2,7 @@ package objects.accounts
 
 import io.ktor.http.*
 import kotlinx.coroutines.*
+import kotlinx.serialization.Serializable
 import java.util.UUID
 
 class GroupLoginProvider(
@@ -50,6 +51,7 @@ class GroupLoginProvider(
     fun isValidCorrelation(correlationId: String): Boolean = results.containsKey(correlationId)
 }
 
+@Serializable
 class BeginLoginInfo(
     val userLoginUrl: String,
     val pollUrl: String,
