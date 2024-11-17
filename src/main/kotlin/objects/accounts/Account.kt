@@ -1,4 +1,5 @@
 package objects.accounts
 
-class Account {
+class Account(val userId: String) {
+
 }

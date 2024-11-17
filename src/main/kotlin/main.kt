@@ -10,7 +10,6 @@ import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.future.*
-import kotlinx.serialization.json.*
 import objects.*
 import objects.accounts.*
 import java.io.*
@@ -58,8 +57,17 @@ fun runAuth() {
     // 4. User picks an authentication provider and logs in
     // 5. Value being polled is set to value of user's login token
     // 6. As the client has now successfully got a value, it stops polling
+    val dotenv = dotenv()
 
-    val groupLoginProvider = GroupLoginProvider(listOf(DiscordLoginProvider("dummy", "dummy", "dummy")))
+    val groupLoginProvider = GroupLoginProvider(
+        listOf(
+            DiscordLoginProvider(
+                dotenv["DISCORD_REDIRECT_URI"],
+                dotenv["DISCORD_CLIENT_ID"],
+                dotenv["DISCORD_CLIENT_SECRET"]
+            )
+        )
+    )
 
     embeddedServer(Netty, 9934) {
         install(ContentNegotiation) {
@@ -69,10 +77,32 @@ fun runAuth() {
 
         routing {
             route("/auth") {
-                get("/begin") {
+                post("/begin") {
                     val authInfo = groupLoginProvider.beginAuth()
 
                     call.respond(authInfo)
+                }
+
+                get("/login") {
+                    val builder = StringBuilder()
+                    builder.appendLine("<!DOCTYPE html>")
+                    builder.appendLine("<html>")
+                    builder.appendLine("<body>")
+                    builder.appendLine("<p>Please choose one of the following options:</p>")
+                    builder.appendLine("<ul>")
+                    for (provider in groupLoginProvider.providers()) {
+                        val url = URLBuilder("http://localhost:9934/auth/providers/${provider.name()}/begin")
+                        url.parameters.append("correlationId", call.request.queryParameters["correlationId"]!!)
+                        // TODO: this is *not* an appropriate way to build HTML, as it (at least in the state when I wrote this)
+                        // TODO: is vulnerable if the generated url is somehow executable
+                        builder.appendLine("<li><a href=\"$url\">${provider.name()}</a></li>")
+                    }
+                    builder.appendLine("</ul>")
+                    builder.appendLine("</body>")
+                    builder.appendLine("</html>")
+                    call.respondText(ContentType.Text.Html) {
+                        builder.toString()
+                    }
                 }
 
                 get("/poll") {
@@ -87,9 +117,37 @@ fun runAuth() {
                     }
                 }
 
+                get("/safe_to_close") {
+                    call.respondText {
+                        "Logged in. You can close this page."
+                    }
+                }
+
                 for (provider in groupLoginProvider.providers()) {
-                    route("/${provider.name()}") {
-                        provider.registerRoutes(this)
+                    route("/providers/${provider.name()}") {
+                        println("registering $provider under $this")
+                        get("/begin") {
+                            println("looking for correlation id")
+                            val correlationId = call.request.queryParameters["correlationId"]!!
+
+                            if (!groupLoginProvider.isValidCorrelation(correlationId)) {
+                                // REMOVE ME
+                                println("got invalid correlation id: $correlationId")
+                                call.respond(HttpStatusCode.BadRequest)
+                                return@get
+                            }
+
+                            // REMOVE ME
+                            println("called initial handler")
+                            provider.handleInitialRequest(correlationId, call)
+
+                            launch {
+                                val result = provider.waitForLogin(correlationId)
+                                groupLoginProvider.setResult(correlationId, result)
+                            }
+                        }
+
+                        provider.registerAdditionalRoutes(this)
                     }
                 }
             }
