@@ -5,6 +5,7 @@ import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.contentnegotiation.*
+import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
@@ -40,7 +41,7 @@ fun main() {
     println("Listening for clients...")
     runBlocking {
         launch {
-            runAuth()
+            runAuth(db)
         }
 
         launch {
@@ -49,7 +50,7 @@ fun main() {
     }
 }
 
-fun runAuth() {
+fun runAuth(db: GameDatabase) {
     // # Auth Flow Overview
     // 1. Client sends a POST request to `/auth/begin` and gets back a JSON body with a login URL and a polling URL
     // 2. Client opens login URL in browser
@@ -59,15 +60,17 @@ fun runAuth() {
     // 6. As the client has now successfully got a value, it stops polling
     val dotenv = dotenv()
 
-    val groupLoginProvider = GroupLoginProvider(
-        listOf(
-            DiscordLoginProvider(
-                dotenv["DISCORD_REDIRECT_URI"],
-                dotenv["DISCORD_CLIENT_ID"],
-                dotenv["DISCORD_CLIENT_SECRET"]
-            )
+    val groupLoginProvider =
+        GroupLoginProvider(
+            listOf(
+                DiscordLoginProvider(
+                    dotenv["DISCORD_REDIRECT_URI"],
+                    dotenv["DISCORD_CLIENT_ID"],
+                    dotenv["DISCORD_CLIENT_SECRET"],
+                    db,
+                ),
+            ),
         )
-    )
 
     embeddedServer(Netty, 9934) {
         install(ContentNegotiation) {
@@ -110,7 +113,8 @@ fun runAuth() {
 
                     if (result is LoginSuccess) {
                         // TODO: this should not be returning the user ID, but instead generating a token and returning that
-                        call.respondText(result.userId, ContentType.Text.Plain, HttpStatusCode.OK)
+                        val token = db.generateTokenFor(result.userId)
+                        call.respondText(token!!, ContentType.Text.Plain, HttpStatusCode.OK)
                     } else {
                         // TODO: obviously `LoginFailure` should also be handled, I am just lazy
                         println("got unexpected login result: $result")
@@ -151,11 +155,28 @@ fun runAuth() {
                     }
                 }
             }
+
+            route("/users") {
+                get("/@me") {
+                    val auth = call.request.authorization()
+                    println(auth)
+
+                    call.respond(
+                        object {
+                            //                        val userId = groupLoginProvider.getUserIdFromToken(auth)
+                            val userId = "dummy user id :3"
+                        },
+                    )
+                }
+            }
         }
     }.start(wait = true)
 }
 
-fun runWebsocket(playerQueue: Queue<Pair<GameConnection, CompletableFuture<Pair<Game, Player>>>>, db: GameDatabase) {
+fun runWebsocket(
+    playerQueue: Queue<Pair<GameConnection, CompletableFuture<Pair<Game, Player>>>>,
+    db: GameDatabase,
+) {
     embeddedServer(Netty, port = 9933) {
         install(WebSockets)
         routing {

@@ -13,7 +13,7 @@ class GroupLoginProvider(
     fun providers(): List<LoginProvider> = providers
 
     fun beginAuth(): BeginLoginInfo {
-        val correlationId = generateCorrelationId();
+        val correlationId = generateCorrelationId()
 
         val userLoginUrl = URLBuilder("http://localhost:9934/auth/login")
         userLoginUrl.parameters.append("correlationId", correlationId)
@@ -27,15 +27,15 @@ class GroupLoginProvider(
         )
     }
 
-    suspend fun waitForLogin(correlationId: String): LoginProviderResult? {
-        return results[correlationId]?.await()
-    }
+    suspend fun waitForLogin(correlationId: String): LoginProviderResult? = results[correlationId]?.await()
 
-    fun setResult(correlationId: String, result: LoginProviderResult) {
+    fun setResult(
+        correlationId: String,
+        result: LoginProviderResult,
+    ) {
         results[correlationId]?.complete(result)
     }
 
-    // TODO: make this return an actual correlation id (any random unique value)
     private fun generateCorrelationId(): String {
         val id = UUID.randomUUID().toString()
 
@@ -46,9 +46,10 @@ class GroupLoginProvider(
         return id
     }
 
-    fun isValidCorrelation(correlationId: String): Boolean {
-        return results[correlationId] != null
-    }
+    fun isValidCorrelation(correlationId: String): Boolean = results[correlationId] != null
 }
 
-class BeginLoginInfo(val userLoginUrl: String, val pollUrl: String)
+class BeginLoginInfo(
+    val userLoginUrl: String,
+    val pollUrl: String,
+)

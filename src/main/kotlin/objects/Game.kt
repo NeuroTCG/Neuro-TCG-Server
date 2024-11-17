@@ -85,7 +85,7 @@ class Game(
 
             val passiveUpdates = boardManager.passiveManager.updatePassives(packet)
             if (passiveUpdates != null) {
-                connection.sendPacket(passiveUpdates);
+                connection.sendPacket(passiveUpdates)
             }
 
             boardManager.gameOverHandler()

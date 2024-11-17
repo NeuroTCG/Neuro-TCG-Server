@@ -227,10 +227,10 @@ class BoardStateManager(
             )
 
         val newCard =
-            Card (
+            Card(
                 packet.card_id,
                 packet.position,
-                newCardState
+                newCardState,
             )
 
         setCard(
@@ -241,7 +241,6 @@ class BoardStateManager(
 
         removeFromHand(player, packet.card_id)
         removeRam(player, cardStat.summoning_cost)
-
 
         passiveManager.addPassive(newCard, player)
 
@@ -436,8 +435,8 @@ class BoardStateManager(
         setCard(player, packet.position1, c2)
         setCard(player, packet.position2, c1)
 
-        c2?.position = packet.position1;
-        c1?.position = packet.position2;
+        c2?.position = packet.position1
+        c1?.position = packet.position2
 
         getConnection(player).sendPacket(
             packet.getResponsePacket(
@@ -541,8 +540,6 @@ class BoardStateManager(
         val cardID = cardDecks[playerToIndex(player)].drawCard()
 
         placeInHand(player, cardID)
-
-
 
         getConnection(player).sendPacket(DrawCard(cardID, true))
         getConnection(!player).sendPacket(DrawCard(cardID, false))
@@ -673,7 +670,6 @@ class BoardStateManager(
                 return true
             }
         }
-
     }
 
     suspend fun handleUseMagicCardPacket(

@@ -4,6 +4,7 @@ import kotlinx.serialization.*
 import kotlinx.serialization.json.*
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.javatime.*
+import org.jetbrains.exposed.sql.statements.api.*
 import org.jetbrains.exposed.sql.transactions.*
 import java.sql.*
 import java.time.*
@@ -19,7 +20,18 @@ class GameDatabase {
         TransactionManager.defaultDatabase = db
         TransactionManager.manager.defaultIsolationLevel = Connection.TRANSACTION_SERIALIZABLE
         transaction {
-            SchemaUtils.create(CurrentGames, PreviousGames, Cards, DeckMasters, Creatures, MagicCards, TrapCards)
+            SchemaUtils.create(
+                CurrentGames,
+                PreviousGames,
+                Cards,
+                DeckMasters,
+                Creatures,
+                MagicCards,
+                TrapCards,
+                Users,
+                UserTokens,
+                DiscordUsers,
+            )
             commit()
         }
     }
@@ -123,7 +135,7 @@ class GameDatabase {
                 it[incremental_moves] = newMoveList.toString()
             }
             // Player row column
-            currentGameState[change[0][0] ][change[1][0]][change[1][1] ] =
+            currentGameState[change[0][0]][change[1][0]][change[1][1]] =
                 change[2] // TODO: Gotta figure out how we want to handle changes. For now, it's a List of Integers.
             CurrentGames.update({ CurrentGames.game_ID eq gameID }) {
                 it[current_game_state] = currentGameState.toString()
@@ -155,6 +167,27 @@ class GameDatabase {
             }
             commit()
         }
+    }
+
+    fun getUserByDiscordId(discordId: String): String? {
+        TODO("Get a user id by checking `discord_users.linked_to_user_id`")
+    }
+
+    fun createNewUser(): String {
+        TODO("Create a new user and return the user id")
+    }
+
+    fun updateDiscordUserInfo(
+        discordUserInfo: Any,
+        userId: String,
+    ) {
+        TODO("Update the discord user's details (username, etc)")
+        // TODO: also think about what happens if for whatever reason `userId` is different to the stored value
+    }
+
+    fun generateTokenFor(userId: String): String? {
+        TODO("Create a token for the provided user id")
+        // TODO: think about what should happen if a user already has a token. do we want multiple logins?
     }
 }
 
@@ -241,4 +274,27 @@ object TrapCards : Table("trap_cards") {
     val deltaHp: Column<Short> = short("delta_hp")
     val condition: Column<String> = text("condition")
     val attackRow: Column<Byte> = byte("attack_row")
+}
+
+object Users : Table("users") {
+    // TODO: ids probably won't be 32ch long, but I don't know what else to put
+    val userId: Column<String> = varchar("user_id", 32)
+
+    override val primaryKey = PrimaryKey(userId)
+}
+
+object UserTokens : Table("user_tokens") {
+    // TODO: same as above in regards to length
+    val userId: Column<String> = reference("user_id", Users.userId)
+    val tokenHash: Column<ExposedBlob> = blob("token_hash")
+}
+
+object DiscordUsers : Table("discord_users") {
+    val linkedTo: Column<String> = reference("linked_to_user_id", Users.userId)
+    val userID: Column<ULong> = ulong("discord_user_id")
+    val accessToken: Column<String> = varchar("access_token", 1024)
+    val accessTokenExpiry: Column<LocalDate> = date("access_token_expiry")
+    val refreshToken: Column<String> = varchar("refresh_token", 1024)
+
+    override val primaryKey = PrimaryKey(linkedTo)
 }
