@@ -83,11 +83,11 @@ fun main() {
                     builder.appendLine("<ul>")
                     for (provider in groupLoginProvider.providers()) {
                         // TODO: This should not be hardcoded to localhost
-                        val url = URLBuilder("http://localhost:9933/auth/providers/${provider.name()}/begin")
+                        val url = URLBuilder("http://localhost:9933/auth/providers/${provider.name}/begin")
                         url.parameters.append("correlationId", call.request.queryParameters["correlationId"]!!)
                         // TODO: this is *not* an appropriate way to build HTML, as it (at least in the state when I wrote this)
                         // TODO: is vulnerable if the generated url is somehow executable
-                        builder.appendLine("<li><a href=\"$url\">${provider.name()}</a></li>")
+                        builder.appendLine("<li><a href=\"$url\">${provider.name}</a></li>")
                     }
                     builder.appendLine("</ul>")
                     builder.appendLine("</body>")
@@ -116,7 +116,7 @@ fun main() {
                 }
 
                 for (provider in groupLoginProvider.providers()) {
-                    route("/providers/${provider.name()}") {
+                    route("/providers/${provider.name}") {
                         println("registering $provider under $this")
                         get("/begin") {
                             val correlationId = call.request.queryParameters["correlationId"]!!
