@@ -1,11 +1,15 @@
 package objects.accounts
 
 import io.ktor.http.*
+import kotlinx.coroutines.*
 
 class GroupLoginProvider(
     private val providers: List<LoginProvider>,
 ) {
-    public fun providers(): List<LoginProvider> = providers
+    // This should probably be using a thread-safe data structure given there's coroutines?
+    private val deferredCompletables: MutableMap<String, CompletableDeferred<LoginProviderResult>> = mutableMapOf()
+
+    fun providers(): List<LoginProvider> = providers
 
     fun beginAuth(): BeginLoginInfo {
         val userLoginUrl = URLBuilder("http://localhost:9934/auth/login")
@@ -20,8 +24,12 @@ class GroupLoginProvider(
         )
     }
 
-    suspend fun waitForLogin(correlationId: String): LoginProviderResult {
-        TODO("Do login stuff")
+    suspend fun waitForLogin(correlationId: String): LoginProviderResult? {
+        return deferredCompletables[correlationId]?.await()
+    }
+
+    fun loginCompleted(correlationId: String, result: LoginProviderResult) {
+        deferredCompletables[correlationId]?.complete(result)
     }
 
     // TODO: make this return an actual correlation id (any random unique value)
