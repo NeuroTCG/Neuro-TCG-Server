@@ -9,13 +9,13 @@ import objects.packets.objects.*
 
 @Serializable
 class CardActionList (
-    @Required val user: CardData,
+    @Required val card: CardData,
     @Required val actions: Array<CardAction>
 )
 
 @Serializable class CardAction (
     @Required val action_name : String,
-    @Required val targets: Array<CardData>,
+    @Required val targets: Array<CardPosition>,
     @Required val amount: Int,
 )
 
@@ -23,6 +23,8 @@ class CardActionList (
 object CardActionNames {
     const val TEST = "test"
     const val ADD_HP = "add_hp"
-    const val ADD_ATTACK = "add_attack"
+    const val ATTACK = "attack"
+    const val HEAL = "heal"
     const val SET_PHASE = "set_phase"
+    const val SET_ABILITY_USED = "set_ability_used"
 }

@@ -28,6 +28,6 @@ abstract class Passive (
 class DefaultPassive(passiveManager: PassiveManager, cardData: CardData, player: Player) : Passive(passiveManager, cardData, player) {
     override fun update(lastChange: Packet?, boardState: BoardState): CardActionList? {
         print("A default passive update function was called for: $cardData");
-        return CardActionList(cardData, arrayOf(CardAction(CardActionNames.TEST, arrayOf(cardData), 0)))
+        return CardActionList(cardData, arrayOf(CardAction(CardActionNames.TEST, arrayOf(cardData.position), 0)))
     }
 }

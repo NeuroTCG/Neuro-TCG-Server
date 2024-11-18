@@ -229,7 +229,6 @@ class BoardStateManager(
 
         val newCardData =
             CardData (
-                packet.card_id,
                 packet.position,
                 newCardState
             )
@@ -313,8 +312,8 @@ class BoardStateManager(
 
         attackerState.phase = CardTurnPhase.Done
 
-        val attackerCardStat = CardStats.getCardByID(attacker.id)
-        val targetCardStat = CardStats.getCardByID(target.id)
+        val attackerCardStat = CardStats.getCardByID(attackerState.id)
+        val targetCardStat = CardStats.getCardByID(targetState.id)
         if (attackerCardStat == null || targetCardStat == null) {
             sendInvalid()
             return
@@ -395,7 +394,7 @@ class BoardStateManager(
                 getCard(!player, CardPosition(CardPosition.FRONT_ROW, 2)) == null &&
                 getCard(!player, CardPosition(CardPosition.FRONT_ROW, 3)) == null
 
-        val cardStat = CardStats.getCardByID(getCard(player, attackerPosition)!!.id)
+        val cardStat = CardStats.getCardByID(getCard(player, attackerPosition)!!.state.id)
         if (cardStat == null) return false
 
         val attackerReach = cardStat.attack_range

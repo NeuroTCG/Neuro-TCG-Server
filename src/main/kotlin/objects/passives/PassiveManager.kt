@@ -18,8 +18,6 @@ class PassiveManager (
 
     fun addPassive(cardData: CardData, player: Player) {
 
-        println("adding passive for $player 's $cardData Card.")
-
         val newPassive : Passive? = assignPassiveByCard(cardData, player)
         when (newPassive) {
             is Passive -> {
@@ -31,12 +29,11 @@ class PassiveManager (
             }
         }
 
-        println("passive Manager is now tracking ${passives.size} passives.")
     }
 
     fun assignPassiveByCard(cardData: CardData, player: Player): Passive? {
-        println("Card's ID is ${cardData.id}");
-        when(cardData.id) {
+        println("Card's ID is ${cardData.state.id}");
+        when(cardData.state.id) {
             //TODO: Create Unique passives for each card.
             0 -> {
                 return DefaultPassive(this, cardData, player)
@@ -57,20 +54,19 @@ class PassiveManager (
         println("Updating ${passives.size} passives...")
 
         for (p : Passive in passives.values) {
+
             val updates : CardActionList? = p.update(lastPacket, boardManager.getBoardState())
 
-            /**
-             * NULL -> card has been destroyed, remove passive
-             * Empty List -> no actions needed, don't add CardActionList to packet
-             * Non-Empty List -> Add CardActionList to packet
-             */
-            if (updates != null) {
-                print(updates);
+            if (updates == null) {
+                //NULL -> card has been destroyed, remove passive
+                passives.remove(p.cardData)
+            }
+            if (updates!!.actions.isNotEmpty()) {
+                //Non-Empty List -> Add CardActionList to packet
                 updateActions.add(updates);
             }
-            else {
-                print("$p returned a empty array of update actions.");
-            }
+
+            //Empty List -> no actions needed, don't add CardActionList to packet
         }
 
         return PassiveUpdatePacket(updateActions.toTypedArray());
