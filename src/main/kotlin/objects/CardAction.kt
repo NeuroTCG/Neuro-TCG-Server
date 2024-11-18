@@ -8,17 +8,17 @@ import kotlinx.serialization.*
 import objects.packets.objects.*
 
 @Serializable
-class CardActionList (
+class CardActionList(
     @Required val card: CardData,
-    @Required val actions: Array<CardAction>
+    @Required val actions: Array<CardAction>,
 )
 
-@Serializable class CardAction (
-    @Required val action_name : String,
+@Serializable
+class CardAction(
+    @Required val action_name: String,
     @Required val targets: Array<CardPosition>,
     @Required val amount: Int,
 )
-
 
 object CardActionNames {
     const val TEST = "test"

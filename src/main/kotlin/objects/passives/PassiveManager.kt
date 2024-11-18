@@ -8,17 +8,19 @@ import objects.*
 import objects.packets.*
 import objects.packets.objects.*
 
-class PassiveManager (
-    val boardManager: BoardStateManager
+class PassiveManager(
+    val boardManager: BoardStateManager,
 ) {
-    //A Packet used to describe the last action that occurred.
+    // A Packet used to describe the last action that occurred.
     // Used to provide context when updating passives.
-    var lastPacket: Packet? = null;
+    var lastPacket: Packet? = null
     val passives: HashMap<CardData, Passive> = hashMapOf()
 
-    fun addPassive(cardData: CardData, player: Player) {
-
-        val newPassive : Passive? = assignPassiveByCard(cardData, player)
+    fun addPassive(
+        cardData: CardData,
+        player: Player,
+    ) {
+        val newPassive: Passive? = assignPassiveByCard(cardData, player)
         when (newPassive) {
             is Passive -> {
                 println("adding new passive: $newPassive")
@@ -28,13 +30,15 @@ class PassiveManager (
                 print("Tried to add passive of unknown card id.")
             }
         }
-
     }
 
-    fun assignPassiveByCard(cardData: CardData, player: Player): Passive? {
-        println("Card's ID is ${cardData.state.id}");
-        when(cardData.state.id) {
-            //TODO: Create Unique passives for each card.
+    fun assignPassiveByCard(
+        cardData: CardData,
+        player: Player,
+    ): Passive? {
+        println("Card's ID is ${cardData.state.id}")
+        when (cardData.state.id) {
+            // TODO: Create Unique passives for each card.
             0 -> {
                 return DefaultPassive(this, cardData, player)
             }
@@ -46,29 +50,27 @@ class PassiveManager (
         return null
     }
 
-    fun updatePassives(packet: Packet) : PassiveUpdatePacket {
-
-        lastPacket = packet;
-        val updateActions: MutableList<CardActionList> = mutableListOf();
+    fun updatePassives(packet: Packet): PassiveUpdatePacket {
+        lastPacket = packet
+        val updateActions: MutableList<CardActionList> = mutableListOf()
 
         println("Updating ${passives.size} passives...")
 
-        for (p : Passive in passives.values) {
-
-            val updates : CardActionList? = p.update(lastPacket, boardManager.getBoardState())
+        for (p: Passive in passives.values) {
+            val updates: CardActionList? = p.update(lastPacket, boardManager.getBoardState())
 
             if (updates == null) {
-                //NULL -> card has been destroyed, remove passive
+                // NULL -> card has been destroyed, remove passive
                 passives.remove(p.cardData)
             }
             if (updates!!.actions.isNotEmpty()) {
-                //Non-Empty List -> Add CardActionList to packet
-                updateActions.add(updates);
+                // Non-Empty List -> Add CardActionList to packet
+                updateActions.add(updates)
             }
 
-            //Empty List -> no actions needed, don't add CardActionList to packet
+            // Empty List -> no actions needed, don't add CardActionList to packet
         }
 
-        return PassiveUpdatePacket(updateActions.toTypedArray());
+        return PassiveUpdatePacket(updateActions.toTypedArray())
     }
 }

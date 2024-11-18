@@ -12,6 +12,5 @@ import kotlinx.serialization.Serializable
 @Serializable
 class CardData(
     var position: CardPosition,
-    var state: CardState
-) {
-}
+    var state: CardState,
+)
