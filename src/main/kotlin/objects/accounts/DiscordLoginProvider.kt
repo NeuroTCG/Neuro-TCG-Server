@@ -15,6 +15,7 @@ import kotlinx.coroutines.*
 import kotlinx.serialization.*
 import kotlinx.serialization.json.*
 import objects.*
+import java.util.concurrent.*
 import kotlin.collections.set
 
 class DiscordLoginProvider(
@@ -23,7 +24,7 @@ class DiscordLoginProvider(
     private val clientSecret: String,
     private val db: GameDatabase,
 ) : LoginProvider {
-    private val results: MutableMap<String, CompletableDeferred<LoginProviderResult>> = mutableMapOf()
+    private val results: ConcurrentMap<String, CompletableDeferred<LoginProviderResult>> = ConcurrentHashMap()
 
     @OptIn(ExperimentalSerializationApi::class)
     private val httpClient =
@@ -81,7 +82,7 @@ class DiscordLoginProvider(
         return builder.toString()
     }
 
-    suspend fun handleRedirect(
+    private suspend fun handleRedirect(
         code: String,
         state: String,
     ) {
@@ -91,7 +92,7 @@ class DiscordLoginProvider(
             val tcgUserId = getTcgUserFromOauthCodeResponse(code)
             deferred.complete(LoginSuccess(tcgUserId))
         } catch (e: Exception) {
-            deferred.completeExceptionally(e)
+            deferred.complete(LoginException(e))
         }
     }
 
@@ -114,7 +115,6 @@ class DiscordLoginProvider(
                     )
                 })
                 .body()
-        println(Json.encodeToString(response))
 
         val discordUserInfo: DiscordOauthUserInfo =
             httpClient
@@ -123,10 +123,8 @@ class DiscordLoginProvider(
                         append("Authorization", "${response.tokenType} ${response.accessToken}")
                     }
                 }.body()
-        println(Json.encodeToString(discordUserInfo))
 
         var tcgUserId = db.getUserByDiscordId(discordUserInfo.id)
-        println("mapped to $tcgUserId")
 
         if (tcgUserId == null) {
             tcgUserId = db.createNewUser()
@@ -137,13 +135,6 @@ class DiscordLoginProvider(
 
         return tcgUserId
     }
-
-    @Serializable
-    private class DiscordOauthTokenRequest(
-        val grantType: String,
-        val code: String,
-        val redirectUri: String,
-    )
 
     @Serializable
     class DiscordOauthTokenResponse(

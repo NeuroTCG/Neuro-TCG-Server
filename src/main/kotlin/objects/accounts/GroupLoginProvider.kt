@@ -4,12 +4,12 @@ import io.ktor.http.*
 import kotlinx.coroutines.*
 import kotlinx.serialization.Serializable
 import java.util.UUID
+import java.util.concurrent.*
 
 class GroupLoginProvider(
     private val providers: List<LoginProvider>,
 ) {
-    // This should probably be using a thread-safe data structure given there's coroutines?
-    private val results: MutableMap<String, CompletableDeferred<LoginProviderResult>> = mutableMapOf()
+    private val results: ConcurrentMap<String, CompletableDeferred<LoginProviderResult>> = ConcurrentHashMap()
 
     fun providers(): List<LoginProvider> = providers
 
@@ -41,7 +41,7 @@ class GroupLoginProvider(
     private fun generateCorrelationId(): String {
         val id = UUID.randomUUID().toString()
 
-        assert(!results.containsKey(id), { "id generated already exists" })
+        assert(!results.containsKey(id)) { "id generated already exists" }
 
         results[id] = CompletableDeferred()
 

@@ -15,3 +15,9 @@ class LoginFailure(
 ) : LoginProviderResult {
     override val isSuccessful = false
 }
+
+class LoginException(
+    val exception: Exception,
+) : LoginProviderResult {
+    override val isSuccessful = false
+}
