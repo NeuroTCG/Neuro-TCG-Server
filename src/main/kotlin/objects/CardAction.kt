@@ -16,8 +16,14 @@ class CardActionList(
 @Serializable
 class CardAction(
     @Required val action_name: String,
-    @Required val targets: Array<CardPosition>,
+    @Required val targets: Array<CardActionTarget>,
     @Required val amount: Int,
+)
+
+@Serializable
+class CardActionTarget(
+    @Required val playerIdx: Int,
+    @Required val position: CardPosition,
 )
 
 object CardActionNames {

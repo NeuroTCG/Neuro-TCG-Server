@@ -9,12 +9,20 @@ import objects.packets.*
 import objects.packets.objects.*
 
 class PassiveManager(
-    val boardManager: BoardStateManager,
+    private val boardManager: BoardStateManager,
 ) {
     // A Packet used to describe the last action that occurred.
     // Used to provide context when updating passives.
     var lastPacket: Packet? = null
     val passives: HashMap<CardData, Passive> = hashMapOf()
+
+    fun playerToIdx(player: Player): Int {
+        if (player == Player.Player1) {
+            return 0
+        } else {
+            return 1
+        }
+    }
 
     fun addPassive(
         cardData: CardData,

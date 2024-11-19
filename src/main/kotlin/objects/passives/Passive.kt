@@ -35,6 +35,17 @@ class DefaultPassive(
         boardState: BoardState,
     ): CardActionList? {
         print("A default passive update function was called for: $cardData")
-        return CardActionList(cardData, arrayOf(CardAction(CardActionNames.TEST, arrayOf(cardData.position), 0)))
+        return CardActionList(
+            cardData,
+            arrayOf(
+                CardAction(
+                    CardActionNames.TEST,
+                    arrayOf(
+                        CardActionTarget(passiveManager.playerToIdx(player), cardData.position),
+                    ),
+                    0,
+                ),
+            ),
+        )
     }
 }
