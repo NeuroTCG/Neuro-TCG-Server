@@ -10,9 +10,9 @@ interface LoginProvider {
 
     // This should handle the initial provider request, and internally acknowledge the correlation id
     suspend fun handleInitialRequest(
-        correlationId: String,
+        correlationId: CorrelationId,
         call: ApplicationCall,
     )
 
-    suspend fun waitForLogin(correlationId: String): LoginProviderResult
+    suspend fun waitForLogin(correlationId: CorrelationId): LoginProviderResult?
 }

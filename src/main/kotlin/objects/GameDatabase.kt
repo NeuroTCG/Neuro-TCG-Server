@@ -174,24 +174,24 @@ class GameDatabase {
         }
     }
 
-    fun getUserByDiscordId(discordId: String): String? {
+    fun getUserByDiscordId(discordId: DiscordId): TcgId? {
         val result =
             transaction {
                 (Users innerJoin DiscordUsers)
                     .select(Users.userId, DiscordUsers.linkedTo)
                     .where {
-                        DiscordUsers.userID.eq(discordId)
+                        DiscordUsers.userID.eq(discordId.id)
                     }.singleOrNull()
             }
 
         if (result == null) {
             return null
         } else {
-            return result[Users.userId]
+            return TcgId(result[Users.userId])
         }
     }
 
-    fun createNewUser(): String {
+    fun createNewUser(): TcgId {
         val newUserId = UUID.randomUUID().toString()
 
         transaction {
@@ -203,10 +203,10 @@ class GameDatabase {
             commit()
         }
 
-        return newUserId
+        return TcgId(newUserId)
     }
 
-    fun generateTokenFor(tcgUserId: String): String? {
+    fun generateTokenFor(tcgUserId: TcgId): String? {
         // TODO: this is 100% not a good enough token
         val token = UUID.randomUUID().toString()
 
@@ -214,7 +214,7 @@ class GameDatabase {
             transaction {
                 val success =
                     UserTokens.insert {
-                        it[userId] = tcgUserId
+                        it[userId] = tcgUserId.id
                         // TODO: THIS IS NOT A HASH
                         it[tokenHash] = ExposedBlob(token.toByteArray())
                     }
@@ -236,11 +236,11 @@ class GameDatabase {
     fun createLinkedDiscordInfo(
         discordUserInfo: DiscordLoginProvider.DiscordOauthUserInfo,
         discordTokenInfo: DiscordLoginProvider.DiscordOauthTokenResponse,
-        tcgUserId: String,
+        tcgUserId: TcgId,
     ) {
         transaction {
             DiscordUsers.insert {
-                it[linkedTo] = tcgUserId
+                it[linkedTo] = tcgUserId.id
                 it[userID] = discordUserInfo.id
                 it[accessToken] = discordTokenInfo.accessToken
                 it[accessTokenExpiry] = LocalDateTime.now().plusSeconds(discordTokenInfo.expiresIn.toLong())
@@ -267,12 +267,12 @@ class GameDatabase {
         }
     }
 
-    fun getUserIdFromToken(token: String): String? {
+    fun getUserIdFromToken(token: Token): TcgId? {
         val col =
             transaction {
                 UserTokens
                     .selectAll()
-                    .where(UserTokens.tokenHash.eq(ExposedBlob(token.toByteArray())))
+                    .where(UserTokens.tokenHash.eq(ExposedBlob(token.getHash().tokenHash)))
                     .singleOrNull()
             }
 
@@ -280,7 +280,7 @@ class GameDatabase {
             return null
         }
 
-        return col[UserTokens.userId]
+        return TcgId(col[UserTokens.userId])
     }
 }
 
@@ -391,3 +391,29 @@ object DiscordUsers : Table("discord_users") {
 
     override val primaryKey = PrimaryKey(linkedTo)
 }
+
+@JvmInline
+@Serializable
+value class TcgId(
+    val id: String,
+)
+
+@JvmInline
+@Serializable
+value class DiscordId(
+    val id: String,
+)
+
+class Token(
+    private val token: String,
+) {
+    fun getHash(): TokenHash {
+        // TODO: actually hash here
+        return TokenHash(token.toByteArray())
+    }
+}
+
+@JvmInline
+value class TokenHash(
+    val tokenHash: ByteArray,
+)

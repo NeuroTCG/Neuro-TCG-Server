@@ -24,7 +24,7 @@ class DiscordLoginProvider(
     private val clientSecret: String,
     private val db: GameDatabase,
 ) : LoginProvider {
-    private val results: ConcurrentMap<String, CompletableDeferred<LoginProviderResult>> = ConcurrentHashMap()
+    private val results: ConcurrentMap<CorrelationId, CompletableDeferred<LoginProviderResult>> = ConcurrentHashMap()
 
     @OptIn(ExperimentalSerializationApi::class)
     private val httpClient =
@@ -48,7 +48,7 @@ class DiscordLoginProvider(
     override val name: String = "discord"
 
     override suspend fun handleInitialRequest(
-        correlationId: String,
+        correlationId: CorrelationId,
         call: ApplicationCall,
     ) {
         results[correlationId] = CompletableDeferred()
@@ -63,21 +63,21 @@ class DiscordLoginProvider(
         }
     }
 
-    override suspend fun waitForLogin(correlationId: String): LoginProviderResult {
-        val deferred = results[correlationId]!!
+    override suspend fun waitForLogin(correlationId: CorrelationId): LoginProviderResult? {
+        val deferred = results[correlationId] ?: return null
 
         val result = deferred.await()
         results.remove(correlationId)
         return result
     }
 
-    private fun getFlowStartUrl(correlationId: String): String {
+    private fun getFlowStartUrl(correlationId: CorrelationId): String {
         val builder = URLBuilder("https://discordapp.com/oauth2/authorize")
         builder.parameters.append("response_type", "code")
         builder.parameters.append("client_id", this.clientId)
         builder.parameters.append("redirect_uri", redirectUrl)
         builder.parameters.append("scope", "identify")
-        builder.parameters.append("state", correlationId)
+        builder.parameters.append("state", correlationId.value)
 
         return builder.toString()
     }
@@ -86,7 +86,7 @@ class DiscordLoginProvider(
         code: String,
         state: String,
     ) {
-        val deferred = results[state] ?: return
+        val deferred = results[CorrelationId(state)] ?: return
 
         try {
             val tcgUserId = getTcgUserFromOauthCodeResponse(code)
@@ -96,7 +96,7 @@ class DiscordLoginProvider(
         }
     }
 
-    private suspend fun getTcgUserFromOauthCodeResponse(code: String): String {
+    private suspend fun getTcgUserFromOauthCodeResponse(code: String): TcgId {
         val url = URLBuilder("https://discord.com/api/oauth2/token")
         url.parameters.append("client_id", this.clientId)
         val response: DiscordOauthTokenResponse =
@@ -124,7 +124,7 @@ class DiscordLoginProvider(
                     }
                 }.body()
 
-        var tcgUserId = db.getUserByDiscordId(discordUserInfo.id)
+        var tcgUserId = db.getUserByDiscordId(DiscordId(discordUserInfo.id))
 
         if (tcgUserId == null) {
             tcgUserId = db.createNewUser()

@@ -74,9 +74,6 @@ fun main() {
         install(Pebble) {
             loader(
                 FileLoader().apply {
-                    // do not cache file loads to allow for hot reloading
-                    cacheActive(false)
-
                     prefix = "templates/"
                     suffix = ".pebble"
                 },
@@ -98,15 +95,16 @@ fun main() {
                 }
 
                 get("/login") {
-                    val correlationId = call.parameters["correlationId"]!!
+                    val correlationId = CorrelationId(call.request.queryParameters["correlationId"]!!)
+
                     if (!groupLoginProvider.isValidCorrelation(correlationId)) {
                         call.respond(HttpStatusCode.BadRequest, "invalid correlationId, please try logging in again")
                     }
 
                     val providers: List<Map<String, String>> =
-                        groupLoginProvider.providers().map {
+                        groupLoginProvider.providers.map {
                             val url = URLBuilder("$webserverBase/auth/providers/${it.name}/begin")
-                            url.parameters.append("correlationId", correlationId)
+                            url.parameters.append("correlationId", correlationId.value)
                             mapOf(
                                 "name" to it.name,
                                 "redirect" to url.buildString(),
@@ -117,7 +115,7 @@ fun main() {
                 }
 
                 get("/poll") {
-                    val result = groupLoginProvider.waitForLogin(call.request.queryParameters["correlationId"]!!)
+                    val result = groupLoginProvider.waitForLogin(CorrelationId(call.request.queryParameters["correlationId"]!!))
 
                     when (result) {
                         is LoginSuccess -> {
@@ -143,11 +141,11 @@ fun main() {
                     }
                 }
 
-                for (provider in groupLoginProvider.providers()) {
+                for (provider in groupLoginProvider.providers) {
                     route("/providers/${provider.name}") {
                         println("registering $provider under $this")
                         get("/begin") {
-                            val correlationId = call.request.queryParameters["correlationId"]!!
+                            val correlationId = CorrelationId(call.request.queryParameters["correlationId"]!!)
 
                             if (!groupLoginProvider.isValidCorrelation(correlationId)) {
                                 call.respond(HttpStatusCode.BadRequest)
@@ -157,7 +155,8 @@ fun main() {
                             provider.handleInitialRequest(correlationId, call)
 
                             launch {
-                                val result = provider.waitForLogin(correlationId)
+                                val result = provider.waitForLogin(correlationId) ?: return@launch
+
                                 groupLoginProvider.setResult(correlationId, result)
                             }
                         }
@@ -176,7 +175,7 @@ fun main() {
                         return@get
                     }
 
-                    val mappedUser = db.getUserIdFromToken(auth.removePrefix("Bearer "))
+                    val mappedUser = db.getUserIdFromToken(Token(auth.removePrefix("Bearer ")))
 
                     if (mappedUser == null) {
                         call.respond(HttpStatusCode.Unauthorized)
@@ -185,7 +184,7 @@ fun main() {
 
                     @Serializable
                     class UserInfo(
-                        val userId: String,
+                        val userId: TcgId,
                     )
 
                     call.respond(UserInfo(mappedUser))

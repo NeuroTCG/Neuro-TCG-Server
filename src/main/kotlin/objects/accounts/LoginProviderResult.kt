@@ -1,11 +1,13 @@
 package objects.accounts
 
+import objects.*
+
 interface LoginProviderResult {
     val isSuccessful: Boolean
 }
 
 class LoginSuccess(
-    val userId: String,
+    val userId: TcgId,
 ) : LoginProviderResult {
     override val isSuccessful = true
 }
