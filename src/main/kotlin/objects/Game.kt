@@ -6,6 +6,7 @@ import objects.packets.*
 import objects.packets.objects.BoardState
 import objects.passives.*
 import java.io.File
+import java.util.concurrent.CountDownLatch
 
 class Game(
     val p1Connection: GameConnection,
@@ -13,6 +14,7 @@ class Game(
     db: GameDatabase,
 ) {
     private val boardManager = BoardStateManager(db, p1Connection, p2connection)
+    private val fence = CountDownLatch(2)
 
     val id = boardManager.gameID
 
@@ -42,6 +44,13 @@ class Game(
             connection.sendPacket(StartTurnPacket())
             boardManager.drawCard(player)
         }
+
+        println(prefix + "Waiting for player ${!player} to initialize")
+        fence.countDown()
+        fence.await()
+
+        connection.sendPacket(GetBoardStateResponse(boardManager.getBoardState()))
+        otherConnection.sendPacket(GetBoardStateResponse(boardManager.getBoardState()))
 
         while (connection.isOpen) {
             when (val packet = connection.receivePacket()) {
@@ -95,7 +104,6 @@ class Game(
                             }
                             "load" -> {
                                 println(prefix + "[DEBUG EVENT] Loading game")
-                                
 
                                 boardManager.loadGame(Json.decodeFromString<BoardState>(File(DEBUG_EVENT_SAVE_FILE).readText()))
                             }
