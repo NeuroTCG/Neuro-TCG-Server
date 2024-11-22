@@ -7,6 +7,7 @@ import java.util.UUID
 import java.util.concurrent.*
 
 class GroupLoginProvider(
+    private val webserverBase: String,
     private val providers: List<LoginProvider>,
 ) {
     private val results: ConcurrentMap<String, CompletableDeferred<LoginProviderResult>> = ConcurrentHashMap()
@@ -16,11 +17,10 @@ class GroupLoginProvider(
     fun beginAuth(): BeginLoginInfo {
         val correlationId = generateCorrelationId()
 
-        // TODO: These two URLs should not be hardcoded to localhost. We should probably pass in some info
-        val userLoginUrl = URLBuilder("http://localhost:9933/auth/login")
+        val userLoginUrl = URLBuilder("$webserverBase/auth/login")
         userLoginUrl.parameters.append("correlationId", correlationId)
 
-        val pollUrl = URLBuilder("http://localhost:9933/auth/poll")
+        val pollUrl = URLBuilder("$webserverBase/auth/poll")
         pollUrl.parameters.append("correlationId", correlationId)
 
         return BeginLoginInfo(

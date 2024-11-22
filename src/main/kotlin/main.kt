@@ -45,11 +45,14 @@ fun main() {
     println("Listening for clients...")
     val dotenv = dotenv()
 
+    val webserverBase = dotenv["WEB_HOST_BASE"]
+
     val groupLoginProvider =
         GroupLoginProvider(
+            webserverBase,
             listOf(
                 DiscordLoginProvider(
-                    dotenv["DISCORD_REDIRECT_URI"],
+                    "$webserverBase/auth/providers/discord/redirect",
                     dotenv["DISCORD_CLIENT_ID"],
                     dotenv["DISCORD_CLIENT_SECRET"],
                     db,
@@ -83,11 +86,10 @@ fun main() {
                     builder.appendLine("<p>Please choose one of the following options:</p>")
                     builder.appendLine("<ul>")
                     for (provider in groupLoginProvider.providers()) {
-                        // TODO: This should not be hardcoded to localhost
-                        val url = URLBuilder("http://localhost:9933/auth/providers/${provider.name}/begin")
+                        val url = URLBuilder("$webserverBase/auth/providers/${provider.name}/begin")
                         url.parameters.append("correlationId", call.request.queryParameters["correlationId"]!!)
                         // TODO: this is *not* an appropriate way to build HTML, as it (at least in the state when I wrote this)
-                        // TODO: is vulnerable if the generated url is somehow executable
+                        // TODO: is vulnerable if the generated url is somehow executable javascript (as user controls correlationId)
                         builder.appendLine("<li><a href=\"$url\">${provider.name}</a></li>")
                     }
                     builder.appendLine("</ul>")
@@ -123,8 +125,6 @@ fun main() {
                             val correlationId = call.request.queryParameters["correlationId"]!!
 
                             if (!groupLoginProvider.isValidCorrelation(correlationId)) {
-                                // REMOVE ME
-                                println("got invalid correlation id: $correlationId")
                                 call.respond(HttpStatusCode.BadRequest)
                                 return@get
                             }
