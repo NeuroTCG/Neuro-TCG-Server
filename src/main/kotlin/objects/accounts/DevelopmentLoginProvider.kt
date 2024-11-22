@@ -24,8 +24,12 @@ class DevelopmentLoginProvider(
             db.getUserIdFromToken(
                 Token(auth.removePrefix("Bearer ")),
             ) ?: return call.response.status(HttpStatusCode.Unauthorized)
-        val devUserId = DevelopmentId(call.request.queryParameters["devUserId"]!!)
 
+        if (!db.userHasFlag(callerId, Flag("is_developer"))) {
+            return call.response.status(HttpStatusCode.Forbidden)
+        }
+
+        val devUserId = DevelopmentId(call.request.queryParameters["devUserId"]!!)
         var devAccountTcgId = db.getUserByDevelopmentId(devUserId, callerId)
 
         if (devAccountTcgId == null) {

@@ -2,6 +2,7 @@ package objects
 
 import kotlinx.serialization.*
 import kotlinx.serialization.json.*
+import objects.DiscordUsers.userID
 import objects.accounts.*
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
@@ -36,6 +37,7 @@ class GameDatabase(
                 UserTokens,
                 DiscordUsers,
                 DevelopmentUsers,
+                UserFlags,
             )
             commit()
         }
@@ -317,6 +319,46 @@ class GameDatabase(
             commit()
         }
     }
+
+    // TODO: this also returns false if the userId is invalid, which is *probably* fine
+    // TODO: but it would be better if this function returned a nullable boolean or something
+    fun userHasFlag(
+        userId: TcgId,
+        flag: Flag,
+    ): Boolean =
+        transaction {
+            Users
+                .innerJoin(
+                    UserFlags,
+                    { UserFlags.userId },
+                    { Users.userId },
+                ).select(Users.userId)
+                .where { UserFlags.flag eq flag.flag }
+                .singleOrNull()
+        } != null
+
+    fun userSetFlag(
+        userId: TcgId,
+        flag: Flag,
+    ) {
+        transaction {
+            UserFlags.insert {
+                it[userID] = userId.id
+                it[this.flag] = flag.flag
+            }
+
+            commit()
+        }
+    }
+
+    fun userUnsetFlag(
+        userId: TcgId,
+        flag: Flag,
+    ) {
+        transaction {
+            UserFlags.deleteWhere { (UserFlags.userId eq userId.id) and (UserFlags.flag eq flag.flag) }
+        }
+    }
 }
 
 object CurrentGames : Table() {
@@ -435,6 +477,13 @@ object DevelopmentUsers : Table("development_users") {
     override val primaryKey = PrimaryKey(linkedToId)
 }
 
+object UserFlags : Table("user_flags") {
+    val userId: Column<String> = reference("user_id", Users.userId)
+    val flag: Column<String> = varchar("flag", 128)
+
+    override val primaryKey = PrimaryKey(userId, flag)
+}
+
 @JvmInline
 @Serializable
 value class TcgId(
@@ -457,4 +506,10 @@ value class DevelopmentId(
 @Serializable
 value class Token(
     val token: String,
+)
+
+@JvmInline
+@Serializable
+value class Flag(
+    val flag: String,
 )
