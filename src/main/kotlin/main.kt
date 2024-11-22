@@ -2,11 +2,11 @@ import io.github.cdimascio.dotenv.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
-import io.ktor.server.routing.*
-import io.ktor.server.websocket.*
+import io.ktor.server.routing.* import io.ktor.server.websocket.*
 import kotlinx.coroutines.future.*
 import objects.*
 import objects.accounts.*
+import objects.packets.objects.CardStats
 import java.io.*
 import java.util.*
 import java.util.concurrent.*
@@ -23,6 +23,20 @@ fun getFirstOpenConnection(
     return null
 }
 
+fun warnForDebugSettings() {
+    val warn = { msg: String ->
+        println("\u001b[0;33m" + msg + "\u001b[0m")
+    }
+
+    if (Game.DEBUG_EVENTS_ENABLED) {
+        warn("WARNING: Debug events are enabled!")
+    }
+    if (CardStats.FREE_EVERYTHING) {
+        warn("WARNING: Zero cost cards are enabled!")
+    }
+}
+
+
 val dotenv = dotenv() // usage: dotenv[key: String]
 val discordLoginManager = DiscordLogin(dotenv["DISCORD_CLIENT_SECRET"]!!, dotenv["DISCORD_CLIENT_ID"]!!, dotenv["DISCORD_REDIRECT_URI"]!!)
 // TODO: add .env file with secrets
@@ -35,6 +49,8 @@ fun main() {
 
     val playerQueue: Queue<Pair<GameConnection, CompletableFuture<Pair<Game, Player>>>> =
         LinkedList()
+
+    warnForDebugSettings()
 
     println("Listening for clients...")
     embeddedServer(Netty, port = 9933) {

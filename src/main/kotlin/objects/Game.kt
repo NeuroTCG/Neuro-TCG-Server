@@ -1,7 +1,11 @@
 package objects
 
+import kotlinx.serialization.*
+import kotlinx.serialization.json.*
 import objects.packets.*
+import objects.packets.objects.BoardState
 import objects.passives.*
+import java.io.File
 
 class Game(
     val p1Connection: GameConnection,
@@ -11,6 +15,11 @@ class Game(
     private val boardManager = BoardStateManager(db, p1Connection, p2connection)
 
     val id = boardManager.gameID
+
+    companion object {
+        val DEBUG_EVENTS_ENABLED = true
+        val DEBUG_EVENT_SAVE_FILE = "data/saved_game.json"
+    }
 
     suspend fun mainLoop(player: Player) {
         val prefix = "[Game $id][Player ${if (player == Player.Player1) 1 else 2}] "
@@ -76,6 +85,26 @@ class Game(
                 }
                 is UseMagicCardRequestPacket -> {
                     boardManager.handleUseMagicCardPacket(packet, player)
+                }
+                is DebugEventPacket -> {
+                    if (DEBUG_EVENTS_ENABLED) {
+                        when (packet.event) {
+                            "save" -> {
+                                println(prefix + "[DEBUG EVENT] Saving game")
+
+                                File(DEBUG_EVENT_SAVE_FILE).writeText(Json.encodeToString(boardManager.getBoardState()))
+                            }
+                            "load" -> {
+                                println(prefix + "[DEBUG EVENT] Loading game")
+                                
+
+                                boardManager.loadGame(Json.decodeFromString<BoardState>(File(DEBUG_EVENT_SAVE_FILE).readText()))
+                            }
+                            else -> {
+                                println(prefix + "Received unknown debug event '${packet.event}'")
+                            }
+                        }
+                    }
                 }
                 else -> {
                     connection.sendPacket(UnknownPacketPacket("unknown packet type received"))

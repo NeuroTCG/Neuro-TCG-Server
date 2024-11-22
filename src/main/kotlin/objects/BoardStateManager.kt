@@ -31,6 +31,12 @@ class BoardStateManager(
 
     fun getBoardState(): BoardState = this.boardState
 
+    suspend fun loadGame(new_state: BoardState) {
+        boardState = new_state
+        player1Connection.sendPacket(GetBoardStateResponse(new_state))
+        player2Connection.sendPacket(GetBoardStateResponse(new_state))
+    }
+
     private fun isTurnOfPlayer(player: Player): Boolean = boardState.first_player_active == (player == Player.Player1)
 
     private fun playerToIndex(player: Player): Int =
@@ -227,10 +233,10 @@ class BoardStateManager(
             )
 
         val newCard =
-            Card (
+            Card(
                 packet.card_id,
                 packet.position,
-                newCardState
+                newCardState,
             )
 
         setCard(
@@ -436,8 +442,8 @@ class BoardStateManager(
         setCard(player, packet.position1, c2)
         setCard(player, packet.position2, c1)
 
-        c2?.position = packet.position1;
-        c1?.position = packet.position2;
+        c2?.position = packet.position1
+        c1?.position = packet.position2
 
         getConnection(player).sendPacket(
             packet.getResponsePacket(
@@ -673,7 +679,6 @@ class BoardStateManager(
                 return true
             }
         }
-
     }
 
     suspend fun handleUseMagicCardPacket(
