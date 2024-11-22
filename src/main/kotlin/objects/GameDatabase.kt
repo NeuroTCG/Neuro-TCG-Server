@@ -3,6 +3,7 @@ package objects
 import io.ktor.utils.io.core.*
 import kotlinx.serialization.*
 import kotlinx.serialization.json.*
+import objects.DiscordUsers.linkedTo
 import objects.accounts.*
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
@@ -12,11 +13,12 @@ import org.jetbrains.exposed.sql.transactions.*
 import java.sql.*
 import java.time.*
 import java.util.*
-import kotlin.text.toByteArray
 
 // All transactions are blocking, so use them wrapped in withContext(), if you need concurrency.
-class GameDatabase {
-    private val db = Database.connect("jdbc:sqlite:./data/data.db", "org.sqlite.JDBC")
+class GameDatabase(
+    val dbPath: String,
+) {
+    private val db = Database.connect("jdbc:sqlite:$dbPath", "org.sqlite.JDBC")
 
     @OptIn(ExperimentalSerializationApi::class)
     private val json = Json
@@ -36,6 +38,7 @@ class GameDatabase {
                 Users,
                 UserTokens,
                 DiscordUsers,
+                DevelopmentUsers,
             )
             commit()
         }
@@ -206,7 +209,7 @@ class GameDatabase {
         return TcgId(newUserId)
     }
 
-    fun generateTokenFor(tcgUserId: TcgId): String? {
+    fun generateTokenFor(tcgUserId: TcgId): Token? {
         // TODO: this is 100% not a good enough token
         val token = UUID.randomUUID().toString()
 
@@ -215,8 +218,7 @@ class GameDatabase {
                 val success =
                     UserTokens.insert {
                         it[userId] = tcgUserId.id
-                        // TODO: THIS IS NOT A HASH
-                        it[tokenHash] = ExposedBlob(token.toByteArray())
+                        it[UserTokens.token] = token
                     }
 
                 commit()
@@ -228,7 +230,7 @@ class GameDatabase {
             return null
         }
 
-        return token
+        return Token(token)
     }
 
     // TODO: this might be better with `discordUserInfo` as a different class to decouple it from `DiscordLoginProvider`
@@ -272,7 +274,7 @@ class GameDatabase {
             transaction {
                 UserTokens
                     .selectAll()
-                    .where(UserTokens.tokenHash.eq(ExposedBlob(token.getHash().tokenHash)))
+                    .where(UserTokens.token.eq(token.token))
                     .singleOrNull()
             }
 
@@ -281,6 +283,37 @@ class GameDatabase {
         }
 
         return TcgId(col[UserTokens.userId])
+    }
+
+    fun getUserByDevelopmentId(id: DevelopmentId): TcgId? {
+        val result =
+            transaction {
+                (Users innerJoin DevelopmentUsers)
+                    .select(Users.userId, DevelopmentUsers.linkedTo)
+                    .where {
+                        DevelopmentUsers.userID.eq(id.id)
+                    }.singleOrNull()
+            }
+
+        if (result == null) {
+            return null
+        } else {
+            return TcgId(result[Users.userId])
+        }
+    }
+
+    fun createLinkedDevelopmentInfo(
+        devUserId: DevelopmentId,
+        userId: TcgId,
+    ) {
+        transaction {
+            DevelopmentUsers.insert {
+                it[linkedTo] = userId.id
+                it[this.userID] = devUserId.id
+            }
+
+            commit()
+        }
     }
 }
 
@@ -379,7 +412,7 @@ object Users : Table("users") {
 object UserTokens : Table("user_tokens") {
     // TODO: same as above in regards to length
     val userId: Column<String> = reference("user_id", Users.userId)
-    val tokenHash: Column<ExposedBlob> = blob("token_hash")
+    val token: Column<String> = varchar("token", 1024)
 }
 
 object DiscordUsers : Table("discord_users") {
@@ -388,6 +421,13 @@ object DiscordUsers : Table("discord_users") {
     val accessToken: Column<String> = varchar("access_token", 1024)
     val accessTokenExpiry: Column<LocalDateTime> = datetime("access_token_expiry")
     val refreshToken: Column<String> = varchar("refresh_token", 1024)
+
+    override val primaryKey = PrimaryKey(linkedTo)
+}
+
+object DevelopmentUsers : Table("development_users") {
+    val linkedTo: Column<String> = reference("linked_to_user_id", Users.userId)
+    val userID: Column<String> = varchar("development_user_id", 128)
 
     override val primaryKey = PrimaryKey(linkedTo)
 }
@@ -404,16 +444,14 @@ value class DiscordId(
     val id: String,
 )
 
-class Token(
-    private val token: String,
-) {
-    fun getHash(): TokenHash {
-        // TODO: actually hash here
-        return TokenHash(token.toByteArray())
-    }
-}
+@JvmInline
+@Serializable
+value class DevelopmentId(
+    val id: String,
+)
 
 @JvmInline
-value class TokenHash(
-    val tokenHash: ByteArray,
+@Serializable
+value class Token(
+    val token: String,
 )

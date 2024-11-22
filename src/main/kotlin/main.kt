@@ -18,7 +18,6 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
 import objects.*
 import objects.accounts.*
-import java.io.*
 import java.util.*
 import java.util.concurrent.*
 
@@ -36,18 +35,19 @@ fun getFirstOpenConnection(
 
 @OptIn(ExperimentalSerializationApi::class)
 fun main() {
-    val db = GameDatabase()
-    if (!File("data/data.db").exists()) {
-        db.createTables()
-    }
+    val dotenv = dotenv()
+
+    val dbPath = "data/data.db"
+    val db = GameDatabase(dbPath)
+    db.createTables()
 
     val playerQueue: Queue<Pair<GameConnection, CompletableFuture<Pair<Game, Player>>>> =
         LinkedList()
 
     println("Listening for clients...")
-    val dotenv = dotenv()
 
     val webserverBase = dotenv["WEB_HOST_BASE"]
+    val developmentLoginToken = dotenv["DEVELOPMENT_TOKEN"]
 
     val groupLoginProvider =
         GroupLoginProvider(
@@ -59,6 +59,7 @@ fun main() {
                     dotenv["DISCORD_CLIENT_SECRET"],
                     db,
                 ),
+                DevelopmentLoginProvider(developmentLoginToken, db),
             ),
         )
 
@@ -101,8 +102,9 @@ fun main() {
                         call.respond(HttpStatusCode.BadRequest, "invalid correlationId, please try logging in again")
                     }
 
+                    // TODO: ideally there'd be a way to get DevelopmentLoginProvider's name statically
                     val providers: List<Map<String, String>> =
-                        groupLoginProvider.providers.map {
+                        groupLoginProvider.providers.filter { it.name != "__development" }.map {
                             val url = URLBuilder("$webserverBase/auth/providers/${it.name}/begin")
                             url.parameters.append("correlationId", correlationId.value)
                             mapOf(
@@ -120,7 +122,7 @@ fun main() {
                     when (result) {
                         is LoginSuccess -> {
                             val token = db.generateTokenFor(result.userId)
-                            call.respondText(token!!, ContentType.Text.Plain, HttpStatusCode.OK)
+                            call.respondText(token!!.token, ContentType.Text.Plain, HttpStatusCode.OK)
                         }
 
                         is LoginFailure -> {
@@ -143,7 +145,6 @@ fun main() {
 
                 for (provider in groupLoginProvider.providers) {
                     route("/providers/${provider.name}") {
-                        println("registering $provider under $this")
                         get("/begin") {
                             val correlationId = CorrelationId(call.request.queryParameters["correlationId"]!!)
 
