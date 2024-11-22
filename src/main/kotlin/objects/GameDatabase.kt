@@ -1,14 +1,11 @@
 package objects
 
-import io.ktor.utils.io.core.*
 import kotlinx.serialization.*
 import kotlinx.serialization.json.*
-import objects.DiscordUsers.linkedTo
 import objects.accounts.*
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.javatime.*
-import org.jetbrains.exposed.sql.statements.api.*
 import org.jetbrains.exposed.sql.transactions.*
 import java.sql.*
 import java.time.*
@@ -285,13 +282,16 @@ class GameDatabase(
         return TcgId(col[UserTokens.userId])
     }
 
-    fun getUserByDevelopmentId(id: DevelopmentId): TcgId? {
+    fun getUserByDevelopmentId(
+        id: DevelopmentId,
+        ownerId: TcgId,
+    ): TcgId? {
         val result =
             transaction {
-                (Users innerJoin DevelopmentUsers)
-                    .select(Users.userId, DevelopmentUsers.linkedTo)
+                (Users.innerJoin(DevelopmentUsers, { DevelopmentUsers.linkedToId }, { Users.userId }))
+                    .select(Users.userId)
                     .where {
-                        DevelopmentUsers.userID.eq(id.id)
+                        DevelopmentUsers.developmentId.eq(id.id) and DevelopmentUsers.ownedById.eq(ownerId.id)
                     }.singleOrNull()
             }
 
@@ -304,12 +304,14 @@ class GameDatabase(
 
     fun createLinkedDevelopmentInfo(
         devUserId: DevelopmentId,
+        ownerId: TcgId,
         userId: TcgId,
     ) {
         transaction {
             DevelopmentUsers.insert {
-                it[linkedTo] = userId.id
-                it[this.userID] = devUserId.id
+                it[linkedToId] = userId.id
+                it[ownedById] = ownerId.id
+                it[this.developmentId] = devUserId.id
             }
 
             commit()
@@ -426,10 +428,11 @@ object DiscordUsers : Table("discord_users") {
 }
 
 object DevelopmentUsers : Table("development_users") {
-    val linkedTo: Column<String> = reference("linked_to_user_id", Users.userId)
-    val userID: Column<String> = varchar("development_user_id", 128)
+    val linkedToId: Column<String> = reference("linked_to_user_id", Users.userId)
+    val ownedById: Column<String> = reference("owner_user_id", Users.userId)
+    val developmentId: Column<String> = varchar("development_id", 128)
 
-    override val primaryKey = PrimaryKey(linkedTo)
+    override val primaryKey = PrimaryKey(linkedToId)
 }
 
 @JvmInline

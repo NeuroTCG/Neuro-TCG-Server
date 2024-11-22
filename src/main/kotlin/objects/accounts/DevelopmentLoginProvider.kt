@@ -2,12 +2,12 @@ package objects.accounts
 
 import io.ktor.http.*
 import io.ktor.server.application.*
+import io.ktor.server.request.*
 import kotlinx.coroutines.*
 import objects.*
 import java.util.concurrent.*
 
 class DevelopmentLoginProvider(
-    private val devToken: String,
     private val db: GameDatabase,
 ) : LoginProvider {
     private val results: ConcurrentHashMap<CorrelationId, CompletableDeferred<LoginProviderResult>> = ConcurrentHashMap()
@@ -18,21 +18,22 @@ class DevelopmentLoginProvider(
         correlationId: CorrelationId,
         call: ApplicationCall,
     ) {
-        val devToken = call.request.queryParameters["devToken"]!!
+        val auth = call.request.authorization() ?: return call.response.status(HttpStatusCode.Unauthorized)
+
+        val callerId =
+            db.getUserIdFromToken(
+                Token(auth.removePrefix("Bearer ")),
+            ) ?: return call.response.status(HttpStatusCode.Unauthorized)
         val devUserId = DevelopmentId(call.request.queryParameters["devUserId"]!!)
 
-        if (devToken != this.devToken) {
-            return call.response.status(HttpStatusCode.Forbidden)
+        var devAccountTcgId = db.getUserByDevelopmentId(devUserId, callerId)
+
+        if (devAccountTcgId == null) {
+            devAccountTcgId = db.createNewUser()
+            db.createLinkedDevelopmentInfo(devUserId, callerId, devAccountTcgId)
         }
 
-        var userId = db.getUserByDevelopmentId(devUserId)
-
-        if (userId == null) {
-            userId = db.createNewUser()
-            db.createLinkedDevelopmentInfo(devUserId, userId)
-        }
-
-        results[correlationId] = CompletableDeferred(LoginSuccess(userId))
+        results[correlationId] = CompletableDeferred(LoginSuccess(devAccountTcgId))
         call.response.status(HttpStatusCode.OK)
     }
 

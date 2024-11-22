@@ -47,7 +47,6 @@ fun main() {
     println("Listening for clients...")
 
     val webserverBase = dotenv["WEB_HOST_BASE"]
-    val developmentLoginToken = dotenv["DEVELOPMENT_TOKEN"]
 
     val groupLoginProvider =
         GroupLoginProvider(
@@ -59,7 +58,7 @@ fun main() {
                     dotenv["DISCORD_CLIENT_SECRET"],
                     db,
                 ),
-                DevelopmentLoginProvider(developmentLoginToken, db),
+                DevelopmentLoginProvider(db),
             ),
         )
 
