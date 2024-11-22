@@ -24,6 +24,7 @@ class GroupLoginProvider(
         pollUrl.parameters.append("correlationId", correlationId)
 
         return BeginLoginInfo(
+            correlationId,
             userLoginUrl.build().toString(),
             pollUrl.build().toString(),
         )
@@ -36,6 +37,12 @@ class GroupLoginProvider(
         result: LoginProviderResult,
     ) {
         results[correlationId]?.complete(result)
+    }
+
+    suspend fun timeoutLogin(correlationId: String) {
+        // give users (up to) 20 minutes to log in
+        delay(1000 * 60 * 20)
+        results[correlationId]?.complete(LoginFailure("timeout"))
     }
 
     private fun generateCorrelationId(): String {
@@ -53,6 +60,7 @@ class GroupLoginProvider(
 
 @Serializable
 class BeginLoginInfo(
+    val correlationId: String,
     val userLoginUrl: String,
     val pollUrl: String,
 )

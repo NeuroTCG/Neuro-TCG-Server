@@ -75,6 +75,11 @@ fun main() {
             route("/auth") {
                 post("/begin") {
                     val authInfo = groupLoginProvider.beginAuth()
+
+                    launch {
+                        groupLoginProvider.timeoutLogin(authInfo.correlationId)
+                    }
+
                     call.respond(authInfo)
                 }
 
@@ -103,12 +108,21 @@ fun main() {
                 get("/poll") {
                     val result = groupLoginProvider.waitForLogin(call.request.queryParameters["correlationId"]!!)
 
-                    if (result is LoginSuccess) {
-                        val token = db.generateTokenFor(result.userId)
-                        call.respondText(token!!, ContentType.Text.Plain, HttpStatusCode.OK)
-                    } else {
-                        // TODO: obviously `LoginFailure` should also be handled, I am just lazy
-                        println("got unexpected login result: $result")
+                    when (result) {
+                        is LoginSuccess -> {
+                            val token = db.generateTokenFor(result.userId)
+                            call.respondText(token!!, ContentType.Text.Plain, HttpStatusCode.OK)
+                        }
+
+                        is LoginFailure -> {
+                            println("had login failure: ${result.reason}")
+                            call.respond(HttpStatusCode.BadRequest)
+                        }
+
+                        else -> {
+                            println("got unexpected login result: $result")
+                            call.respond(HttpStatusCode.InternalServerError)
+                        }
                     }
                 }
 
