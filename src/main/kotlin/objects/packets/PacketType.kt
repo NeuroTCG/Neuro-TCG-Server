@@ -32,5 +32,7 @@ class PacketType {
         const val USE_MAGIC_CARD = "use_magic_card"
 
         const val GAME_OVER = "game_over"
+
+        const val DEBUG_EVENT = "debug_event"
     }
 }

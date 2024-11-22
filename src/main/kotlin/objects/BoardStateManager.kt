@@ -29,6 +29,12 @@ class BoardStateManager(
 
     fun getBoardState(): BoardState = this.boardState
 
+    suspend fun loadGame(new_state: BoardState) {
+        boardState = new_state
+        player1Connection.sendPacket(GetBoardStateResponse(new_state))
+        player2Connection.sendPacket(GetBoardStateResponse(new_state))
+    }
+
     private fun isTurnOfPlayer(player: Player): Boolean = boardState.first_player_active == (player == Player.Player1)
 
     private fun playerToIndex(player: Player): Int =
@@ -223,6 +229,7 @@ class BoardStateManager(
                 0,
                 0,
             )
+
         setCard(
             player,
             packet.position,
@@ -648,8 +655,6 @@ class BoardStateManager(
                 return true
             }
         }
-
-        return false
     }
 
     suspend fun handleUseMagicCardPacket(
