@@ -182,7 +182,7 @@ class GameDatabase(
                 (Users innerJoin DiscordUsers)
                     .select(Users.userId, DiscordUsers.linkedTo)
                     .where {
-                        DiscordUsers.userID.eq(discordId.id)
+                        userID.eq(discordId.id)
                     }.singleOrNull()
             }
 
@@ -293,7 +293,7 @@ class GameDatabase(
                 (Users.innerJoin(DevelopmentUsers, { DevelopmentUsers.linkedToId }, { Users.userId }))
                     .select(Users.userId)
                     .where {
-                        DevelopmentUsers.developmentId.eq(id.id) and DevelopmentUsers.ownedById.eq(ownerId.id)
+                        (DevelopmentUsers.developmentId eq id.id) and (DevelopmentUsers.ownedById eq ownerId.id)
                     }.singleOrNull()
             }
 
@@ -333,7 +333,7 @@ class GameDatabase(
                     { UserFlags.userId },
                     { Users.userId },
                 ).select(Users.userId)
-                .where { UserFlags.flag eq flag.flag }
+                .where { (UserFlags.flag eq flag.flag) and (UserFlags.userId eq userId.id) }
                 .singleOrNull()
         } != null
 
