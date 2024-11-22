@@ -17,6 +17,9 @@ repositories {
 
 dependencies {
     implementation("io.ktor:ktor-server-call-logging-jvm:3.0.1")
+    implementation("io.ktor:ktor-server-core-jvm:3.0.1")
+    implementation("io.ktor:ktor-server-pebble-jvm:3.0.1")
+    implementation("io.ktor:ktor-server-core-jvm:3.0.1")
     testImplementation("org.jetbrains.kotlin:kotlin-test")
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
@@ -32,9 +35,10 @@ dependencies {
 
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
     implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
+    implementation("io.ktor:ktor-server-websockets:$ktorVersion")
+    implementation("io.ktor:ktor-server-pebble:$ktorVersion")
     implementation("io.ktor:ktor-serialization-kotlinx:$ktorVersion")
     implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
-    implementation("io.ktor:ktor-server-websockets:$ktorVersion")
     implementation("io.ktor:ktor-client-core:$ktorVersion")
     implementation("io.ktor:ktor-client-okhttp:$ktorVersion")
     implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")

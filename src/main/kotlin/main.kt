@@ -4,11 +4,13 @@ import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
+import io.ktor.server.pebble.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
+import io.pebbletemplates.pebble.loader.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.future.*
 import kotlinx.serialization.*
@@ -69,6 +71,18 @@ fun main() {
             )
         }
 
+        install(Pebble) {
+            loader(
+                FileLoader().apply {
+                    // do not cache file loads to allow for hot reloading
+                    cacheActive(false)
+
+                    prefix = "templates/"
+                    suffix = ".pebble"
+                },
+            )
+        }
+
         install(WebSockets)
 
         routing {
@@ -84,25 +98,22 @@ fun main() {
                 }
 
                 get("/login") {
-                    val builder = StringBuilder()
-                    builder.appendLine("<!DOCTYPE html>")
-                    builder.appendLine("<html>")
-                    builder.appendLine("<body>")
-                    builder.appendLine("<p>Please choose one of the following options:</p>")
-                    builder.appendLine("<ul>")
-                    for (provider in groupLoginProvider.providers()) {
-                        val url = URLBuilder("$webserverBase/auth/providers/${provider.name}/begin")
-                        url.parameters.append("correlationId", call.request.queryParameters["correlationId"]!!)
-                        // TODO: this is *not* an appropriate way to build HTML, as it (at least in the state when I wrote this)
-                        // TODO: is vulnerable if the generated url is somehow executable javascript (as user controls correlationId)
-                        builder.appendLine("<li><a href=\"$url\">${provider.name}</a></li>")
+                    val correlationId = call.parameters["correlationId"]!!
+                    if (!groupLoginProvider.isValidCorrelation(correlationId)) {
+                        call.respond(HttpStatusCode.BadRequest, "invalid correlationId, please try logging in again")
                     }
-                    builder.appendLine("</ul>")
-                    builder.appendLine("</body>")
-                    builder.appendLine("</html>")
-                    call.respondText(ContentType.Text.Html) {
-                        builder.toString()
-                    }
+
+                    val providers: List<Map<String, String>> =
+                        groupLoginProvider.providers().map {
+                            val url = URLBuilder("$webserverBase/auth/providers/${it.name}/begin")
+                            url.parameters.append("correlationId", correlationId)
+                            mapOf(
+                                "name" to it.name,
+                                "redirect" to url.buildString(),
+                            )
+                        }
+
+                    call.respond(PebbleContent("loginChoices", mapOf("providers" to providers)))
                 }
 
                 get("/poll") {
