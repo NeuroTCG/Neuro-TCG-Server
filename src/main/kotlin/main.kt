@@ -2,6 +2,7 @@ import io.github.cdimascio.dotenv.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
+import io.ktor.server.auth.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.pebble.*
@@ -14,7 +15,6 @@ import io.pebbletemplates.pebble.loader.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.future.*
 import kotlinx.serialization.*
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
 import objects.*
 import objects.accounts.*
@@ -62,6 +62,8 @@ fun main() {
             ),
         )
 
+    val adminAuth = AdminAuth(db)
+
     embeddedServer(Netty, 9933) {
         install(ContentNegotiation) {
             json(
@@ -78,6 +80,12 @@ fun main() {
                     suffix = ".pebble"
                 },
             )
+        }
+
+        install(Authentication) {
+            bearer("admin") {
+                authenticate { tokenCredential -> adminAuth.authenticateToken(Token(tokenCredential.token)) }
+            }
         }
 
         install(WebSockets)
@@ -116,7 +124,8 @@ fun main() {
                 }
 
                 get("/poll") {
-                    val result = groupLoginProvider.waitForLogin(CorrelationId(call.request.queryParameters["correlationId"]!!))
+                    val result =
+                        groupLoginProvider.waitForLogin(CorrelationId(call.request.queryParameters["correlationId"]!!))
 
                     when (result) {
                         is LoginSuccess -> {
@@ -223,6 +232,44 @@ fun main() {
                     e.printStackTrace()
                 }
                 println("Game finished")
+            }
+
+            authenticate("admin") {
+                route("/admin") {
+                    // authentication should probably be done by somme kind of middleware in here?
+
+                    route("/users") {
+                        route("/{userId}") {
+                            get {
+                                // get user info
+                            }
+
+                            route("/flags") {
+                                get {
+                                    // get a users' full list of flags
+                                }
+
+                                route("/{flag}") {
+                                    get {
+                                        val has =
+                                            db.userHasFlag(TcgId(call.parameters["userId"]!!), Flag(call.parameters["flag"]!!))
+                                                ?: return@get call.respond(HttpStatusCode.NoContent)
+
+                                        call.respond(has)
+                                    }
+
+                                    post {
+                                        db.userSetFlag(TcgId(call.parameters["userId"]!!), Flag(call.parameters["flag"]!!))
+                                    }
+
+                                    delete {
+                                        db.userUnsetFlag(TcgId(call.parameters["userId"]!!), Flag(call.parameters["flag"]!!))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }.start(wait = true)

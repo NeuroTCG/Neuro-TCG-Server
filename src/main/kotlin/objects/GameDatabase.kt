@@ -38,6 +38,7 @@ class GameDatabase(
                 DiscordUsers,
                 DevelopmentUsers,
                 UserFlags,
+                AdminTokens,
             )
             commit()
         }
@@ -320,12 +321,12 @@ class GameDatabase(
         }
     }
 
-    // TODO: this also returns false if the userId is invalid, which is *probably* fine
-    // TODO: but it would be better if this function returned a nullable boolean or something
+    // TODO: this also returns false if the userId is invalid, which sucks
+    // TODO: it would be better if this function returned a nullable boolean or something
     fun userHasFlag(
         userId: TcgId,
         flag: Flag,
-    ): Boolean =
+    ): Boolean? =
         transaction {
             Users
                 .innerJoin(
@@ -358,6 +359,23 @@ class GameDatabase(
         transaction {
             UserFlags.deleteWhere { (UserFlags.userId eq userId.id) and (UserFlags.flag eq flag.flag) }
         }
+    }
+
+    fun checkAdminToken(token: Token): Boolean =
+        transaction {
+            AdminTokens.selectAll().where { AdminTokens.token eq token.token }.singleOrNull()
+        } != null
+
+    fun getAdminTokenComment(token: Token): String? {
+        val result = transaction {
+            AdminTokens.selectAll().where { AdminTokens.token eq token.token }.singleOrNull()
+        }
+
+        if (result == null) {
+            return null
+        }
+
+        return result[AdminTokens.comment]
     }
 }
 
@@ -482,6 +500,13 @@ object UserFlags : Table("user_flags") {
     val flag: Column<String> = varchar("flag", 128)
 
     override val primaryKey = PrimaryKey(userId, flag)
+}
+
+object AdminTokens : Table("admin_tokens") {
+    val token: Column<String> = text("token")
+    val comment: Column<String> = text("comment")
+
+    override val primaryKey = PrimaryKey(token)
 }
 
 @JvmInline

@@ -25,7 +25,7 @@ class DevelopmentLoginProvider(
                 Token(auth.removePrefix("Bearer ")),
             ) ?: return call.response.status(HttpStatusCode.Unauthorized)
 
-        if (!db.userHasFlag(callerId, Flag("is_developer"))) {
+        if (!db.userHasFlag(callerId, Flag("is_developer"))!!) {
             return call.response.status(HttpStatusCode.Forbidden)
         }
 

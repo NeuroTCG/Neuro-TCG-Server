@@ -16,10 +16,6 @@ repositories {
 }
 
 dependencies {
-    implementation("io.ktor:ktor-server-call-logging-jvm:3.0.1")
-    implementation("io.ktor:ktor-server-core-jvm:3.0.1")
-    implementation("io.ktor:ktor-server-pebble-jvm:3.0.1")
-    implementation("io.ktor:ktor-server-core-jvm:3.0.1")
     testImplementation("org.jetbrains.kotlin:kotlin-test")
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
@@ -33,6 +29,7 @@ dependencies {
 
     implementation("org.xerial:sqlite-jdbc:3.44.1.0")
 
+    implementation("io.ktor:ktor-server-auth:$ktorVersion")
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
     implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-server-websockets:$ktorVersion")
@@ -42,6 +39,11 @@ dependencies {
     implementation("io.ktor:ktor-client-core:$ktorVersion")
     implementation("io.ktor:ktor-client-okhttp:$ktorVersion")
     implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
+
+    implementation("io.ktor:ktor-server-call-logging-jvm:$ktorVersion")
+    implementation("io.ktor:ktor-server-core-jvm:$ktorVersion")
+    implementation("io.ktor:ktor-server-pebble-jvm:$ktorVersion")
+    implementation("io.ktor:ktor-server-core-jvm:$ktorVersion")
 
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("io.github.cdimascio:dotenv-kotlin:6.4.1")
