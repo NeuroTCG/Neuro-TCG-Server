@@ -2,6 +2,7 @@ package objects
 
 import objects.packets.*
 import objects.packets.objects.*
+import objects.shared.TrapCardManager
 import kotlin.math.*
 
 enum class Player {
@@ -23,6 +24,7 @@ class BoardStateManager(
     private val player2Connection: GameConnection,
 ) {
     private var boardState = BoardState()
+    private val trapCardManager = TrapCardManager(this)
     private val player1ID: Int = 1
     private val player2ID: Int = 2
     val gameID = db.createGame(player1ID, player2ID)
@@ -38,7 +40,7 @@ class BoardStateManager(
             1
         }
 
-    private fun getConnection(player: Player): GameConnection =
+    public fun getConnection(player: Player): GameConnection =
         if (player == Player.Player1) {
             player1Connection
         } else {
@@ -324,9 +326,14 @@ class BoardStateManager(
             }
         }
 
+        if (trapCardManager.wouldDestroyEnemy(attacker, target, player, targetCardStat.base_atk)) {
+            return
+        }
+
         if (attacker.health <= 0) {
             attacker = null
         }
+
         if (target.health <= 0) {
             target = null
         }

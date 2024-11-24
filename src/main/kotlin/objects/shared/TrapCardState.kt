@@ -3,4 +3,6 @@ package objects.shared
 import kotlinx.serialization.Serializable
 
 @Serializable
-class TrapCard
+data class TrapCardState(
+    val id: Int,
+)

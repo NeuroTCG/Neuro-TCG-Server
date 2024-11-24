@@ -32,7 +32,7 @@ class BoardState {
 
     @Required
     val traps =
-        arrayOf<Array<TrapCard?>>(
+        arrayOf<Array<TrapCardState?>>(
             // player1 [local left, local right]
             arrayOfNulls(2),
             // player2 [local left, local right]
