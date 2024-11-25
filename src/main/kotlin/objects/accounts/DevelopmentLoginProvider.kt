@@ -12,7 +12,7 @@ class DevelopmentLoginProvider(
 ) : LoginProvider {
     private val results: ConcurrentHashMap<CorrelationId, CompletableDeferred<LoginProviderResult>> = ConcurrentHashMap()
 
-    override val name = "__development"
+    override val name = AuthProviderName("__development")
 
     override suspend fun handleInitialRequest(
         correlationId: CorrelationId,
@@ -33,7 +33,7 @@ class DevelopmentLoginProvider(
         var devAccountTcgId = db.getUserByDevelopmentId(devUserId, callerId)
 
         if (devAccountTcgId == null) {
-            devAccountTcgId = db.createNewUser()
+            devAccountTcgId = db.createNewUser(this.name)
             db.createLinkedDevelopmentInfo(devUserId, callerId, devAccountTcgId)
         }
 

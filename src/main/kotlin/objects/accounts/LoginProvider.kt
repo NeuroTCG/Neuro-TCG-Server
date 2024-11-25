@@ -2,9 +2,10 @@ package objects.accounts
 
 import io.ktor.server.application.*
 import io.ktor.server.routing.*
+import objects.*
 
 interface LoginProvider {
-    val name: String
+    val name: AuthProviderName
 
     fun registerAdditionalRoutes(route: Route) { }
 

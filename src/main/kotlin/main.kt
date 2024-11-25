@@ -111,11 +111,11 @@ fun main() {
 
                     // TODO: ideally there'd be a way to get DevelopmentLoginProvider's name statically
                     val providers: List<Map<String, String>> =
-                        groupLoginProvider.providers.filter { it.name != "__development" }.map {
-                            val url = URLBuilder("$webserverBase/auth/providers/${it.name}/begin")
+                        groupLoginProvider.providers.filter { it.name != AuthProviderName("__development") }.map {
+                            val url = URLBuilder("$webserverBase/auth/providers/${it.name.name}/begin")
                             url.parameters.append("correlationId", correlationId.value)
                             mapOf(
-                                "name" to it.name,
+                                "name" to it.name.name,
                                 "redirect" to url.buildString(),
                             )
                         }
@@ -152,7 +152,7 @@ fun main() {
                 }
 
                 for (provider in groupLoginProvider.providers) {
-                    route("/providers/${provider.name}") {
+                    route("/providers/${provider.name.name}") {
                         get("/begin") {
                             val correlationId = CorrelationId(call.request.queryParameters["correlationId"]!!)
 
@@ -246,7 +246,7 @@ fun main() {
 
                             route("/flags") {
                                 get {
-                                    // get a users' full list of flags
+                                    call.respond(db.userListFlags(TcgId(call.request.queryParameters["userId"]!!)))
                                 }
 
                                 route("/{flag}") {
@@ -260,10 +260,12 @@ fun main() {
 
                                     post {
                                         db.userSetFlag(TcgId(call.parameters["userId"]!!), Flag(call.parameters["flag"]!!))
+                                        call.respond(HttpStatusCode.OK)
                                     }
 
                                     delete {
                                         db.userUnsetFlag(TcgId(call.parameters["userId"]!!), Flag(call.parameters["flag"]!!))
+                                        call.respond(HttpStatusCode.OK)
                                     }
                                 }
                             }

@@ -194,7 +194,7 @@ class GameDatabase(
         }
     }
 
-    fun createNewUser(): TcgId {
+    fun createNewUser(authProvider: AuthProviderName): TcgId {
         val newUserId = UUID.randomUUID().toString()
 
         transaction {
@@ -361,15 +361,25 @@ class GameDatabase(
         }
     }
 
+    fun userListFlags(userId: TcgId): List<Flag> =
+        transaction {
+            UserFlags
+                .selectAll()
+                .where { UserFlags.userId eq userId.id }
+                .sortedBy { UserFlags.flag }
+                .map { Flag(it[UserFlags.flag]) }
+        }
+
     fun checkAdminToken(token: Token): Boolean =
         transaction {
             AdminTokens.selectAll().where { AdminTokens.token eq token.token }.singleOrNull()
         } != null
 
     fun getAdminTokenComment(token: Token): String? {
-        val result = transaction {
-            AdminTokens.selectAll().where { AdminTokens.token eq token.token }.singleOrNull()
-        }
+        val result =
+            transaction {
+                AdminTokens.selectAll().where { AdminTokens.token eq token.token }.singleOrNull()
+            }
 
         if (result == null) {
             return null
@@ -466,7 +476,8 @@ object TrapCards : Table("trap_cards") {
 
 object Users : Table("users") {
     // TODO: ids probably won't 128ch long, but I don't know what else to put
-    val userId: Column<String> = varchar("user_id", 128)
+    val userId: Column<String> = text("user_id")
+    val providerName: Column<String> = text("provider_name")
 
     override val primaryKey = PrimaryKey(userId)
 }
@@ -474,15 +485,15 @@ object Users : Table("users") {
 object UserTokens : Table("user_tokens") {
     // TODO: same as above in regards to length
     val userId: Column<String> = reference("user_id", Users.userId)
-    val token: Column<String> = varchar("token", 1024)
+    val token: Column<String> = text("token")
 }
 
 object DiscordUsers : Table("discord_users") {
     val linkedTo: Column<String> = reference("linked_to_user_id", Users.userId)
-    val userID: Column<String> = varchar("discord_user_id", 128)
-    val accessToken: Column<String> = varchar("access_token", 1024)
+    val userID: Column<String> = text("discord_user_id")
+    val accessToken: Column<String> = text("access_token")
     val accessTokenExpiry: Column<LocalDateTime> = datetime("access_token_expiry")
-    val refreshToken: Column<String> = varchar("refresh_token", 1024)
+    val refreshToken: Column<String> = text("refresh_token")
 
     override val primaryKey = PrimaryKey(linkedTo)
 }
@@ -490,14 +501,14 @@ object DiscordUsers : Table("discord_users") {
 object DevelopmentUsers : Table("development_users") {
     val linkedToId: Column<String> = reference("linked_to_user_id", Users.userId)
     val ownedById: Column<String> = reference("owner_user_id", Users.userId)
-    val developmentId: Column<String> = varchar("development_id", 128)
+    val developmentId: Column<String> = text("development_id")
 
     override val primaryKey = PrimaryKey(linkedToId)
 }
 
 object UserFlags : Table("user_flags") {
     val userId: Column<String> = reference("user_id", Users.userId)
-    val flag: Column<String> = varchar("flag", 128)
+    val flag: Column<String> = text("flag")
 
     override val primaryKey = PrimaryKey(userId, flag)
 }
@@ -537,4 +548,10 @@ value class Token(
 @Serializable
 value class Flag(
     val flag: String,
+)
+
+@JvmInline
+@Serializable
+value class AuthProviderName(
+    val name: String,
 )

@@ -45,7 +45,7 @@ class DiscordLoginProvider(
             }
         }
 
-    override val name: String = "discord"
+    override val name = AuthProviderName("discord")
 
     override suspend fun handleInitialRequest(
         correlationId: CorrelationId,
@@ -127,7 +127,7 @@ class DiscordLoginProvider(
         var tcgUserId = db.getUserByDiscordId(DiscordId(discordUserInfo.id))
 
         if (tcgUserId == null) {
-            tcgUserId = db.createNewUser()
+            tcgUserId = db.createNewUser(this.name)
             db.createLinkedDiscordInfo(discordUserInfo, response, tcgUserId)
         }
 
