@@ -201,6 +201,7 @@ class GameDatabase(
             Users.insert {
                 // TODO: User id generation should probably live in some kind of singleton
                 it[userId] = newUserId
+                it[providerName] = authProvider.name
             }[Users.userId]
 
             commit()
