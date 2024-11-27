@@ -83,6 +83,10 @@ fun main() {
         }
 
         install(Authentication) {
+            bearer("user") {
+                authenticate { tokenCredential -> db.getUserIdFromToken(Token(tokenCredential.token)) }
+            }
+
             bearer("admin") {
                 authenticate { tokenCredential -> adminAuth.authenticateToken(Token(tokenCredential.token)) }
             }
@@ -174,29 +178,18 @@ fun main() {
                     }
                 }
             }
+            authenticate("user") {
+                route("/users") {
+                    get("/@me") {
+                        val mappedUserId = call.principal<TcgId>()!!
 
-            route("/users") {
-                get("/@me") {
-                    val auth = call.request.authorization()
+                        @Serializable
+                        class UserInfo(
+                            val userId: TcgId,
+                        )
 
-                    if (auth == null) {
-                        call.respond(HttpStatusCode.Unauthorized)
-                        return@get
+                        call.respond(UserInfo(mappedUserId))
                     }
-
-                    val mappedUser = db.getUserIdFromToken(Token(auth.removePrefix("Bearer ")))
-
-                    if (mappedUser == null) {
-                        call.respond(HttpStatusCode.Unauthorized)
-                        return@get
-                    }
-
-                    @Serializable
-                    class UserInfo(
-                        val userId: TcgId,
-                    )
-
-                    call.respond(UserInfo(mappedUser))
                 }
             }
 
