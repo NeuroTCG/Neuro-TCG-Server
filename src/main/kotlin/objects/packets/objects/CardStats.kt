@@ -17,6 +17,14 @@ enum class CardType {
     TOKEN,
 }
 
+enum class CardIDNames {
+    PIRATE_EVIL,
+    FILIPINO_BOY,
+    TWITCH,
+    ANGEL_NEURO,
+    TEN_CANS_ONE_STREAM,
+}
+
 /**
  * The stats, name, etc. for all instances of one card. IDs are not given out in order.
  */
@@ -85,7 +93,7 @@ class CardStats(
                         Ability(AbilityEffect.ADD_HP, 3, AbilityRange.ALLY_CARD, 4),
                         true,
                     ),
-                // Twitch
+                // Angel Neuro
                 3 to
                     CardStats(
                         "The Streaming Site She Uses",
@@ -98,7 +106,7 @@ class CardStats(
                         Ability(AbilityEffect.SEAL, 1, AbilityRange.ENEMY_CARD, 0),
                         true,
                     ),
-                // 10 Tin Cans 1 Stream card (magic card)
+                // Twitch
                 4 to
                     CardStats(
                         "10 Tins Cans 1 Stream",
@@ -111,6 +119,7 @@ class CardStats(
                         Ability(AbilityEffect.ATTACK, 5, AbilityRange.ENEMY_CARD, 0),
                         true,
                     ),
+                // 10 Tin Cans 1 Stream card (magic card)
             )
 
         fun getCardByID(id: Int): CardStats? = cardIDMapping.get(id)

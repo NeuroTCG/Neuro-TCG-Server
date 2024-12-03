@@ -19,10 +19,14 @@ abstract class Passive(
     /*
     Update the state of the passive, return any actions for the update
      */
-    abstract fun update(
+    abstract suspend fun update(
         lastChange: Packet?,
         boardState: BoardState,
     ): CardActionList?
+
+    fun playerIdx(): Int = passiveManager.playerToIdx(player)
+
+    fun cardWasDestroyed(): Boolean = passiveManager.findCardByPosition(player, cardData.position) == null
 }
 
 class DefaultPassive(
@@ -30,22 +34,55 @@ class DefaultPassive(
     cardData: CardData,
     player: Player,
 ) : Passive(passiveManager, cardData, player) {
-    override fun update(
+    override suspend fun update(
         lastChange: Packet?,
         boardState: BoardState,
     ): CardActionList? {
         print("A default passive update function was called for: $cardData")
-        return CardActionList(
-            cardData,
-            arrayOf(
-                CardAction(
-                    CardActionNames.TEST,
-                    arrayOf(
-                        CardActionTarget(passiveManager.playerToIdx(player), cardData.position),
-                    ),
-                    0,
-                ),
-            ),
-        )
+
+        // Check if the card has been destroyed
+        if (cardWasDestroyed()) {
+            return null
+        }
+        return CardActionList.testActionList(cardData, playerIdx())
+    }
+}
+
+class NullPassive(
+    passiveManager: PassiveManager,
+    cardData: CardData,
+    player: Player,
+) : Passive(passiveManager, cardData, player) {
+    override suspend fun update(
+        lastChange: Packet?,
+        boardState: BoardState,
+    ): CardActionList? = null
+}
+
+class FilipinoBoyPassive(
+    passiveManager: PassiveManager,
+    cardData: CardData,
+    player: Player,
+) : Passive(passiveManager, cardData, player) {
+    private var drawRequestWasSent = false
+
+    override suspend fun update(
+        lastChange: Packet?,
+        boardState: BoardState,
+    ): CardActionList? {
+        // Card has been destroyed
+        if (cardWasDestroyed()) {
+            if (!drawRequestWasSent) {
+                drawRequestWasSent = true
+
+                // Draw card
+                val cardId = passiveManager.drawCard(player)
+
+                return CardActionList.drawCardActionList(cardData, playerIdx(), cardId)
+            }
+            return null
+        } else {
+            return CardActionList.emptyActionList(cardData)
+        }
     }
 }

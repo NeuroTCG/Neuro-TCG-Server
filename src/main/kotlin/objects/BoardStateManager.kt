@@ -52,7 +52,7 @@ class BoardStateManager(
         id: Int,
     ): Boolean = this.boardState.hands[playerToIndex(player)].contains(id)
 
-    private fun getCard(
+    fun getCard(
         player: Player,
         position: CardPosition,
     ): CardData? = this.boardState.cards[playerToIndex(player)][position.row][position.column]
@@ -65,7 +65,7 @@ class BoardStateManager(
         this.boardState.cards[playerToIndex(player)][position.row][position.column] = cardData
     }
 
-    private fun placeInHand(
+    fun placeInHand(
         player: Player,
         cardID: Int,
     ) {
@@ -534,7 +534,7 @@ class BoardStateManager(
         }
     }
 
-    private val cardDecks = listOf(CardDeck(), CardDeck())
+    val cardDecks = listOf(CardDeck(), CardDeck())
 
     suspend fun handleDrawCard(player: Player) {
         if (!isTurnOfPlayer(player)) {

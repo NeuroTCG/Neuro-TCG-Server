@@ -50,17 +50,22 @@ class PassiveManager(
             0 -> {
                 return DefaultPassive(this, cardData, player)
             }
+            CardIDNames.FILIPINO_BOY.ordinal -> {
+                return FilipinoBoyPassive(this, cardData, player)
+            }
             else -> {
-                return DefaultPassive(this, cardData, player)
+                return null
             }
         }
-
-        return null
     }
 
-    fun updatePassives(packet: Packet): PassiveUpdatePacket {
+    suspend fun updatePassives(packet: Packet): PassiveUpdatePacket {
         lastPacket = packet
         val updateActions: MutableList<CardActionList> = mutableListOf()
+
+        // Track list of cards needed to be removed.
+        // That way, we're not removing passive as we iterate!
+        val removalQueue: MutableList<CardData> = mutableListOf()
 
         println("Updating ${passives.size} passives...")
 
@@ -68,10 +73,9 @@ class PassiveManager(
             val updates: CardActionList? = p.update(lastPacket, boardManager.getBoardState())
 
             if (updates == null) {
-                // NULL -> card has been destroyed, remove passive
-                passives.remove(p.cardData)
-            }
-            if (updates!!.actions.isNotEmpty()) {
+                // NULL -> passive is ready to be removed from list
+                removalQueue.add(p.cardData)
+            } else if (updates!!.actions.isNotEmpty()) {
                 // Non-Empty List -> Add CardActionList to packet
                 updateActions.add(updates)
             }
@@ -79,6 +83,22 @@ class PassiveManager(
             // Empty List -> no actions needed, don't add CardActionList to packet
         }
 
+        for (c: CardData in removalQueue) {
+            assert(passives.remove(c) != null, { "Passive associated with CardData object " + c + " does not exist." })
+        }
+
         return PassiveUpdatePacket(updateActions.toTypedArray())
+    }
+
+    fun findCardByPosition(
+        player: Player,
+        position: CardPosition,
+    ): CardData? = boardManager.getCard(player, position)
+
+    suspend fun drawCard(player: Player): Int {
+        val cardID = boardManager.cardDecks[playerToIdx(player)].drawCard()
+        boardManager.placeInHand(player, cardID)
+
+        return cardID
     }
 }
