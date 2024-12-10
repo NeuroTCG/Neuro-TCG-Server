@@ -22,4 +22,5 @@ data class CardState(
     @Required var phase: CardTurnPhase,
     @Required var shield: Int,
     @Required var sealed_turns_left: Int,
+    @Required var attack_bonus: Int = 0,
 )

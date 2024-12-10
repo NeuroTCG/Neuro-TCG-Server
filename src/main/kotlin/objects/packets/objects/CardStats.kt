@@ -17,14 +17,6 @@ enum class CardType {
     TOKEN,
 }
 
-enum class CardIDNames {
-    PIRATE_EVIL,
-    FILIPINO_BOY,
-    TWITCH,
-    ANGEL_NEURO,
-    TEN_CANS_ONE_STREAM,
-}
-
 /**
  * The stats, name, etc. for all instances of one card. IDs are not given out in order.
  */
