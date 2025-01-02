@@ -320,7 +320,7 @@ class BoardStateManager(
         }
 
         if (targetState.shield == 0) {
-            targetState.health -= attackerCardStat.base_atk
+            targetState.health -= (attackerCardStat.base_atk + attackerState.attack_bonus)
         } else {
             targetState.shield -= 1
         }
@@ -332,7 +332,7 @@ class BoardStateManager(
 
         if (canAttackBack) {
             if (attackerState.shield == 0) {
-                attackerState.health -= max(targetCardStat.base_atk - 1, 0)
+                attackerState.health -= max(targetCardStat.base_atk + targetState.attack_bonus - 1, 0)
             } else {
                 attackerState.shield -= 1
             }
@@ -435,7 +435,7 @@ class BoardStateManager(
         }
 
         val c1 = getCard(player, packet.position1)
-        val c2 = getCard(!player, packet.position2)
+        val c2 = getCard(player, packet.position2)
 
         if ((c1 != null && c1.state.phase < CardTurnPhase.MoveOrAction) || (c2 != null && c2.state!!.phase < CardTurnPhase.MoveOrAction)) {
             sendInvalid()

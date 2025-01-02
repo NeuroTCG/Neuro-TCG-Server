@@ -102,6 +102,7 @@ class AngelNeuroPassive(
     player: Player,
 ) : Passive(passiveManager, cardData, player) {
     private val adjacentCards: MutableMap<CardData, CardData> = mutableMapOf()
+    private var removedBuffsOnDestroy = false
 
     override suspend fun update(
         lastChange: Packet?,
@@ -112,11 +113,26 @@ class AngelNeuroPassive(
         val actions: MutableList<CardAction> = mutableListOf()
 
         if (cardWasDestroyed()) {
+            if (!removedBuffsOnDestroy) {
+                removedBuffsOnDestroy = true
+
+                for (c: CardData in adjacentCards.values) {
+                    removeBuffList.add(CardActionTarget(c.playerIdx, c.position))
+                }
+
+                val removeBuffArray = removeBuffList.toTypedArray()
+
+                actions.add(CardAction(CardActionNames.SUB_ATTACK, removeBuffArray, 2))
+                actions.add(CardAction(CardActionNames.SUB_HP, removeBuffArray, 2, arrayOf(CardActionArgs.minHp(1))))
+
+                return CardActionList(cardData, actions.toTypedArray())
+            }
+
             return null
         }
 
         // Get newly updated list of adjacentCards
-        val newAdjacentCards: Map<CardData, CardData> = passiveManager.getAdjcentCards(cardData)
+        val newAdjacentCards: Map<CardData, CardData> = passiveManager.getAdjacentCards(cardData)
 
         // Nothing to be updated. Skip.
         if (newAdjacentCards.isEmpty() && adjacentCards.isEmpty()) {
@@ -127,19 +143,29 @@ class AngelNeuroPassive(
             if (!adjacentCards.containsKey(c)) {
                 adjacentCards[c] = c
                 c.state.health += 2
+                c.state.attack_bonus += 2
                 addBuffList.add(CardActionTarget(c.playerIdx, c.position))
             }
         }
 
         // Create a queue of cards to remove to avoid an exception getting thrown here.
         val removeQueue: MutableList<CardData> = mutableListOf()
+
+        // Adding destroyed cards to the update packet causes an assert statement to fail on the client's end.
+        // Making a separate list that removes them from the list without adding them to the update packet.
+        val destroyedQueue: MutableList<CardData> = mutableListOf()
+
         for (c: CardData in adjacentCards.values) {
             if (cardWasDestroyed(c)) {
-                removeQueue.add(c)
+                destroyedQueue.add(c)
             } else if (!newAdjacentCards.containsKey(c)) {
                 c.state.health = if (c.state.health - 2 < 1) 1 else c.state.health - 2
+                c.state.attack_bonus -= 2
                 removeQueue.add(c)
             }
+        }
+        for (c: CardData in destroyedQueue) {
+            adjacentCards.remove(c)
         }
         for (c: CardData in removeQueue) {
             adjacentCards.remove(c)
@@ -148,14 +174,16 @@ class AngelNeuroPassive(
 
         // Give new adjacentCards the +2 HP / +2 Attack Buff
         if (addBuffList.isNotEmpty()) {
-            actions.add(CardAction(CardActionNames.ADD_HP, addBuffList.toTypedArray(), 2))
-            actions.add(CardAction(CardActionNames.ADD_ATTACK, addBuffList.toTypedArray(), 2))
+            val addBuffArray = addBuffList.toTypedArray()
+            actions.add(CardAction(CardActionNames.ADD_HP, addBuffArray, 2))
+            actions.add(CardAction(CardActionNames.ADD_ATTACK, addBuffArray, 2))
         }
 
-        // Remove buffs from cards no longer adjacent to neuro
+        // Remove buffs from cards no longer adjacent to angel
         if (removeBuffList.isNotEmpty()) {
-            actions.add(CardAction(CardActionNames.SUB_ATTACK, removeBuffList.toTypedArray(), 2))
-            actions.add(CardAction(CardActionNames.SUB_HP, removeBuffList.toTypedArray(), 2, arrayOf(CardActionArgs.minHp(1))))
+            val removeBuffArray = removeBuffList.toTypedArray()
+            actions.add(CardAction(CardActionNames.SUB_ATTACK, removeBuffArray, 2))
+            actions.add(CardAction(CardActionNames.SUB_HP, removeBuffArray, 2, arrayOf(CardActionArgs.minHp(1))))
         }
 
         return CardActionList(cardData, actions.toTypedArray())

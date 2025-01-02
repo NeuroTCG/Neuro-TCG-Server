@@ -38,6 +38,9 @@ class PassiveManager(
     ) {
         val newPassive: Passive? = assignPassiveByCard(cardData, player)
         when (newPassive) {
+            is NullPassive -> {
+                // Ignore
+            }
             is Passive -> {
                 println("adding new passive: $newPassive")
                 passives[cardData] = newPassive
@@ -56,7 +59,7 @@ class PassiveManager(
         when (cardData.state.id) {
             // TODO: Create Unique passives for each card.
             CardIDNumbers.PIRATE_EVIL -> {
-                return DefaultPassive(this, cardData, player)
+                return NullPassive(this, cardData, player)
             }
             CardIDNumbers.ANGEL_NEURO -> {
                 return AngelNeuroPassive(this, cardData, player)
@@ -106,7 +109,7 @@ class PassiveManager(
         position: CardPosition,
     ): CardData? = boardManager.getCard(player, position)
 
-    fun getAdjcentCards(thisCard: CardData): Map<CardData, CardData> {
+    fun getAdjacentCards(thisCard: CardData): Map<CardData, CardData> {
         val workingList: MutableMap<CardData, CardData> = mutableMapOf()
 
         val leftPosition: CardPosition? = positionLeftOf(thisCard.position)
