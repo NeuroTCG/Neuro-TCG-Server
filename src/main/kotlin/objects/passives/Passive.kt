@@ -7,6 +7,7 @@ package objects.passives
 import objects.*
 import objects.packets.*
 import objects.packets.objects.*
+import kotlin.math.max
 
 abstract class Passive(
     // The passive manager
@@ -28,25 +29,6 @@ abstract class Passive(
 
     fun cardWasDestroyed(it: CardData = cardData): Boolean =
         passiveManager.findCardByPosition(passiveManager.idxToPlayer(it.playerIdx), it.position) == null
-}
-
-class DefaultPassive(
-    passiveManager: PassiveManager,
-    cardData: CardData,
-    player: Player,
-) : Passive(passiveManager, cardData, player) {
-    override suspend fun update(
-        lastChange: Packet?,
-        boardState: BoardState,
-    ): CardActionList? {
-        print("A default passive update function was called for: $cardData")
-
-        // Check if the card has been destroyed
-        if (cardWasDestroyed()) {
-            return null
-        }
-        return CardActionList.testActionList(cardData, playerIdx())
-    }
 }
 
 class NullPassive(
@@ -92,10 +74,6 @@ class FilipinoBoyPassive(
     }
 }
 
-/**
- *  Passive for 'Angel Neuro'
- *      Adjacent Cards gain +1 HP / +1 Attack
- */
 class AngelNeuroPassive(
     passiveManager: PassiveManager,
     cardData: CardData,
@@ -159,7 +137,7 @@ class AngelNeuroPassive(
             if (cardWasDestroyed(c)) {
                 destroyedQueue.add(c)
             } else if (!newAdjacentCards.containsKey(c)) {
-                c.state.health = if (c.state.health - 2 < 1) 1 else c.state.health - 2
+                c.state.health = max(1, c.state.health - 2)
                 c.state.attack_bonus -= 2
                 removeQueue.add(c)
             }

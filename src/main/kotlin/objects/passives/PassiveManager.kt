@@ -7,6 +7,8 @@ package objects.passives
 import objects.*
 import objects.packets.*
 import objects.packets.objects.*
+import kotlin.math.max
+import kotlin.math.min
 
 class PassiveManager(
     private val boardManager: BoardStateManager,
@@ -25,6 +27,7 @@ class PassiveManager(
     }
 
     fun idxToPlayer(idx: Int): Player {
+        assert(idx == 0 || idx == 1, { "player index out of range!" })
         if (idx == 0) {
             return Player.Player1
         } else {
@@ -46,7 +49,10 @@ class PassiveManager(
                 passives[cardData] = newPassive
             }
             else -> {
-                assert(false, { "Tried to add passive of unknown card id." })
+                assert(false) {
+                    "Tried to add passive of unknown card id. +" +
+                        "If a card has no passive associated with it, use NullPassive instead."
+                }
             }
         }
     }
@@ -132,7 +138,7 @@ class PassiveManager(
     }
 
     private fun positionLeftOf(position: CardPosition): CardPosition? {
-        val leftColumn = if (position.column - 1 < 0) 0 else position.column - 1
+        val leftColumn = max(0, position.column - 1)
 
         // Card is already on left end of row
         if (position.column == leftColumn) return null
@@ -141,7 +147,7 @@ class PassiveManager(
 
     private fun positionRightOf(position: CardPosition): CardPosition? {
         val end = boardManager.getBoardState().cards[0][position.row].size - 1
-        val rightColumn = if (position.column + 1 > end) end else position.column + 1
+        val rightColumn = min(end, position.column + 1)
 
         // Check if card is already on the right side
         if (position.column == rightColumn) return null

@@ -118,7 +118,6 @@ class CardStats(
                         Ability(AbilityEffect.ATTACK, 5, AbilityRange.ENEMY_CARD, 0),
                         true,
                     ),
-                // 10 Tin Cans 1 Stream card (magic card)
             )
 
         fun getCardByID(id: Int): CardStats? = cardIDMapping.get(id)
