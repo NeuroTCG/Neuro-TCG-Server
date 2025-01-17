@@ -75,35 +75,44 @@ class GameConnection(
         get() = !clientSocket.outgoing.isClosedForSend
 
     suspend fun receivePacket(): Packet? {
-        val text =
+        var packet: Packet? = null
+        while (packet == null) {
+            val text =
+                try {
+                    (clientSocket.incoming.receive() as Frame.Text).readText()
+                } catch (e: SocketException) {
+                    return null
+                } catch (e: EOFException) {
+                    return null
+                } catch (e: ClosedReceiveChannelException) {
+                    return null
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    return null
+                }
+
             try {
-                (clientSocket.incoming.receive() as Frame.Text).readText()
-            } catch (e: SocketException) {
-                return null
-            } catch (e: EOFException) {
-                return null
-            } catch (e: ClosedReceiveChannelException) {
-                return null
+                packet = Json.decodeFromString<Packet>(text)
+                println("Received '$packet'")
+                when (packet) {
+                    is KeepalivePacket -> {
+                        packet = null
+                    }
+                    else -> {}
+                }
+            } catch (e: IllegalArgumentException) {
+                e.printStackTrace()
+                UnknownPacketPacket("unknown packet")
+            } catch (e: SerializationException) {
+                e.printStackTrace()
+                UnknownPacketPacket("unknown packet")
             } catch (e: Exception) {
                 e.printStackTrace()
+                UnknownPacketPacket("unknown packet")
                 return null
             }
-
-        return try {
-            val packet = Json.decodeFromString<Packet>(text)
-            println("Received '$packet'")
-            packet
-        } catch (e: IllegalArgumentException) {
-            e.printStackTrace()
-            UnknownPacketPacket("unknown packet")
-        } catch (e: SerializationException) {
-            e.printStackTrace()
-            UnknownPacketPacket("unknown packet")
-        } catch (e: Exception) {
-            e.printStackTrace()
-            UnknownPacketPacket("unknown packet")
-            return null
         }
+        return packet
     }
 
     suspend fun sendPacket(packet: Packet) {

@@ -34,5 +34,7 @@ class PacketType {
         const val PASSIVE_UPDATE = "passive_update"
 
         const val GAME_OVER = "game_over"
+
+        const val KEEPALIVE = "keepalive"
     }
 }
