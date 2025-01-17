@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "org.example"
-version = "1.0-SNAPSHOT"
+version = "0.1"
 val exposedVersion = "0.49.0"
 val ktorVersion = "2.3.12"
 
