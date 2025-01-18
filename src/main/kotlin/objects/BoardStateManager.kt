@@ -124,7 +124,7 @@ class BoardStateManager(
     }
 
     private suspend fun getGameWinner(): Player? {
-        if (this.boardState.deck_masters.all { (it?.run { health > 0 }) != false }) {
+        if (this.boardState.deck_masters.all { (it?.run { state.health > 0 }) != false }) {
             return null
         }
 
@@ -133,8 +133,8 @@ class BoardStateManager(
 
         // TODO: These are temporary after we consider that deck_masters must exist
         // TODO: Hence, when they do exist, remove the next few lines
-        val deckMasterPlayer1Opt = this.boardState.deck_masters[playerToIndex(Player.Player1)]
-        val deckMasterPlayer2Opt = this.boardState.deck_masters[playerToIndex(Player.Player2)]
+        val deckMasterPlayer1Opt = this.boardState.deck_masters[playerToIndex(Player.Player1)]?.state
+        val deckMasterPlayer2Opt = this.boardState.deck_masters[playerToIndex(Player.Player2)]?.state
         val temporarySpecialGameOver =
             isGameOverTemporarySpecialLogic(deckMasterPlayer1Opt, deckMasterPlayer2Opt)
 
@@ -151,6 +151,43 @@ class BoardStateManager(
         }
 
         return if (deckMasterPlayer1.health > deckMasterPlayer2.health) player1 else player2
+    }
+
+    suspend fun initDeckMaster(
+        player: Player,
+        deckMasterID: Int,
+    ) {
+        val dmStat = CardStats.getCardByID(deckMasterID)
+        if (dmStat == null) {
+            assert(false, { "Could not find a deck master with ID: $deckMasterID" })
+        }
+
+        val deckMasterCard =
+            CardData(
+                playerToIndex(player),
+                CardPosition(1, 1),
+                CardState(
+                    deckMasterID,
+                    dmStat!!.max_hp,
+                    false,
+                    CardTurnPhase.MoveOrAction,
+                    0,
+                    0,
+                ),
+            )
+
+        setCard(
+            player,
+            deckMasterCard.position,
+            deckMasterCard,
+        )
+
+        getConnection(player).let {
+            it.sendPacket(DeckMasterInitPacket(true, true, deckMasterCard.position, deckMasterCard.state))
+        }
+        getConnection(!player).let {
+            it.sendPacket(DeckMasterInitPacket(false, true, deckMasterCard.position, deckMasterCard.state))
+        }
     }
 
     suspend fun gameOverHandler() {
@@ -245,7 +282,7 @@ class BoardStateManager(
 
         // If it's a deck master, we put it in the board state
         if (cardStat.card_type == CardType.DECK_MASTER) {
-            this.boardState.deck_masters[playerToIndex(player)] = newCardState
+            this.boardState.deck_masters[playerToIndex(player)] = newCardData
         }
 
         getConnection(player).sendPacket(

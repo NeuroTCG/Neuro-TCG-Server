@@ -25,6 +25,11 @@ class Game(
             MatchFoundPacket(otherConnection.getUserInfo(), id, false, player == Player.Player1),
         )
 
+        /*
+            Set up Deck Masters around here?
+         */
+        boardManager.initDeckMaster(player, CardIDNumbers.ANGEL_NEURO)
+
         for (i in 0..<4) {
             boardManager.drawCard(player)
         }

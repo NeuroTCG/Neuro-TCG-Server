@@ -60,5 +60,5 @@ class BoardState {
     // TODO: Ideally, the deck master will already be on the board, it
     // shouldn't be possible for these to be null
     @Required
-    var deck_masters = arrayOf<CardState?>(null, null)
+    var deck_masters = arrayOf<CardData?>(null, null)
 }
