@@ -3,10 +3,11 @@ package objects.packets.objects
 import kotlinx.serialization.*
 
 @Serializable
-enum class AttackRange {
-    STANDARD,
+enum class Tactic {
     REACH,
+    NIMBLE
 }
+
 
 @Serializable
 enum class CardType {
@@ -28,7 +29,7 @@ class CardStats(
     @Required val max_hp: Int,
     @Required val base_atk: Int,
     @Required var summoning_cost: Int,
-    @Required val attack_range: AttackRange,
+    @Required val tactics: Array<Tactic>,
     @Required val card_type: CardType,
     @Required val ability: Ability,
     @Required val has_summoning_sickness: Boolean,
@@ -65,7 +66,7 @@ class CardStats(
                         2,
                         2,
                         2,
-                        AttackRange.STANDARD,
+                        arrayOf<Tactic>(),
                         CardType.CREATURE,
                         Ability(),
                         true,
@@ -77,7 +78,7 @@ class CardStats(
                         3,
                         3,
                         5,
-                        AttackRange.REACH,
+                        arrayOf<Tactic>(Tactic.REACH),
                         CardType.CREATURE,
                         Ability(),
                         true,
@@ -89,7 +90,7 @@ class CardStats(
                         24,
                         2,
                         0,
-                        AttackRange.STANDARD,
+                        arrayOf<Tactic>(),
                         CardType.DECK_MASTER,
                         Ability(AbilityEffect.ADD_HP, 3, AbilityRange.ALLY_CARD, 4),
                         true,
@@ -101,7 +102,7 @@ class CardStats(
                         3,
                         4,
                         4,
-                        AttackRange.STANDARD,
+                        arrayOf<Tactic>(),
                         CardType.CREATURE,
                         Ability(AbilityEffect.SEAL, 1, AbilityRange.ENEMY_CARD, 0),
                         true,
@@ -113,7 +114,7 @@ class CardStats(
                         0,
                         0,
                         4,
-                        AttackRange.STANDARD,
+                        arrayOf<Tactic>(),
                         CardType.MAGIC,
                         Ability(AbilityEffect.ATTACK, 5, AbilityRange.ENEMY_CARD, 0),
                         true,

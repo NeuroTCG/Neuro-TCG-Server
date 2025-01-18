@@ -400,16 +400,16 @@ class BoardStateManager(
         val cardStat = CardStats.getCardByID(getCard(player, attackerPosition)!!.state.id)
         if (cardStat == null) return false
 
-        val attackerReach = cardStat.attack_range
+        val attackerHasReach = cardStat.tactics.contains(Tactic.REACH)
 
         assert(attackerPosition.row in 0..1)
         assert(targetPosition.row in 0..1)
 
         return when (attackerPosition.row to targetPosition.row) {
             CardPosition.FRONT_ROW to CardPosition.FRONT_ROW -> true
-            CardPosition.FRONT_ROW to CardPosition.BACK_ROW -> isOppoonentFrontEmpty || attackerReach == AttackRange.REACH
-            CardPosition.BACK_ROW to CardPosition.FRONT_ROW -> isPlayerFrontEmpty || attackerReach == AttackRange.REACH
-            CardPosition.BACK_ROW to CardPosition.BACK_ROW -> attackerReach == AttackRange.REACH
+            CardPosition.FRONT_ROW to CardPosition.BACK_ROW -> isOppoonentFrontEmpty || attackerHasReach
+            CardPosition.BACK_ROW to CardPosition.FRONT_ROW -> isPlayerFrontEmpty || attackerHasReach
+            CardPosition.BACK_ROW to CardPosition.BACK_ROW -> attackerHasReach
             else -> {
                 assert(false) { "unreachable" }
                 false
