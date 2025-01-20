@@ -182,12 +182,10 @@ class BoardStateManager(
             deckMasterCard,
         )
 
-        getConnection(player).let {
-            it.sendPacket(DeckMasterInitPacket(true, true, deckMasterCard.position, deckMasterCard.state))
-        }
-        getConnection(!player).let {
-            it.sendPacket(DeckMasterInitPacket(false, true, deckMasterCard.position, deckMasterCard.state))
-        }
+        passiveManager.addPassive(deckMasterCard, player)
+
+        getConnection(player).sendPacket(DeckMasterInitPacket(true, true, deckMasterCard.position, deckMasterCard.state))
+        getConnection(!player).sendPacket(DeckMasterInitPacket(false, true, deckMasterCard.position, deckMasterCard.state))
     }
 
     suspend fun gameOverHandler() {
