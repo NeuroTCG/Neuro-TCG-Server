@@ -16,6 +16,8 @@ class GameConnection(
     private val clientSocket = socket
     private var userInfo: UserInfo? = null
 
+    var readyToPlay: Boolean = false
+
     fun getUserInfo(): UserInfo = userInfo!!
 
     suspend fun connect() {

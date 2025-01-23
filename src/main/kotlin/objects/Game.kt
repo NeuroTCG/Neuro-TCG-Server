@@ -21,14 +21,63 @@ class Game(
         println(prefix + "Sending game rules to client")
         connection.sendPacket(RuleInfoPacket())
         println(prefix + "Sending match to client")
+
         connection.sendPacket(
             MatchFoundPacket(otherConnection.getUserInfo(), id, false, player == Player.Player1),
         )
 
         /*
-            Set up Deck Masters around here?
+         * Deck Master Select Phase -> Keep looping until both players are ready.
          */
-        boardManager.initDeckMaster(player, CardIDNumbers.ANGEL_NEURO)
+        var playerDeckMasterId = -1
+
+        while (!(otherConnection.readyToPlay && connection.readyToPlay) && connection.isOpen) {
+            val packet = connection.receivePacket()
+            when (packet) {
+                null -> {
+                    if (connection.isOpen) connection.close()
+                    println(prefix + "Connection was closed unexpectedly")
+
+                    if (otherConnection.isOpen) {
+                        println(prefix + "Informing opponent")
+                        otherConnection.sendPacket(
+                            DisconnectPacket(
+                                DisconnectPacket.Reason.opponent_disconnect,
+                                "The opponent has closed it's connection",
+                            ),
+                        )
+                        // otherConnection.close()
+                    }
+                }
+                is DeckMasterRequestPacket -> {
+                    playerDeckMasterId = boardManager.handleDeckMasterRequest(player, packet)
+                    if (playerDeckMasterId != -1) {
+                        connection.readyToPlay = true
+                        connection.sendPacket(DeckMasterSelectedPacket(true, true))
+
+                        // Let the opponent know that player is ready.
+                        otherConnection.sendPacket(DeckMasterSelectedPacket(true, true))
+                    } else {
+                        assert(false) { "Server received invalid card ID." }
+                    }
+                }
+                else -> {
+                    connection.sendPacket(
+                        UnknownPacketPacket(
+                            "Received an unexpected packet type. Only DeckMasterRequestPacket should be received at this time.",
+                        ),
+                    )
+                    println(prefix + "Received unknown packet")
+                }
+            }
+        }
+
+        connection.sendPacket(GameStartPacket())
+
+        /*
+         * Add Deck Master onto game board.
+         */
+        boardManager.initDeckMaster(player, playerDeckMasterId)
 
         for (i in 0..<4) {
             boardManager.drawCard(player)
@@ -39,6 +88,9 @@ class Game(
             boardManager.drawCard(player)
         }
 
+        /*
+         * Main Game Phase
+         */
         while (connection.isOpen) {
             val packet = connection.receivePacket()
             when (packet) {

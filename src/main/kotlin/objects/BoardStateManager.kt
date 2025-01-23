@@ -153,6 +153,35 @@ class BoardStateManager(
         return if (deckMasterPlayer1.health > deckMasterPlayer2.health) player1 else player2
     }
 
+    suspend fun handleDeckMasterRequest(
+        player: Player,
+        packet: DeckMasterRequestPacket,
+    ): Int {
+        val sendInvalid =
+            suspend {
+                getConnection(player).sendPacket(DeckMasterSelectedPacket(false, true))
+            }
+
+        // Check if requested card ID is in valid range.
+        if (packet.card_id < 0 || packet.card_id > CardStats.cardIDMapping.size - 1) {
+            sendInvalid()
+            return -1
+        }
+
+        val card: CardStats? = CardStats.getCardByID(packet.card_id)
+
+        // Check if id belongs to a valid Deck Master.
+        if (card == null) {
+            sendInvalid()
+            return -1
+        } else if (card.card_type != CardType.DECK_MASTER) {
+            sendInvalid()
+            return -1
+        }
+
+        return packet.card_id
+    }
+
     suspend fun initDeckMaster(
         player: Player,
         deckMasterID: Int,
@@ -189,16 +218,15 @@ class BoardStateManager(
     }
 
     suspend fun gameOverHandler() {
-        val winner = getGameWinner()
-        if (winner == null) {
-            return
-        }
+        val winner = getGameWinner() ?: return
 
         getConnection(winner).let {
+            it.readyToPlay = false
             it.sendPacket(GameOverPacket(true))
             it.sendPacket(DisconnectPacket(DisconnectPacket.Reason.game_over, "Game is over"))
         }
         getConnection(!winner).let {
+            it.readyToPlay = false
             it.sendPacket(GameOverPacket(false))
             it.sendPacket(DisconnectPacket(DisconnectPacket.Reason.game_over, "Game is over"))
         }

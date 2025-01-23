@@ -9,7 +9,13 @@ class PacketType {
         const val AUTHENTICATION_VALID = "authentication_valid"
         const val RULE_INFO = "rule_info"
         const val MATCH_FOUND = "match_found"
+        const val GAME_START = "game_start"
+        const val PLAYER_READY = "player_ready"
+
+        const val DECK_MASTER_REQUEST = "deck_master_request"
+        const val DECK_MASTER_SELECTED = "deck_master_selected"
         const val DECK_MASTER_INIT = "deck_master_init"
+
         const val UNKNOWN_PACKET = "unknown_packet"
         const val GET_BOARD_STATE = "get_board_state"
         const val GET_BOARD_STATE_RESPONSE = "get_board_state_response"
