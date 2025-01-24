@@ -16,7 +16,7 @@ class PassiveManager(
     // A Packet used to describe the last action that occurred.
     // Used to provide context when updating passives.
     var lastPacket: Packet? = null
-    val passives: HashMap<CardData, Passive> = hashMapOf()
+    val passives: HashMap<Card, Passive> = hashMapOf()
 
     fun playerToIdx(player: Player): Int {
         if (player == Player.Player1) {
@@ -36,17 +36,17 @@ class PassiveManager(
     }
 
     fun addPassive(
-        cardData: CardData,
+        card: Card,
         player: Player,
     ) {
-        val newPassive: Passive? = assignPassiveByCard(cardData, player)
+        val newPassive: Passive? = assignPassiveByCard(card, player)
         when (newPassive) {
             is NullPassive -> {
                 // Ignore
             }
             is Passive -> {
                 println("adding new passive: $newPassive")
-                passives[cardData] = newPassive
+                passives[card] = newPassive
             }
             else -> {
                 assert(false) {
@@ -58,20 +58,20 @@ class PassiveManager(
     }
 
     fun assignPassiveByCard(
-        cardData: CardData,
+        card: Card,
         player: Player,
     ): Passive? {
-        println("Card's ID is ${cardData.state.id}")
-        when (cardData.state.id) {
+        println("Card's ID is ${card.state.id}")
+        when (card.state.id) {
             // TODO: Create Unique passives for each card.
             CardIDNumbers.PIRATE_EVIL -> {
-                return NullPassive(this, cardData, player)
+                return NullPassive(this, card, player)
             }
             CardIDNumbers.ANGEL_NEURO -> {
-                return AngelNeuroPassive(this, cardData, player)
+                return AngelNeuroPassive(this, card, player)
             }
             CardIDNumbers.FILIPINO_BOY -> {
-                return FilipinoBoyPassive(this, cardData, player)
+                return FilipinoBoyPassive(this, card, player)
             }
             else -> {
                 return null
@@ -85,7 +85,7 @@ class PassiveManager(
 
         // Track list of cards needed to be removed.
         // That way, we're not removing passive as we iterate!
-        val removalQueue: MutableList<CardData> = mutableListOf()
+        val removalQueue: MutableList<Card> = mutableListOf()
 
         println("Updating ${passives.size} passives...")
 
@@ -94,7 +94,7 @@ class PassiveManager(
 
             if (updates == null) {
                 // NULL -> passive is ready to be removed from list
-                removalQueue.add(p.cardData)
+                removalQueue.add(p.card)
             } else if (updates.actions.isNotEmpty()) {
                 // Non-Empty List -> Add CardActionList to packet
                 updateActions.add(updates)
@@ -103,8 +103,8 @@ class PassiveManager(
             // Empty List -> no actions needed, don't add CardActionList to packet
         }
 
-        for (c: CardData in removalQueue) {
-            assert(passives.remove(c) != null, { "Passive associated with CardData object " + c + " does not exist." })
+        for (c: Card in removalQueue) {
+            assert(passives.remove(c) != null, { "Passive associated with Card object " + c + " does not exist." })
         }
 
         return PassiveUpdatePacket(updateActions.toTypedArray())
@@ -113,14 +113,14 @@ class PassiveManager(
     fun findCardByPosition(
         player: Player,
         position: CardPosition,
-    ): CardData? = boardManager.getCard(player, position)
+    ): Card? = boardManager.getCard(player, position)
 
-    fun getAdjacentCards(thisCard: CardData): Map<CardData, CardData> {
-        val workingList: MutableMap<CardData, CardData> = mutableMapOf()
+    fun getAdjacentCards(thisCard: Card): Map<Card, Card> {
+        val workingList: MutableMap<Card, Card> = mutableMapOf()
 
         val leftPosition: CardPosition? = positionLeftOf(thisCard.position)
         if (leftPosition != null) {
-            val leftCard: CardData? = boardManager.getCard(idxToPlayer(thisCard.playerIdx), leftPosition)
+            val leftCard: Card? = boardManager.getCard(idxToPlayer(thisCard.playerIdx), leftPosition)
             if (leftCard != null) {
                 workingList.put(leftCard, leftCard)
             }
@@ -128,7 +128,7 @@ class PassiveManager(
 
         val rightPosition: CardPosition? = positionRightOf(thisCard.position)
         if (rightPosition != null) {
-            val rightCard: CardData? = boardManager.getCard(idxToPlayer(thisCard.playerIdx), rightPosition)
+            val rightCard: Card? = boardManager.getCard(idxToPlayer(thisCard.playerIdx), rightPosition)
             if (rightCard != null) {
                 workingList.put(rightCard, rightCard)
             }

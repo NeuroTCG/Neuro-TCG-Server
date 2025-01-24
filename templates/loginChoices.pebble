@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html lang="en">
+<body>
+    <h1>Login</h1>
+    <p>Please choose from one of the following:</p>
+    <ul>
+        {% for provider in providers %}
+        <li><a href="{{ provider.redirect }}">{{ provider.name }}</a></li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

@@ -2,15 +2,21 @@ package objects
 
 import kotlinx.serialization.*
 import kotlinx.serialization.json.*
+import objects.DiscordUsers.userID
+import objects.accounts.*
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.javatime.*
 import org.jetbrains.exposed.sql.transactions.*
 import java.sql.*
 import java.time.*
+import java.util.*
 
 // All transactions are blocking, so use them wrapped in withContext(), if you need concurrency.
-class GameDatabase {
-    private val db = Database.connect("jdbc:sqlite:./data/data.db", "org.sqlite.JDBC")
+class GameDatabase(
+    val dbPath: String,
+) {
+    private val db = Database.connect("jdbc:sqlite:$dbPath", "org.sqlite.JDBC")
 
     @OptIn(ExperimentalSerializationApi::class)
     private val json = Json
@@ -19,7 +25,21 @@ class GameDatabase {
         TransactionManager.defaultDatabase = db
         TransactionManager.manager.defaultIsolationLevel = Connection.TRANSACTION_SERIALIZABLE
         transaction {
-            SchemaUtils.create(CurrentGames, PreviousGames, Cards, DeckMasters, Creatures, MagicCards, TrapCards)
+            SchemaUtils.create(
+                CurrentGames,
+                PreviousGames,
+                Cards,
+                DeckMasters,
+                Creatures,
+                MagicCards,
+                TrapCards,
+                Users,
+                UserTokens,
+                DiscordUsers,
+                DevelopmentUsers,
+                UserFlags,
+                AdminTokens,
+            )
             commit()
         }
     }
@@ -123,7 +143,7 @@ class GameDatabase {
                 it[incremental_moves] = newMoveList.toString()
             }
             // Player row column
-            currentGameState[change[0][0] ][change[1][0]][change[1][1] ] =
+            currentGameState[change[0][0]][change[1][0]][change[1][1]] =
                 change[2] // TODO: Gotta figure out how we want to handle changes. For now, it's a List of Integers.
             CurrentGames.update({ CurrentGames.game_ID eq gameID }) {
                 it[current_game_state] = currentGameState.toString()
@@ -155,6 +175,218 @@ class GameDatabase {
             }
             commit()
         }
+    }
+
+    fun getUserByDiscordId(discordId: DiscordId): TcgId? {
+        val result =
+            transaction {
+                (Users innerJoin DiscordUsers)
+                    .select(Users.userId, DiscordUsers.linkedTo)
+                    .where {
+                        userID.eq(discordId.id)
+                    }.singleOrNull()
+            }
+
+        if (result == null) {
+            return null
+        } else {
+            return TcgId(result[Users.userId])
+        }
+    }
+
+    fun createNewUser(authProvider: AuthProviderName): TcgId {
+        val newUserId = UUID.randomUUID().toString()
+
+        transaction {
+            Users.insert {
+                // TODO: User id generation should probably live in some kind of singleton
+                it[userId] = newUserId
+                it[providerName] = authProvider.name
+            }[Users.userId]
+
+            commit()
+        }
+
+        return TcgId(newUserId)
+    }
+
+    fun generateTokenFor(tcgUserId: TcgId): Token? {
+        // TODO: this is 100% not a good enough token
+        val token = UUID.randomUUID().toString()
+
+        val success =
+            transaction {
+                val success =
+                    UserTokens.insert {
+                        it[userId] = tcgUserId.id
+                        it[UserTokens.token] = token
+                    }
+
+                commit()
+
+                success
+            }
+
+        if (success.insertedCount == 0) {
+            return null
+        }
+
+        return Token(token)
+    }
+
+    // TODO: this might be better with `discordUserInfo` as a different class to decouple it from `DiscordLoginProvider`
+    // TODO: same with `discordTokenInfo`
+    fun createLinkedDiscordInfo(
+        discordUserInfo: DiscordLoginProvider.DiscordOauthUserInfo,
+        discordTokenInfo: DiscordLoginProvider.DiscordOauthTokenResponse,
+        tcgUserId: TcgId,
+    ) {
+        transaction {
+            DiscordUsers.insert {
+                it[linkedTo] = tcgUserId.id
+                it[userID] = discordUserInfo.id
+                it[accessToken] = discordTokenInfo.accessToken
+                it[accessTokenExpiry] = LocalDateTime.now().plusSeconds(discordTokenInfo.expiresIn.toLong())
+                it[refreshToken] = discordTokenInfo.refreshToken
+            }
+
+            commit()
+        }
+    }
+
+    fun updateDiscordUserInfo(
+        discordUserInfo: DiscordLoginProvider.DiscordOauthUserInfo,
+        discordTokenInfo: DiscordLoginProvider.DiscordOauthTokenResponse,
+    ) {
+        transaction {
+            DiscordUsers.update({ DiscordUsers.userID.eq(discordUserInfo.id) }) {
+                it[userID] = discordUserInfo.id
+                it[accessToken] = discordTokenInfo.accessToken
+                it[accessTokenExpiry] = LocalDateTime.now().plusSeconds(discordTokenInfo.expiresIn.toLong())
+                it[refreshToken] = discordTokenInfo.refreshToken
+            }
+
+            commit()
+        }
+    }
+
+    fun getUserIdFromToken(token: Token): TcgId? {
+        val col =
+            transaction {
+                UserTokens
+                    .selectAll()
+                    .where(UserTokens.token.eq(token.token))
+                    .singleOrNull()
+            }
+
+        if (col == null) {
+            return null
+        }
+
+        return TcgId(col[UserTokens.userId])
+    }
+
+    fun getUserByDevelopmentId(
+        id: DevelopmentId,
+        ownerId: TcgId,
+    ): TcgId? {
+        val result =
+            transaction {
+                (Users.innerJoin(DevelopmentUsers, { DevelopmentUsers.linkedToId }, { Users.userId }))
+                    .select(Users.userId)
+                    .where {
+                        (DevelopmentUsers.developmentId eq id.id) and (DevelopmentUsers.ownedById eq ownerId.id)
+                    }.singleOrNull()
+            }
+
+        if (result == null) {
+            return null
+        } else {
+            return TcgId(result[Users.userId])
+        }
+    }
+
+    fun createLinkedDevelopmentInfo(
+        devUserId: DevelopmentId,
+        ownerId: TcgId,
+        userId: TcgId,
+    ) {
+        transaction {
+            DevelopmentUsers.insert {
+                it[linkedToId] = userId.id
+                it[ownedById] = ownerId.id
+                it[this.developmentId] = devUserId.id
+            }
+
+            commit()
+        }
+    }
+
+    // TODO: this also returns false if the userId is invalid, which sucks
+    // TODO: it would be better if this function returned a nullable boolean or something
+    fun userHasFlag(
+        userId: TcgId,
+        flag: Flag,
+    ): Boolean? =
+        transaction {
+            Users
+                .innerJoin(
+                    UserFlags,
+                    { UserFlags.userId },
+                    { Users.userId },
+                ).select(Users.userId)
+                .where { (UserFlags.flag eq flag.flag) and (UserFlags.userId eq userId.id) }
+                .singleOrNull()
+        } != null
+
+    fun userSetFlag(
+        userId: TcgId,
+        flag: Flag,
+    ) {
+        transaction {
+            UserFlags.insert {
+                it[userID] = userId.id
+                it[this.flag] = flag.flag
+            }
+
+            commit()
+        }
+    }
+
+    fun userUnsetFlag(
+        userId: TcgId,
+        flag: Flag,
+    ) {
+        transaction {
+            UserFlags.deleteWhere { (UserFlags.userId eq userId.id) and (UserFlags.flag eq flag.flag) }
+        }
+    }
+
+    fun userListFlags(userId: TcgId): List<Flag> =
+        transaction {
+            UserFlags
+                .selectAll()
+                .where { UserFlags.userId eq userId.id }
+                .sortedBy { UserFlags.flag }
+                .map { Flag(it[UserFlags.flag]) }
+        }
+
+    fun checkAdminToken(token: Token): Boolean =
+        transaction {
+            AdminTokens.selectAll().where { AdminTokens.token eq token.token }.singleOrNull()
+        } != null
+
+    fun getAdminTokenComment(token: Token): String? {
+        val result =
+            transaction {
+                AdminTokens.selectAll().where { AdminTokens.token eq token.token }.singleOrNull()
+            }
+
+        if (result == null) {
+            return null
+        }
+
+        return result[AdminTokens.comment]
     }
 }
 
@@ -242,3 +474,85 @@ object TrapCards : Table("trap_cards") {
     val condition: Column<String> = text("condition")
     val attackRow: Column<Byte> = byte("attack_row")
 }
+
+object Users : Table("users") {
+    // TODO: ids probably won't 128ch long, but I don't know what else to put
+    val userId: Column<String> = text("user_id")
+    val providerName: Column<String> = text("provider_name")
+
+    override val primaryKey = PrimaryKey(userId)
+}
+
+object UserTokens : Table("user_tokens") {
+    // TODO: same as above in regards to length
+    val userId: Column<String> = reference("user_id", Users.userId)
+    val token: Column<String> = text("token")
+}
+
+object DiscordUsers : Table("discord_users") {
+    val linkedTo: Column<String> = reference("linked_to_user_id", Users.userId)
+    val userID: Column<String> = text("discord_user_id")
+    val accessToken: Column<String> = text("access_token")
+    val accessTokenExpiry: Column<LocalDateTime> = datetime("access_token_expiry")
+    val refreshToken: Column<String> = text("refresh_token")
+
+    override val primaryKey = PrimaryKey(linkedTo)
+}
+
+object DevelopmentUsers : Table("development_users") {
+    val linkedToId: Column<String> = reference("linked_to_user_id", Users.userId)
+    val ownedById: Column<String> = reference("owner_user_id", Users.userId)
+    val developmentId: Column<String> = text("development_id")
+
+    override val primaryKey = PrimaryKey(linkedToId)
+}
+
+object UserFlags : Table("user_flags") {
+    val userId: Column<String> = reference("user_id", Users.userId)
+    val flag: Column<String> = text("flag")
+
+    override val primaryKey = PrimaryKey(userId, flag)
+}
+
+object AdminTokens : Table("admin_tokens") {
+    val token: Column<String> = text("token")
+    val comment: Column<String> = text("comment")
+
+    override val primaryKey = PrimaryKey(token)
+}
+
+@JvmInline
+@Serializable
+value class TcgId(
+    val id: String,
+)
+
+@JvmInline
+@Serializable
+value class DiscordId(
+    val id: String,
+)
+
+@JvmInline
+@Serializable
+value class DevelopmentId(
+    val id: String,
+)
+
+@JvmInline
+@Serializable
+value class Token(
+    val token: String,
+)
+
+@JvmInline
+@Serializable
+value class Flag(
+    val flag: String,
+)
+
+@JvmInline
+@Serializable
+value class AuthProviderName(
+    val name: String,
+)

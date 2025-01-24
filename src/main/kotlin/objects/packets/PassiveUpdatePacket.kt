@@ -10,5 +10,5 @@ import objects.*
 @Serializable
 @SerialName(PacketType.PASSIVE_UPDATE)
 class PassiveUpdatePacket(
-    @Required val updates: Array<CardActionList>
+    @Required val updates: Array<CardActionList>,
 ) : Packet()

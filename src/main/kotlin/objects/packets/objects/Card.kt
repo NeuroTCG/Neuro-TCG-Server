@@ -10,7 +10,7 @@ import kotlinx.serialization.Serializable
  * A Container for the position and state of a card.
  */
 @Serializable
-class CardData(
+class Card(
     var playerIdx: Int, // 0 for player1 1 for player 2
     var position: CardPosition,
     var state: CardState,
