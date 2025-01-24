@@ -11,7 +11,8 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 class Card(
-    var playerIdx: Int, // 0 for player1 1 for player 2
+    // 0 for player1 1 for player 2
+    var playerIdx: Int,
     var position: CardPosition,
     var state: CardState,
 )

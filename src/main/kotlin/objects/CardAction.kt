@@ -59,7 +59,8 @@ class CardActionTarget(
 @Serializable
 class CardActionArg(
     @Required val arg_name: String,
-    @Required val arg_value: String, // Using a String so that args can be generic
+    // Using a String so that args can be generic
+    @Required val arg_value: String,
 )
 
 object CardActionNames {
