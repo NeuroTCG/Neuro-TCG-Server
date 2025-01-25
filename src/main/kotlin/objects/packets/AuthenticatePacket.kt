@@ -1,6 +1,8 @@
 package objects.packets
 
 import kotlinx.serialization.*
+import objects.TcgId
+import objects.Token
 
 /**
  * Sent by: Client
@@ -12,5 +14,5 @@ import kotlinx.serialization.*
 @Serializable
 @SerialName(PacketType.AUTHENTICATE)
 class AuthenticatePacket(
-    @Required val username: String,
+    @Required val token: Token
 ) : Packet()

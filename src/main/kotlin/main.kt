@@ -18,6 +18,7 @@ import kotlinx.serialization.*
 import kotlinx.serialization.json.*
 import objects.*
 import objects.accounts.*
+import objects.packets.objects.UserInfo
 import java.util.*
 import java.util.concurrent.*
 
@@ -183,11 +184,6 @@ fun main() {
                     get("/@me") {
                         val mappedUserId = call.principal<TcgId>()!!
 
-                        @Serializable
-                        class UserInfo(
-                            val userId: TcgId,
-                        )
-
                         call.respond(UserInfo(mappedUserId))
                     }
                 }
@@ -195,7 +191,7 @@ fun main() {
 
             webSocket("/game") {
                 println("New connection established")
-                val connection = GameConnection(this)
+                val connection = GameConnection(this, db)
                 connection.connect()
                 val gameFuture = CompletableFuture<Pair<Game, Player>>()
                 playerQueue.add(Pair(connection, gameFuture))

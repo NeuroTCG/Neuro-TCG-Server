@@ -12,6 +12,7 @@ import java.net.*
 
 class GameConnection(
     socket: DefaultWebSocketServerSession,
+    val db: GameDatabase,
 ) {
     private val clientSocket = socket
     private var userInfo: UserInfo? = null
@@ -62,9 +63,14 @@ class GameConnection(
             }
 
             is AuthenticatePacket -> {
-                userInfo = UserInfo(authPacket.username, "somewhere, idk")
-                sendPacket(AuthenticationValidPacket(false, userInfo!!))
-                println("User '${authPacket.username}' has connected")
+                if (db.checkToken(authPacket.token)) {
+                    val user_id = db.getUserIdFromToken(authPacket.token)!!
+                    userInfo = UserInfo(user_id)
+                    sendPacket(AuthenticationValidPacket(false, userInfo!!))
+                    println("User '${user_id}' has connected")
+                } else {
+                    sendPacket(DisconnectPacket(DisconnectPacket.Reason.auth_invalid, "Token is invalid"))
+                }
             }
 
             else -> {

@@ -4,6 +4,8 @@ import kotlinx.serialization.*
 import kotlinx.serialization.json.*
 import objects.DiscordUsers.userID
 import objects.accounts.*
+import objects.UserFlags
+import objects.UserTokens
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.javatime.*
@@ -370,6 +372,11 @@ class GameDatabase(
                 .sortedBy { UserFlags.flag }
                 .map { Flag(it[UserFlags.flag]) }
         }
+
+    fun checkToken(token: Token): Boolean =
+        transaction {
+            UserTokens.selectAll().where { UserTokens.token eq token.token }.singleOrNull()
+        } != null
 
     fun checkAdminToken(token: Token): Boolean =
         transaction {
