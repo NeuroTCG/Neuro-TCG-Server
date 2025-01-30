@@ -1,7 +1,6 @@
 package objects.packets
 
 import kotlinx.serialization.*
-import objects.TcgId
 import objects.Token
 
 /**
@@ -14,5 +13,5 @@ import objects.Token
 @Serializable
 @SerialName(PacketType.AUTHENTICATE)
 class AuthenticatePacket(
-    @Required val token: Token
+    @Required val token: Token,
 ) : Packet()

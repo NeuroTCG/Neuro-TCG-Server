@@ -64,10 +64,10 @@ class GameConnection(
 
             is AuthenticatePacket -> {
                 if (db.checkToken(authPacket.token)) {
-                    val user_id = db.getUserIdFromToken(authPacket.token)!!
-                    userInfo = UserInfo(user_id)
+                    val userId = db.getUserIdFromToken(authPacket.token)!!
+                    userInfo = UserInfo(userId)
                     sendPacket(AuthenticationValidPacket(false, userInfo!!))
-                    println("User '${user_id}' has connected")
+                    println("User '$userId' has connected")
                 } else {
                     sendPacket(DisconnectPacket(DisconnectPacket.Reason.auth_invalid, "Token is invalid"))
                 }

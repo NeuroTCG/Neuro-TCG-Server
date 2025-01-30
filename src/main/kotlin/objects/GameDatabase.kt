@@ -4,8 +4,6 @@ import kotlinx.serialization.*
 import kotlinx.serialization.json.*
 import objects.DiscordUsers.userID
 import objects.accounts.*
-import objects.UserFlags
-import objects.UserTokens
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.javatime.*
