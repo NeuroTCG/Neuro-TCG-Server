@@ -16,7 +16,7 @@ class PassiveManager(
     // A Packet used to describe the last action that occurred.
     // Used to provide context when updating passives.
     var lastPacket: Packet? = null
-    val passives: HashMap<Card, Passive> = hashMapOf()
+    val passives: HashMap<Card, PassiveEffect> = hashMapOf()
 
     fun playerToIdx(player: Player): Int {
         if (player == Player.Player1) {
@@ -39,12 +39,12 @@ class PassiveManager(
         card: Card,
         player: Player,
     ) {
-        val newPassive: Passive? = assignPassiveByCard(card, player)
+        val newPassive: PassiveEffect? = assignPassiveByCard(card, player)
         when (newPassive) {
             is NullPassive -> {
                 // Ignore
             }
-            is Passive -> {
+            is PassiveEffect -> {
                 println("adding new passive: $newPassive")
                 passives[card] = newPassive
             }
@@ -60,18 +60,18 @@ class PassiveManager(
     fun assignPassiveByCard(
         card: Card,
         player: Player,
-    ): Passive? {
+    ): PassiveEffect? {
         println("Card's ID is ${card.state.id}")
-        when (card.state.id) {
+        when (CardStats.getCardByID(card.state.id)?.passive?.effect) {
             // TODO: Create Unique passives for each card.
-            CardIDNumbers.PIRATE_EVIL -> {
+            PassiveEffectType.NONE -> {
                 return NullPassive(this, card, player)
             }
-            CardIDNumbers.ANGEL_NEURO -> {
-                return AngelNeuroPassive(this, card, player)
+            PassiveEffectType.BUFF_ADJACENT -> {
+                return BuffAdjacent(this, card, player)
             }
-            CardIDNumbers.FILIPINO_BOY -> {
-                return FilipinoBoyPassive(this, card, player)
+            PassiveEffectType.DRAW_ON_DESTRUCTION -> {
+                return DrawOnDestruction(this, card, player)
             }
             else -> {
                 return null
@@ -89,7 +89,7 @@ class PassiveManager(
 
         println("Updating ${passives.size} passives...")
 
-        for (p: Passive in passives.values) {
+        for (p: PassiveEffect in passives.values) {
             val updates: CardActionList? = p.update(lastPacket, boardManager.getBoardState())
 
             if (updates == null) {
