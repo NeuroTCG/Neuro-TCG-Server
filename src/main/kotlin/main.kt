@@ -108,6 +108,10 @@ fun main() {
         install(WebSockets)
 
         routing {
+            get("/fire") {
+                call.respond("water")
+            }
+
             route("/auth") {
                 post("/begin") {
                     val authInfo = groupLoginProvider.beginAuth()
