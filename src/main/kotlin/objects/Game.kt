@@ -46,7 +46,7 @@ class Game(
                         otherConnection.sendPacket(
                             DisconnectPacket(
                                 DisconnectPacket.Reason.opponent_disconnect,
-                                "The opponent has closed it's connection",
+                                "The opponent has closed their connection",
                             ),
                         )
                         // otherConnection.close()
