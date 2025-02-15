@@ -13,7 +13,7 @@ class BoardState {
     // ]
     @Required
     val cards =
-        arrayOf<Array<Array<CardData?>>>(
+        arrayOf<Array<Array<Card?>>>(
             // player1
             arrayOf(
                 // local top row

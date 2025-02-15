@@ -9,22 +9,22 @@ import objects.packets.objects.*
 
 @Serializable
 class CardActionList(
-    @Required val card: CardData,
+    @Required val card: Card,
     @Required val actions: Array<CardAction>,
 ) {
     companion object {
-        fun emptyActionList(cardData: CardData) = CardActionList(cardData, arrayOf())
+        fun emptyActionList(card: Card) = CardActionList(card, arrayOf())
 
         fun testActionList(
-            cardData: CardData,
+            card: Card,
             playerIdx: Int,
         ) = CardActionList(
-            cardData,
+            card,
             arrayOf(
                 CardAction(
                     CardActionNames.TEST,
                     arrayOf(
-                        CardActionTarget(playerIdx, cardData.position),
+                        CardActionTarget(playerIdx, card.position),
                     ),
                     0,
                 ),
@@ -32,12 +32,12 @@ class CardActionList(
         )
 
         fun drawCardActionList(
-            cardData: CardData,
+            card: Card,
             playerIdx: Int,
             cardId: Int,
         ) = CardActionList(
-            cardData,
-            arrayOf(CardAction(CardActionNames.DRAW_CARD, arrayOf(CardActionTarget(playerIdx, cardData.position)), cardId)),
+            card,
+            arrayOf(CardAction(CardActionNames.DRAW_CARD, arrayOf(CardActionTarget(playerIdx, card.position)), cardId)),
         )
     }
 }
@@ -59,7 +59,8 @@ class CardActionTarget(
 @Serializable
 class CardActionArg(
     @Required val arg_name: String,
-    @Required val arg_value: String, // Using a String so that args can be generic
+    // Using a String so that args can be generic
+    @Required val arg_value: String,
 )
 
 object CardActionNames {

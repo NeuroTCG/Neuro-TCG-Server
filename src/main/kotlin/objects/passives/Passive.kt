@@ -13,7 +13,7 @@ abstract class Passive(
     // The passive manager
     open val passiveManager: PassiveManager,
     // The card this passive belongs to.
-    open val cardData: CardData,
+    open val card: Card,
     // The player that owns the card associated with this passive.
     open val player: Player,
 ) {
@@ -27,15 +27,15 @@ abstract class Passive(
 
     fun playerIdx(): Int = passiveManager.playerToIdx(player)
 
-    fun cardWasDestroyed(it: CardData = cardData): Boolean =
+    fun cardWasDestroyed(it: Card = card): Boolean =
         passiveManager.findCardByPosition(passiveManager.idxToPlayer(it.playerIdx), it.position) == null
 }
 
 class NullPassive(
     passiveManager: PassiveManager,
-    cardData: CardData,
+    card: Card,
     player: Player,
-) : Passive(passiveManager, cardData, player) {
+) : Passive(passiveManager, card, player) {
     override suspend fun update(
         lastChange: Packet?,
         boardState: BoardState,
@@ -48,9 +48,9 @@ class NullPassive(
  */
 class FilipinoBoyPassive(
     passiveManager: PassiveManager,
-    cardData: CardData,
+    card: Card,
     player: Player,
-) : Passive(passiveManager, cardData, player) {
+) : Passive(passiveManager, card, player) {
     private var drawRequestWasSent = false
 
     override suspend fun update(
@@ -65,21 +65,21 @@ class FilipinoBoyPassive(
                 // Draw card
                 val cardId = passiveManager.drawCard(player)
 
-                return CardActionList.drawCardActionList(cardData, playerIdx(), cardId)
+                return CardActionList.drawCardActionList(card, playerIdx(), cardId)
             }
             return null
         } else {
-            return CardActionList.emptyActionList(cardData)
+            return CardActionList.emptyActionList(card)
         }
     }
 }
 
 class AngelNeuroPassive(
     passiveManager: PassiveManager,
-    cardData: CardData,
+    card: Card,
     player: Player,
-) : Passive(passiveManager, cardData, player) {
-    private val adjacentCards: MutableMap<CardData, CardData> = mutableMapOf()
+) : Passive(passiveManager, card, player) {
+    private val adjacentCards: MutableMap<Card, Card> = mutableMapOf()
     private var removedBuffsOnDestroy = false
 
     override suspend fun update(
@@ -94,7 +94,7 @@ class AngelNeuroPassive(
             if (!removedBuffsOnDestroy) {
                 removedBuffsOnDestroy = true
 
-                for (c: CardData in adjacentCards.values) {
+                for (c: Card in adjacentCards.values) {
                     removeBuffList.add(CardActionTarget(c.playerIdx, c.position))
                 }
 
@@ -103,21 +103,21 @@ class AngelNeuroPassive(
                 actions.add(CardAction(CardActionNames.SUB_ATTACK, removeBuffArray, 2))
                 actions.add(CardAction(CardActionNames.SUB_HP, removeBuffArray, 2, arrayOf(CardActionArgs.minHp(1))))
 
-                return CardActionList(cardData, actions.toTypedArray())
+                return CardActionList(card, actions.toTypedArray())
             }
 
             return null
         }
 
         // Get newly updated list of adjacentCards
-        val newAdjacentCards: Map<CardData, CardData> = passiveManager.getAdjacentCards(cardData)
+        val newAdjacentCards: Map<Card, Card> = passiveManager.getAdjacentCards(card)
 
         // Nothing to be updated. Skip.
         if (newAdjacentCards.isEmpty() && adjacentCards.isEmpty()) {
-            return CardActionList.emptyActionList(cardData)
+            return CardActionList.emptyActionList(card)
         }
 
-        for (c: CardData in newAdjacentCards.values) {
+        for (c: Card in newAdjacentCards.values) {
             if (!adjacentCards.containsKey(c)) {
                 adjacentCards[c] = c
                 c.state.health += 2
@@ -127,13 +127,13 @@ class AngelNeuroPassive(
         }
 
         // Create a queue of cards to remove to avoid an exception getting thrown here.
-        val removeQueue: MutableList<CardData> = mutableListOf()
+        val removeQueue: MutableList<Card> = mutableListOf()
 
         // Adding destroyed cards to the update packet causes an assert statement to fail on the client's end.
         // Making a separate list that removes them from the list without adding them to the update packet.
-        val destroyedQueue: MutableList<CardData> = mutableListOf()
+        val destroyedQueue: MutableList<Card> = mutableListOf()
 
-        for (c: CardData in adjacentCards.values) {
+        for (c: Card in adjacentCards.values) {
             if (cardWasDestroyed(c)) {
                 destroyedQueue.add(c)
             } else if (!newAdjacentCards.containsKey(c)) {
@@ -142,10 +142,10 @@ class AngelNeuroPassive(
                 removeQueue.add(c)
             }
         }
-        for (c: CardData in destroyedQueue) {
+        for (c: Card in destroyedQueue) {
             adjacentCards.remove(c)
         }
-        for (c: CardData in removeQueue) {
+        for (c: Card in removeQueue) {
             adjacentCards.remove(c)
             removeBuffList.add(CardActionTarget(c.playerIdx, c.position))
         }
@@ -164,6 +164,6 @@ class AngelNeuroPassive(
             actions.add(CardAction(CardActionNames.SUB_HP, removeBuffArray, 2, arrayOf(CardActionArgs.minHp(1))))
         }
 
-        return CardActionList(cardData, actions.toTypedArray())
+        return CardActionList(card, actions.toTypedArray())
     }
 }

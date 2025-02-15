@@ -55,14 +55,14 @@ class BoardStateManager(
     fun getCard(
         player: Player,
         position: CardPosition,
-    ): CardData? = this.boardState.cards[playerToIndex(player)][position.row][position.column]
+    ): Card? = this.boardState.cards[playerToIndex(player)][position.row][position.column]
 
     private fun setCard(
         player: Player,
         position: CardPosition,
-        cardData: CardData?,
+        card: Card?,
     ) {
-        this.boardState.cards[playerToIndex(player)][position.row][position.column] = cardData
+        this.boardState.cards[playerToIndex(player)][position.row][position.column] = card
     }
 
     fun placeInHand(
@@ -291,9 +291,9 @@ class BoardStateManager(
                 0,
             )
 
-        val newCardData =
-            CardData(
-                playerToIndex(player),
+        val newCard =
+            Card(
+                packet.card_id,
                 packet.position,
                 newCardState,
             )
@@ -301,12 +301,13 @@ class BoardStateManager(
         setCard(
             player,
             packet.position,
-            newCardData,
+            newCard,
         )
 
         removeFromHand(player, packet.card_id)
         removeRam(player, cardStat.summoning_cost)
-        passiveManager.addPassive(newCardData, player)
+
+        passiveManager.addPassive(newCard, player)
 
         getConnection(player).sendPacket(
             packet.getResponsePacket(

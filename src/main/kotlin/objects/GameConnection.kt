@@ -36,12 +36,14 @@ class GameConnection(
                     sendPacket(
                         DisconnectPacket(
                             DisconnectPacket.Reason.protocol_too_old,
-                            "Protocol version ${clientInfo.protocol_version} isn't supported anymore, please update to version $currentProtocolVersion",
+                            "Protocol version ${clientInfo.protocol_version} isn't supported anymore, " +
+                                "please update to version $currentProtocolVersion",
                         ),
                     )
                 } else {
                     println(
-                        "Client '${clientInfo.client_name}' v${clientInfo.client_version} connected using protocol v${clientInfo.protocol_version}",
+                        "Client '${clientInfo.client_name}' v${clientInfo.client_version} connected " +
+                            "using protocol v${clientInfo.protocol_version}",
                     )
                     sendPacket(ClientInfoAcceptPacket())
                 }

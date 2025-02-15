@@ -5,9 +5,8 @@ import kotlinx.serialization.*
 @Serializable
 enum class Tactic {
     REACH,
-    NIMBLE
+    NIMBLE,
 }
-
 
 @Serializable
 enum class CardType {
