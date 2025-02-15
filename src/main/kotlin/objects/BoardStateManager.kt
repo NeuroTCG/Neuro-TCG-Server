@@ -284,7 +284,7 @@ class BoardStateManager(
                 packet.card_id,
                 cardStat.max_hp,
                 false,
-                if (cardStat.has_summoning_sickness) CardTurnPhase.Done else CardTurnPhase.MoveOrAction,
+                if (!cardStat.tactics.contains(Tactic.NIMBLE)) CardTurnPhase.Done else CardTurnPhase.MoveOrAction,
                 0,
                 0,
             )
