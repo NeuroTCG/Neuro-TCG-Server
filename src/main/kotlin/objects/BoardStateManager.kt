@@ -211,6 +211,8 @@ class BoardStateManager(
             deckMasterCard,
         )
 
+        this.boardState.deck_masters[playerToIndex(player)] = deckMasterCard
+
         passiveManager.addPassive(deckMasterCard, player)
 
         getConnection(player).sendPacket(DeckMasterInitPacket(true, true, deckMasterCard.position, deckMasterCard.state))
@@ -305,11 +307,6 @@ class BoardStateManager(
         removeFromHand(player, packet.card_id)
         removeRam(player, cardStat.summoning_cost)
         passiveManager.addPassive(newCardData, player)
-
-        // If it's a deck master, we put it in the board state
-        if (cardStat.card_type == CardType.DECK_MASTER) {
-            this.boardState.deck_masters[playerToIndex(player)] = newCardData
-        }
 
         getConnection(player).sendPacket(
             packet.getResponsePacket(

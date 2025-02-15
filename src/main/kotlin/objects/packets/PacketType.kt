@@ -10,7 +10,9 @@ class PacketType {
         const val RULE_INFO = "rule_info"
         const val MATCH_FOUND = "match_found"
         const val GAME_START = "game_start"
+
         const val PLAYER_READY = "player_ready"
+        const val OPPONENT_READY = "opponent_ready"
 
         const val DECK_MASTER_REQUEST = "deck_master_request"
         const val DECK_MASTER_SELECTED = "deck_master_selected"
