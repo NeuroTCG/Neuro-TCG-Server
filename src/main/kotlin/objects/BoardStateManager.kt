@@ -192,7 +192,7 @@ class BoardStateManager(
         }
 
         val deckMasterCard =
-            CardData(
+            Card(
                 playerToIndex(player),
                 CardPosition(1, 1),
                 CardState(
