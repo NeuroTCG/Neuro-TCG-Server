@@ -7,6 +7,7 @@ import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.pebble.*
 import io.ktor.server.plugins.contentnegotiation.*
+import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -81,6 +82,17 @@ fun main() {
                     suffix = ".pebble"
                 },
             )
+        }
+
+        install(CORS) {
+            allowSameOrigin
+
+            allowHost("0.0.0.0:8060") // the godot one-click-deploy server runs here
+            allowHost("neurotcg.github.io")
+
+            allowHeaders { true } // all headers
+
+            HttpMethod.DefaultMethods.forEach { allowMethod(it) } // all methods
         }
 
         install(Authentication) {
