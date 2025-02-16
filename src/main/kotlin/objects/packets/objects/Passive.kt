@@ -14,9 +14,10 @@ enum class PassiveEffectType {
 @Serializable
 data class Passive(
     @Required var effect: PassiveEffectType = PassiveEffectType.NONE,
-    @Required var valueX: Int = 0,
-    @Required var valueY: Int = 0,
-)
-
-
-
+    @Required var values: IntArray = IntArray(0),
+    @Required var values_size: Int = 0
+) {
+    init {
+        require(values.size == values_size)
+    }
+}

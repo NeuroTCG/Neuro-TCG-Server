@@ -92,8 +92,8 @@ class BuffAdjacent(
         val stats: CardStats? = CardStats.getCardByID(card.state.id)
         stats?.let {
             cardStats ->
-            atkIncrease = stats.passive.valueX
-            hpIncrease = stats.passive.valueY
+            atkIncrease = stats.passive.values[0]
+            hpIncrease = stats.passive.values[1]
         } ?: run {
             println("Warning: no card was found with ID ${card.state.id}")
         }
