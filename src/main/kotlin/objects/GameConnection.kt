@@ -3,6 +3,7 @@ package objects
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.channels.*
+import kotlinx.coroutines.delay
 import kotlinx.serialization.*
 import kotlinx.serialization.json.*
 import objects.packets.*
@@ -39,6 +40,7 @@ class GameConnection(
                                 "please update to version $currentProtocolVersion",
                         ),
                     )
+                    close()
                 } else {
                     println(
                         "Client '${clientInfo.client_name}' v${clientInfo.client_version} connected " +
@@ -50,6 +52,7 @@ class GameConnection(
 
             else -> {
                 sendPacket(UnknownPacketPacket("expected ${PacketType.CLIENT_INFO} packet"))
+                close()
             }
         }
 
@@ -70,6 +73,7 @@ class GameConnection(
                     println("User '$userId' has connected")
                 } else {
                     sendPacket(DisconnectPacket(DisconnectPacket.Reason.auth_invalid, "Token is invalid"))
+                    close()
                 }
             }
 
@@ -134,6 +138,8 @@ class GameConnection(
     suspend fun close() {
         if (isOpen) {
             println("closing connection")
+            clientSocket.flush()
+            delay(1000) // the last message won't get sent unless we wait
             clientSocket.close(CloseReason(CloseReason.Codes.NORMAL, "Bye"))
             return
         }
