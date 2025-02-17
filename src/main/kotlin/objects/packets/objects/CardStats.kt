@@ -91,7 +91,7 @@ class CardStats(
                         arrayOf<Tactic>(),
                         CardType.DECK_MASTER,
                         Ability(AbilityEffect.ADD_HP, 3, AbilityRange.ALLY_CARD, 4),
-                        Passive(PassiveEffectType.BUFF_ADJACENT, intArrayOf(1, 1), 2),
+                        Passive(PassiveEffectType.BUFF_ADJACENT, intArrayOf(1, 1)),
                     ),
                 3 to
                     CardStats(

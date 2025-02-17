@@ -13,12 +13,18 @@ enum class PassiveEffectType {
 
 @Serializable
 data class Passive(
-    @Required var effect: PassiveEffectType = PassiveEffectType.NONE,
-    @Required var values: IntArray = IntArray(0),
-    @Required var valuesSize: Int = 0,
+    @Required val effect: PassiveEffectType = PassiveEffectType.NONE,
+    @Required val values: IntArray = IntArray(0),
 ) {
     init {
-        require(values.size == valuesSize)
+        require(
+            values.size ==
+                when (effect) {
+                    PassiveEffectType.DRAW_ON_DESTRUCTION -> 0
+                    PassiveEffectType.BUFF_ADJACENT -> 2
+                    PassiveEffectType.NONE -> 0
+                },
+        )
     }
 
     override fun equals(other: Any?): Boolean {
@@ -29,7 +35,6 @@ data class Passive(
 
         if (effect != other.effect) return false
         if (!values.contentEquals(other.values)) return false
-        if (valuesSize != other.valuesSize) return false
 
         return true
     }
@@ -37,7 +42,6 @@ data class Passive(
     override fun hashCode(): Int {
         var result = effect.hashCode()
         result = 31 * result + values.contentHashCode()
-        result = 31 * result + valuesSize
         return result
     }
 }
