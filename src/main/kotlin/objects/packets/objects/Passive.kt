@@ -15,7 +15,7 @@ enum class PassiveEffectType {
 data class Passive(
     @Required var effect: PassiveEffectType = PassiveEffectType.NONE,
     @Required var values: IntArray = IntArray(0),
-    @Required var valuesSize: Int = 0
+    @Required var valuesSize: Int = 0,
 ) {
     init {
         require(values.size == valuesSize)

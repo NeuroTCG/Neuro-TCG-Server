@@ -90,8 +90,7 @@ class BuffAdjacent(
         var atkIncrease = 0
         var hpIncrease = 0
         val stats: CardStats? = CardStats.getCardByID(card.state.id)
-        stats?.let {
-            cardStats ->
+        stats?.let { cardStats ->
             atkIncrease = stats.passive.values[0]
             hpIncrease = stats.passive.values[1]
         } ?: run {
