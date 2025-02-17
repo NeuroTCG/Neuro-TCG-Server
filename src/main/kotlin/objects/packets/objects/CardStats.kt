@@ -31,7 +31,7 @@ class CardStats(
     @Required val tactics: Array<Tactic>,
     @Required val card_type: CardType,
     @Required val ability: Ability,
-    @Required val passive: Passive = Passive()
+    @Required val passive: Passive = Passive(),
 ) {
     init {
         assert(summoning_cost in 0..10)
@@ -91,7 +91,7 @@ class CardStats(
                         arrayOf<Tactic>(),
                         CardType.DECK_MASTER,
                         Ability(AbilityEffect.ADD_HP, 3, AbilityRange.ALLY_CARD, 4),
-                        Passive(PassiveEffectType.BUFF_ADJACENT, intArrayOf(1, 1), 2)
+                        Passive(PassiveEffectType.BUFF_ADJACENT, intArrayOf(1, 1), 2),
                     ),
                 3 to
                     CardStats(
@@ -103,7 +103,7 @@ class CardStats(
                         arrayOf<Tactic>(),
                         CardType.CREATURE,
                         Ability(AbilityEffect.SEAL, 1, AbilityRange.ENEMY_CARD, 0),
-                        Passive()
+                        Passive(),
                     ),
                 4 to
                     CardStats(
