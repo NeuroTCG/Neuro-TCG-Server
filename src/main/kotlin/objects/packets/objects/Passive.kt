@@ -15,9 +15,29 @@ enum class PassiveEffectType {
 data class Passive(
     @Required var effect: PassiveEffectType = PassiveEffectType.NONE,
     @Required var values: IntArray = IntArray(0),
-    @Required var values_size: Int = 0
+    @Required var valuesSize: Int = 0
 ) {
     init {
-        require(values.size == values_size)
+        require(values.size == valuesSize)
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as Passive
+
+        if (effect != other.effect) return false
+        if (!values.contentEquals(other.values)) return false
+        if (valuesSize != other.valuesSize) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = effect.hashCode()
+        result = 31 * result + values.contentHashCode()
+        result = 31 * result + valuesSize
+        return result
     }
 }
