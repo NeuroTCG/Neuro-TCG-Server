@@ -25,13 +25,13 @@ enum class CardType {
 class CardStats(
     @Required val name: String,
     @Required var graphics: String?,
-    @Required val max_hp: Int,
-    @Required val base_atk: Int,
     @Required var summoning_cost: Int,
+    @Required val base_atk: Int,
+    @Required val max_hp: Int,
     @Required val tactics: Array<Tactic>,
     @Required val card_type: CardType,
     @Required val ability: Ability,
-    @Required val has_summoning_sickness: Boolean,
+    @Required val passive: Passive = Passive(),
 ) {
     init {
         assert(summoning_cost in 0..10)
@@ -55,7 +55,6 @@ class CardStats(
             return name.replace(" ", "_").replace("'", "_").lowercase()
         }
 
-        // TODO: maybe move this out of here since it isn't networking related
         val cardIDMapping: HashMap<Int, CardStats> =
             hashMapOf(
                 0 to
@@ -65,58 +64,58 @@ class CardStats(
                         2,
                         2,
                         2,
-                        arrayOf<Tactic>(),
+                        arrayOf<Tactic>(Tactic.REACH),
                         CardType.CREATURE,
                         Ability(),
-                        true,
+                        Passive(),
                     ),
                 1 to
                     CardStats(
                         "Filipino Boy",
                         null,
-                        3,
-                        3,
-                        5,
+                        4,
+                        2,
+                        2,
                         arrayOf<Tactic>(Tactic.REACH),
                         CardType.CREATURE,
                         Ability(),
-                        true,
+                        Passive(PassiveEffectType.DRAW_ON_DESTRUCTION),
                     ),
                 2 to
                     CardStats(
                         "Angel Neuro",
                         null,
-                        24,
-                        2,
                         0,
+                        2,
+                        24,
                         arrayOf<Tactic>(),
                         CardType.DECK_MASTER,
                         Ability(AbilityEffect.ADD_HP, 3, AbilityRange.ALLY_CARD, 4),
-                        true,
+                        Passive(PassiveEffectType.BUFF_ADJACENT, intArrayOf(1, 1)),
                     ),
                 3 to
                     CardStats(
                         "That streaming site she uses",
                         null,
+                        4,
+                        4,
                         3,
-                        4,
-                        4,
                         arrayOf<Tactic>(),
                         CardType.CREATURE,
                         Ability(AbilityEffect.SEAL, 1, AbilityRange.ENEMY_CARD, 0),
-                        true,
+                        Passive(),
                     ),
                 4 to
                     CardStats(
                         "10 Tins Cans 1 Stream",
                         null,
+                        5,
                         0,
                         0,
-                        4,
                         arrayOf<Tactic>(),
                         CardType.MAGIC,
-                        Ability(AbilityEffect.ATTACK, 5, AbilityRange.ENEMY_CARD, 0),
-                        true,
+                        Ability(AbilityEffect.ATTACK, 5, AbilityRange.ENEMY_ROW, 0),
+                        Passive(),
                     ),
             )
 

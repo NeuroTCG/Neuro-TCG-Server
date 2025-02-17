@@ -9,7 +9,7 @@ import objects.packets.*
 import objects.packets.objects.*
 import kotlin.math.max
 
-abstract class Passive(
+abstract class PassiveEffect(
     // The passive manager
     open val passiveManager: PassiveManager,
     // The card this passive belongs to.
@@ -35,22 +35,18 @@ class NullPassive(
     passiveManager: PassiveManager,
     card: Card,
     player: Player,
-) : Passive(passiveManager, card, player) {
+) : PassiveEffect(passiveManager, card, player) {
     override suspend fun update(
         lastChange: Packet?,
         boardState: BoardState,
     ): CardActionList? = null
 }
 
-/**
- *  Passive for 'Filipino Boy'
- *      Card holder draws card when destroyed
- */
-class FilipinoBoyPassive(
+class DrawOnDestruction(
     passiveManager: PassiveManager,
     card: Card,
     player: Player,
-) : Passive(passiveManager, card, player) {
+) : PassiveEffect(passiveManager, card, player) {
     private var drawRequestWasSent = false
 
     override suspend fun update(
@@ -74,11 +70,11 @@ class FilipinoBoyPassive(
     }
 }
 
-class AngelNeuroPassive(
+class BuffAdjacent(
     passiveManager: PassiveManager,
     card: Card,
     player: Player,
-) : Passive(passiveManager, card, player) {
+) : PassiveEffect(passiveManager, card, player) {
     private val adjacentCards: MutableMap<Card, Card> = mutableMapOf()
     private var removedBuffsOnDestroy = false
 
@@ -90,6 +86,17 @@ class AngelNeuroPassive(
         val addBuffList: MutableList<CardActionTarget> = mutableListOf()
         val actions: MutableList<CardAction> = mutableListOf()
 
+        // Assign values for atk and hp increase
+        var atkIncrease = 0
+        var hpIncrease = 0
+        val stats: CardStats? = CardStats.getCardByID(card.state.id)
+        stats?.let { cardStats ->
+            atkIncrease = stats.passive.values[0]
+            hpIncrease = stats.passive.values[1]
+        } ?: run {
+            println("Warning: no card was found with ID ${card.state.id}")
+        }
+
         if (cardWasDestroyed()) {
             if (!removedBuffsOnDestroy) {
                 removedBuffsOnDestroy = true
@@ -100,8 +107,8 @@ class AngelNeuroPassive(
 
                 val removeBuffArray = removeBuffList.toTypedArray()
 
-                actions.add(CardAction(CardActionNames.SUB_ATTACK, removeBuffArray, 2))
-                actions.add(CardAction(CardActionNames.SUB_HP, removeBuffArray, 2, arrayOf(CardActionArgs.minHp(1))))
+                actions.add(CardAction(CardActionNames.SUB_ATTACK, removeBuffArray, atkIncrease))
+                actions.add(CardAction(CardActionNames.SUB_HP, removeBuffArray, hpIncrease, arrayOf(CardActionArgs.minHp(1))))
 
                 return CardActionList(card, actions.toTypedArray())
             }
@@ -120,8 +127,8 @@ class AngelNeuroPassive(
         for (c: Card in newAdjacentCards.values) {
             if (!adjacentCards.containsKey(c)) {
                 adjacentCards[c] = c
-                c.state.health += 2
-                c.state.attack_bonus += 2
+                c.state.health += atkIncrease
+                c.state.attack_bonus += hpIncrease
                 addBuffList.add(CardActionTarget(c.playerIdx, c.position))
             }
         }
@@ -137,8 +144,8 @@ class AngelNeuroPassive(
             if (cardWasDestroyed(c)) {
                 destroyedQueue.add(c)
             } else if (!newAdjacentCards.containsKey(c)) {
-                c.state.health = max(1, c.state.health - 2)
-                c.state.attack_bonus -= 2
+                c.state.health = max(1, c.state.health - hpIncrease)
+                c.state.attack_bonus -= atkIncrease
                 removeQueue.add(c)
             }
         }
@@ -150,18 +157,18 @@ class AngelNeuroPassive(
             removeBuffList.add(CardActionTarget(c.playerIdx, c.position))
         }
 
-        // Give new adjacentCards the +2 HP / +2 Attack Buff
+        // Give new adjacentCards the +x HP / +y Attack Buff
         if (addBuffList.isNotEmpty()) {
             val addBuffArray = addBuffList.toTypedArray()
-            actions.add(CardAction(CardActionNames.ADD_HP, addBuffArray, 2))
-            actions.add(CardAction(CardActionNames.ADD_ATTACK, addBuffArray, 2))
+            actions.add(CardAction(CardActionNames.ADD_HP, addBuffArray, hpIncrease))
+            actions.add(CardAction(CardActionNames.ADD_ATTACK, addBuffArray, atkIncrease))
         }
 
         // Remove buffs from cards no longer adjacent to angel
         if (removeBuffList.isNotEmpty()) {
             val removeBuffArray = removeBuffList.toTypedArray()
-            actions.add(CardAction(CardActionNames.SUB_ATTACK, removeBuffArray, 2))
-            actions.add(CardAction(CardActionNames.SUB_HP, removeBuffArray, 2, arrayOf(CardActionArgs.minHp(1))))
+            actions.add(CardAction(CardActionNames.SUB_ATTACK, removeBuffArray, hpIncrease))
+            actions.add(CardAction(CardActionNames.SUB_HP, removeBuffArray, atkIncrease, arrayOf(CardActionArgs.minHp(1))))
         }
 
         return CardActionList(card, actions.toTypedArray())
