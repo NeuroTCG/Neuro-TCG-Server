@@ -2,6 +2,7 @@ package objects
 
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
+import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 import kotlinx.coroutines.delay
 import kotlinx.serialization.*
@@ -20,7 +21,7 @@ class GameConnection(
 
     fun getUserInfo(): UserInfo = userInfo!!
 
-    suspend fun connect() {
+    suspend fun connectAndAuthenticate(queue: MatchmakingQueue) {
         println("Waiting for client info")
         val clientInfo = receivePacket()
         println("client info received")
@@ -84,7 +85,9 @@ class GameConnection(
     }
 
     val isOpen: Boolean
-        get() = !clientSocket.outgoing.isClosedForSend
+        get() = !clientSocket.outgoing.isClosedForSend && !isClosing
+
+    private var isClosing = false
 
     suspend fun receivePacket(): Packet? {
         var packet: Packet? = null
@@ -137,10 +140,15 @@ class GameConnection(
 
     suspend fun close() {
         if (isOpen) {
-            println("closing connection")
+            println("closing connection in background")
+            isClosing = true
             clientSocket.flush()
-            delay(1000) // the last message won't get sent unless we wait
-            clientSocket.close(CloseReason(CloseReason.Codes.NORMAL, "Bye"))
+
+            CoroutineScope(Dispatchers.Default).launch {
+                delay(5000) // the last message won't get sent unless we wait
+                clientSocket.close(CloseReason(CloseReason.Codes.NORMAL, "Bye"))
+                println("Backgrounded closing task finished")
+            }
             return
         }
         println("connection was already closed")
