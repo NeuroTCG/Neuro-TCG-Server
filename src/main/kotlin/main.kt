@@ -19,6 +19,7 @@ import kotlinx.serialization.*
 import kotlinx.serialization.json.*
 import objects.*
 import objects.accounts.*
+import objects.packets.*
 import objects.packets.objects.UserInfo
 import java.util.*
 import java.util.concurrent.*
@@ -197,10 +198,17 @@ fun main() {
                 val connection = GameConnection(this, db)
                 connection.connectAndAuthenticate(playerQueue)
                 if (!connection.isOpen) {
+                    connection.waitForClose()
                     return@connectionHandler
                 }
 
-                val gameFuture = playerQueue.addPlayer(connection)
+                val gameFuture = playerQueue.addPlayerIfNotInQueue(connection)
+
+                if (gameFuture == null) {
+                    connection.sendPacket(DisconnectPacket(DisconnectPacket.Reason.double_login, "You are already in the queue"))
+                    connection.waitForClose()
+                    return@connectionHandler
+                }
 
                 playerQueue.matchmakeEveryone(db)
 
@@ -212,11 +220,12 @@ fun main() {
                     e.printStackTrace()
                 }
                 println("Game finished")
+                connection.waitForClose()
             }
 
             authenticate("admin") {
                 route("/admin") {
-                    // authentication should probably be done by somme kind of middleware in here?
+                    // authentication should probably be done by some kind of middleware in here?
 
                     route("/users") {
                         route("/{userId}") {

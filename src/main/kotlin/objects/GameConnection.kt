@@ -28,7 +28,7 @@ class GameConnection(
         when (clientInfo) {
             null -> {
                 close()
-                throw RuntimeException("Connection was closed unexpectedly")
+                return
             }
 
             is ClientInfoPacket -> {
@@ -42,6 +42,7 @@ class GameConnection(
                         ),
                     )
                     close()
+                    return
                 } else {
                     println(
                         "Client '${clientInfo.client_name}' v${clientInfo.client_version} connected " +
@@ -54,6 +55,7 @@ class GameConnection(
             else -> {
                 sendPacket(UnknownPacketPacket("expected ${PacketType.CLIENT_INFO} packet"))
                 close()
+                return
             }
         }
 
@@ -63,7 +65,7 @@ class GameConnection(
         when (authPacket) {
             null -> {
                 close()
-                throw RuntimeException("Connection was closed unexpectedly")
+                return
             }
 
             is AuthenticatePacket -> {
@@ -75,11 +77,14 @@ class GameConnection(
                 } else {
                     sendPacket(DisconnectPacket(DisconnectPacket.Reason.auth_invalid, "Token is invalid"))
                     close()
+                    return
                 }
             }
 
             else -> {
                 sendPacket(UnknownPacketPacket("expected ${PacketType.AUTHENTICATE} packet"))
+                close()
+                return
             }
         }
     }
@@ -88,6 +93,7 @@ class GameConnection(
         get() = !clientSocket.outgoing.isClosedForSend && !isClosing
 
     private var isClosing = false
+    private var closingJob: Job? = null
 
     suspend fun receivePacket(): Packet? {
         var packet: Packet? = null
@@ -144,13 +150,21 @@ class GameConnection(
             isClosing = true
             clientSocket.flush()
 
-            CoroutineScope(Dispatchers.Default).launch {
-                delay(5000) // the last message won't get sent unless we wait
-                clientSocket.close(CloseReason(CloseReason.Codes.NORMAL, "Bye"))
-                println("Backgrounded closing task finished")
-            }
+            closingJob =
+                CoroutineScope(Dispatchers.Default).launch {
+                    delay(5000) // the last message won't get sent unless we wait
+                    clientSocket.close(CloseReason(CloseReason.Codes.NORMAL, "Bye"))
+                    println("Backgrounded closing task finished")
+                }
             return
         }
         println("connection was already closed")
+    }
+
+    suspend fun waitForClose() {
+        close()
+        println("Waiting for connection close")
+        closingJob!!.join()
+        println("Waiting for connection close finished")
     }
 }

@@ -1,7 +1,9 @@
 package objects
 
+import okio.withLock
 import java.util.*
 import java.util.concurrent.*
+import java.util.concurrent.locks.ReentrantLock
 
 class MatchmakingResult(
     val game: Game,
@@ -10,40 +12,65 @@ class MatchmakingResult(
 
 class MatchmakingQueue {
     private val queue: Queue<Pair<GameConnection, CompletableFuture<MatchmakingResult>>> = LinkedList()
+    private val lock = ReentrantLock()
 
-    fun tryGetFirstOpenConnection(): Pair<GameConnection, CompletableFuture<MatchmakingResult>>? {
-        while (queue.isNotEmpty()) {
-            val (connection, mmr) = queue.remove()
-            if (connection.isOpen) {
-                return Pair(connection, mmr)
+    fun addPlayerIfNotInQueue(connection: GameConnection): CompletableFuture<MatchmakingResult>? {
+        lock.withLock {
+            if (isPlayerInQueue(connection.getUserInfo().id)) {
+                return null
+            } else {
+                val gameFuture = CompletableFuture<MatchmakingResult>()
+                queue.add(Pair(connection, gameFuture))
+                return gameFuture
+            }
+        }
+    }
+
+    private fun tryGetFirstOpenConnection(): Pair<GameConnection, CompletableFuture<MatchmakingResult>>? {
+        lock.withLock {
+            while (queue.isNotEmpty()) {
+                val (connection, mmr) = queue.remove()
+                if (connection.isOpen) {
+                    return Pair(connection, mmr)
+                }
             }
         }
         return null
     }
 
-    fun addPlayer(connection: GameConnection): CompletableFuture<MatchmakingResult> {
-        val gameFuture = CompletableFuture<MatchmakingResult>()
+    suspend fun matchmakeEveryone(db: GameDatabase) {
+        lock.withLock {
+            while (queue.count() >= 2) {
+                val (p1c, p1gf) = tryGetFirstOpenConnection() ?: break
+                val p2 = tryGetFirstOpenConnection()
 
-        queue.add(Pair(connection, gameFuture))
+                if (p2 == null) {
+                    queue.add(Pair(p1c, p1gf))
+                    break
+                }
+                val (p2c, p2gf) = p2
 
-        return gameFuture
+                val newGame = Game(p1c, p2c, db)
+                println("Created game ${newGame.id}")
+                p1gf.complete(MatchmakingResult(newGame, Player.Player1))
+                p2gf.complete(MatchmakingResult(newGame, Player.Player2))
+            }
+        }
     }
 
-    suspend fun matchmakeEveryone(db: GameDatabase) {
-        while (queue.count() >= 2) {
-            val (p1c, p1gf) = tryGetFirstOpenConnection() ?: break
-            val p2 = tryGetFirstOpenConnection()
+    private fun removeDisconnectedPlayers() {
+        lock.withLock {
+            queue.retainAll { (c, _) -> c.isOpen }
+        }
+    }
 
-            if (p2 == null) {
-                queue.add(Pair(p1c, p1gf))
-                break
+    private fun isPlayerInQueue(id: TcgId): Boolean {
+        lock.withLock {
+            removeDisconnectedPlayers()
+
+            return queue.any { (connection, _) ->
+                connection.getUserInfo().id == id
             }
-            val (p2c, p2gf) = p2
-
-            val newGame = Game(p1c, p2c, db)
-            println("Created game ${newGame.id}")
-            p1gf.complete(MatchmakingResult(newGame, Player.Player1))
-            p2gf.complete(MatchmakingResult(newGame, Player.Player2))
         }
     }
 }
