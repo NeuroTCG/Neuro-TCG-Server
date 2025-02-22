@@ -45,5 +45,10 @@ class DisconnectPacket(
          * game over
          */
         game_over,
+
+        /**
+         * this user is already in a game / queue
+         */
+        double_login,
     }
 }

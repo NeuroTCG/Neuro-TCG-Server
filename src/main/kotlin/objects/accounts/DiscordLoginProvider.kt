@@ -92,6 +92,7 @@ class DiscordLoginProvider(
             val tcgUserId = getTcgUserFromOauthCodeResponse(code)
             deferred.complete(LoginSuccess(tcgUserId))
         } catch (e: Exception) {
+            e.printStackTrace()
             deferred.complete(LoginException(e))
         }
     }
