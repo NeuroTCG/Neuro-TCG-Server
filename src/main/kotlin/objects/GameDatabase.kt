@@ -216,6 +216,9 @@ class GameDatabase(
 
         val success =
             transaction {
+                // invalidate all previous tokens
+                UserTokens.deleteWhere { (UserTokens.userId eq tcgUserId.id) }
+
                 val success =
                     UserTokens.insert {
                         it[userId] = tcgUserId.id
