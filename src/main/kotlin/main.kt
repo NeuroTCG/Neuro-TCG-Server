@@ -32,7 +32,7 @@ fun main() {
     val db = GameDatabase(dbPath)
     db.createTables()
 
-    val playerQueue = MatchmakingQueue()
+    val playerQueue = MatchmakingQueue(db)
 
     println("Listening for clients...")
 
@@ -202,22 +202,28 @@ fun main() {
                     return@connectionHandler
                 }
 
-                val gameFuture = playerQueue.addPlayerIfNotInQueue(connection)
+                val gameFuture = playerQueue.addPlayerIfNotInQueueOrGame(connection)
 
                 if (gameFuture == null) {
-                    connection.sendPacket(DisconnectPacket(DisconnectPacket.Reason.double_login, "You are already in the queue"))
+                    connection.sendPacket(
+                        DisconnectPacket(DisconnectPacket.Reason.double_login, "You are already in the queue or in a game"),
+                    )
                     connection.waitForClose()
                     return@connectionHandler
                 }
 
-                playerQueue.matchmakeEveryone(db)
+                playerQueue.matchmakeEveryone()
 
                 println("Waiting for opponent")
+                val match = gameFuture.await()
                 try {
-                    val match = gameFuture.await()
                     match.game.mainLoop(match.player)
                 } catch (e: Exception) {
                     e.printStackTrace()
+                } finally {
+                    if (match.player == Player.Player1) {
+                        db.moveGameToArchive(match.game.id)
+                    }
                 }
                 println("Game finished")
                 connection.waitForClose()

@@ -10,13 +10,20 @@ class MatchmakingResult(
     val player: Player,
 )
 
-class MatchmakingQueue {
+class MatchmakingQueue(
+    val db: GameDatabase,
+) {
     private val queue: Queue<Pair<GameConnection, CompletableFuture<MatchmakingResult>>> = LinkedList()
     private val lock = ReentrantLock()
 
-    fun addPlayerIfNotInQueue(connection: GameConnection): CompletableFuture<MatchmakingResult>? {
+    fun addPlayerIfNotInQueueOrGame(connection: GameConnection): CompletableFuture<MatchmakingResult>? {
         lock.withLock {
             if (isPlayerInQueue(connection.getUserInfo().id)) {
+                return null
+            } else if (db.userGetCurrentGame(connection.getUserInfo().id) != null) {
+                // this check is only race condition free because the only way to create a
+                // game is matchmakeEveryone() and that also holds the lock while
+                // doing so.
                 return null
             } else {
                 val gameFuture = CompletableFuture<MatchmakingResult>()
@@ -38,7 +45,7 @@ class MatchmakingQueue {
         return null
     }
 
-    suspend fun matchmakeEveryone(db: GameDatabase) {
+    suspend fun matchmakeEveryone() {
         lock.withLock {
             while (queue.count() >= 2) {
                 val (p1c, p1gf) = tryGetFirstOpenConnection() ?: break
