@@ -85,11 +85,11 @@ class GameDatabase(
             val gameId =
                 CurrentGames
                     .insert {
-                        it[game_ID] = newGameid
-                        it[player1_ID] = player1ID.id
-                        it[player2_ID] = player2ID.id
-                        it[current_game_state] = startingGameState
-                        it[incremental_moves] = ""
+                        it[this.game_ID] = newGameid
+                        it[this.player1_ID] = player1ID.id
+                        it[this.player2_ID] = player2ID.id
+                        it[this.current_game_state] = startingGameState
+                        it[this.incremental_moves] = ""
                     }.resultedValues!!
                     .last()[CurrentGames.game_ID]
             commit()
@@ -145,13 +145,13 @@ class GameDatabase(
                 json.decodeFromString<MutableList<MutableList<Int>>>(givenChange)
             val newMoveList = moveList + change
             CurrentGames.update({ CurrentGames.game_ID eq gameID.id }) {
-                it[incremental_moves] = newMoveList.toString()
+                it[this.incremental_moves] = newMoveList.toString()
             }
             // Player row column
             currentGameState[change[0][0]][change[1][0]][change[1][1]] =
                 change[2] // TODO: Gotta figure out how we want to handle changes. For now, it's a List of Integers.
             CurrentGames.update({ CurrentGames.game_ID eq gameID.id }) {
-                it[current_game_state] = currentGameState.toString()
+                it[this.current_game_state] = currentGameState.toString()
             }
             commit()
         }
@@ -163,11 +163,11 @@ class GameDatabase(
             require(game != null)
 
             PreviousGames.insert {
-                it[game_ID] = game[CurrentGames.game_ID]
-                it[player1_ID] = game[CurrentGames.player1_ID]
-                it[player2_ID] = game[CurrentGames.player2_ID]
-                it[current_game_state] = game[CurrentGames.current_game_state]
-                it[incremental_moves] = game[CurrentGames.incremental_moves]
+                it[this.game_ID] = game[CurrentGames.game_ID]
+                it[this.player1_ID] = game[CurrentGames.player1_ID]
+                it[this.player2_ID] = game[CurrentGames.player2_ID]
+                it[this.current_game_state] = game[CurrentGames.current_game_state]
+                it[this.incremental_moves] = game[CurrentGames.incremental_moves]
             }
 
             CurrentGames.deleteWhere { CurrentGames.game_ID eq gameID.id }
@@ -198,8 +198,8 @@ class GameDatabase(
         transaction {
             Users.insert {
                 // TODO: User id generation should probably live in some kind of singleton
-                it[userId] = newUserId
-                it[providerName] = authProvider.name
+                it[this.userId] = newUserId
+                it[this.providerName] = authProvider.name
             }[Users.userId]
 
             commit()
@@ -219,7 +219,7 @@ class GameDatabase(
 
                 val success =
                     UserTokens.insert {
-                        it[userId] = tcgUserId.id
+                        it[this.userId] = tcgUserId.id
                         it[UserTokens.token] = token
                     }
 
@@ -244,11 +244,11 @@ class GameDatabase(
     ) {
         transaction {
             DiscordUsers.insert {
-                it[linkedTo] = tcgUserId.id
-                it[userID] = discordUserInfo.id
-                it[accessToken] = discordTokenInfo.accessToken
-                it[accessTokenExpiry] = LocalDateTime.now().plusSeconds(discordTokenInfo.expiresIn.toLong())
-                it[refreshToken] = discordTokenInfo.refreshToken
+                it[this.linkedTo] = tcgUserId.id
+                it[this.userID] = discordUserInfo.id
+                it[this.accessToken] = discordTokenInfo.accessToken
+                it[this.accessTokenExpiry] = LocalDateTime.now().plusSeconds(discordTokenInfo.expiresIn.toLong())
+                it[this.refreshToken] = discordTokenInfo.refreshToken
             }
 
             commit()
@@ -261,10 +261,10 @@ class GameDatabase(
     ) {
         transaction {
             DiscordUsers.update({ DiscordUsers.userID.eq(discordUserInfo.id) }) {
-                it[userID] = discordUserInfo.id
-                it[accessToken] = discordTokenInfo.accessToken
-                it[accessTokenExpiry] = LocalDateTime.now().plusSeconds(discordTokenInfo.expiresIn.toLong())
-                it[refreshToken] = discordTokenInfo.refreshToken
+                it[this.userID] = discordUserInfo.id
+                it[this.accessToken] = discordTokenInfo.accessToken
+                it[this.accessTokenExpiry] = LocalDateTime.now().plusSeconds(discordTokenInfo.expiresIn.toLong())
+                it[this.refreshToken] = discordTokenInfo.refreshToken
             }
 
             commit()
@@ -314,8 +314,8 @@ class GameDatabase(
     ) {
         transaction {
             DevelopmentUsers.insert {
-                it[linkedToId] = userId.id
-                it[ownedById] = ownerId.id
+                it[this.linkedToId] = userId.id
+                it[this.ownedById] = ownerId.id
                 it[this.developmentId] = devUserId.id
             }
 
@@ -346,7 +346,7 @@ class GameDatabase(
     ) {
         transaction {
             UserFlags.insert {
-                it[userID] = userId.id
+                it[this.userId] = userId.id
                 it[this.flag] = flag.flag
             }
 

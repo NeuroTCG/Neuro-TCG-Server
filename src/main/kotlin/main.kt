@@ -242,7 +242,7 @@ fun main() {
 
                             route("/flags") {
                                 get {
-                                    call.respond(db.userListFlags(TcgId(call.request.queryParameters["userId"]!!)))
+                                    call.respond(db.userListFlags(TcgId(call.parameters["userId"]!!)))
                                 }
 
                                 route("/{flag}") {
