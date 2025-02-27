@@ -43,6 +43,7 @@ fun main() {
             webserverBase,
             listOf(
                 DiscordLoginProvider(
+                    webserverBase,
                     "$webserverBase/auth/providers/discord/redirect",
                     dotenv["DISCORD_CLIENT_ID"],
                     dotenv["DISCORD_CLIENT_SECRET"],
