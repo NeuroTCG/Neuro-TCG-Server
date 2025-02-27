@@ -42,13 +42,15 @@ class GameDatabase(
             )
             commit()
         }
+
+        require(transaction { CurrentGames.selectAll().count() } == 0L, { "Not all games were finished correctly" })
     }
 
     @OptIn(ExperimentalSerializationApi::class)
     fun createGame(
-        player1ID: Int,
-        player2ID: Int,
-    ): Int {
+        player1ID: TcgId,
+        player2ID: TcgId,
+    ): GameId {
         val startingGameState: String =
             """
                 |[
@@ -77,24 +79,27 @@ class GameDatabase(
                 |]
             """.trimMargin()
 
-        return transaction {
+        val newGameid = UUID.randomUUID().toString()
+
+        transaction {
             val gameId =
                 CurrentGames
                     .insert {
-                        it[player1_ID] = player1ID
-                        it[player2_ID] = player2ID
+                        it[game_ID] = newGameid
+                        it[player1_ID] = player1ID.id
+                        it[player2_ID] = player2ID.id
                         it[current_game_state] = startingGameState
                         it[incremental_moves] = ""
                     }.resultedValues!!
                     .last()[CurrentGames.game_ID]
             commit()
-            gameId
         }
+        return GameId(newGameid)
     }
 
     @OptIn(ExperimentalSerializationApi::class)
     fun updateGame(
-        gameID: Int,
+        gameID: GameId,
         givenMoveList: String? = null,
         givenGameState: String? = null,
         givenChange: String,
@@ -117,7 +122,7 @@ class GameDatabase(
                         CurrentGames
                             .select(
                                 CurrentGames.current_game_state,
-                            ).where { CurrentGames.game_ID eq gameID }
+                            ).where { CurrentGames.game_ID eq gameID.id }
                             .firstOrNull() as String,
                     )
                 } else {
@@ -128,7 +133,7 @@ class GameDatabase(
                     json.decodeFromString<MutableList<MutableList<Int>>>(
                         CurrentGames
                             .select(CurrentGames.incremental_moves)
-                            .where { CurrentGames.game_ID eq gameID }
+                            .where { CurrentGames.game_ID eq gameID.id }
                             .firstOrNull() as String,
                     )
                 } else {
@@ -139,40 +144,33 @@ class GameDatabase(
             val change: MutableList<MutableList<Int>> =
                 json.decodeFromString<MutableList<MutableList<Int>>>(givenChange)
             val newMoveList = moveList + change
-            CurrentGames.update({ CurrentGames.game_ID eq gameID }) {
+            CurrentGames.update({ CurrentGames.game_ID eq gameID.id }) {
                 it[incremental_moves] = newMoveList.toString()
             }
             // Player row column
             currentGameState[change[0][0]][change[1][0]][change[1][1]] =
                 change[2] // TODO: Gotta figure out how we want to handle changes. For now, it's a List of Integers.
-            CurrentGames.update({ CurrentGames.game_ID eq gameID }) {
+            CurrentGames.update({ CurrentGames.game_ID eq gameID.id }) {
                 it[current_game_state] = currentGameState.toString()
             }
             commit()
         }
     }
 
-    fun saveGameToArchive(
-        gameID: Int,
-        player1ID: Int,
-        player2ID: Int,
-        player1Deck: ByteArray,
-        player2Deck: ByteArray,
-        gameWinner: Boolean,
-        gameLength: Int,
-        moveList: ByteArray,
-    ) {
+    fun moveGameToArchive(gameID: GameId) {
         transaction {
+            val game = CurrentGames.selectAll().where { CurrentGames.game_ID eq gameID.id }.singleOrNull()
+            require(game != null)
+
             PreviousGames.insert {
-                it[date] = LocalDateTime.now()
-                it[player1_ID] = player1ID
-                it[player1_deck] = player1Deck
-                it[player2_ID] = player2ID
-                it[player2_deck] = player2Deck
-                it[winner] = gameWinner
-                it[game_length] = gameLength
-                it[moves] = moveList
+                it[game_ID] = game[CurrentGames.game_ID]
+                it[player1_ID] = game[CurrentGames.player1_ID]
+                it[player2_ID] = game[CurrentGames.player2_ID]
+                it[current_game_state] = game[CurrentGames.current_game_state]
+                it[incremental_moves] = game[CurrentGames.incremental_moves]
             }
+
+            CurrentGames.deleteWhere { CurrentGames.game_ID eq gameID.id }
             commit()
         }
     }
@@ -216,6 +214,9 @@ class GameDatabase(
 
         val success =
             transaction {
+                // invalidate all previous tokens
+                UserTokens.deleteWhere { (UserTokens.userId eq tcgUserId.id) }
+
                 val success =
                     UserTokens.insert {
                         it[userId] = tcgUserId.id
@@ -371,6 +372,11 @@ class GameDatabase(
                 .map { Flag(it[UserFlags.flag]) }
         }
 
+    fun checkToken(token: Token): Boolean =
+        transaction {
+            UserTokens.selectAll().where { UserTokens.token eq token.token }.singleOrNull()
+        } != null
+
     fun checkAdminToken(token: Token): Boolean =
         transaction {
             AdminTokens.selectAll().where { AdminTokens.token eq token.token }.singleOrNull()
@@ -388,12 +394,29 @@ class GameDatabase(
 
         return result[AdminTokens.comment]
     }
+
+    fun userGetCurrentGame(userId: TcgId): GameId? {
+        val result =
+            transaction {
+                CurrentGames
+                    .selectAll()
+                    .where {
+                        (CurrentGames.player1_ID eq userId.id) or (CurrentGames.player2_ID eq userId.id)
+                    }.singleOrNull()
+            }
+
+        if (result == null) {
+            return null
+        }
+
+        return GameId(result[CurrentGames.game_ID])
+    }
 }
 
 object CurrentGames : Table() {
-    val game_ID: Column<Int> = integer("game_id").autoIncrement()
-    val player1_ID: Column<Int> = integer("player1")
-    val player2_ID: Column<Int> = integer("player2")
+    val game_ID: Column<String> = text("game_id")
+    val player1_ID: Column<String> = reference("player1", Users.userId)
+    val player2_ID: Column<String> = reference("player2", Users.userId)
     val current_game_state: Column<String> = text("current_game_state") // Array as a String. Parse with JSON.
     val incremental_moves: Column<String> = text("incremental_moves") // same here.
 
@@ -401,19 +424,13 @@ object CurrentGames : Table() {
 }
 
 object PreviousGames : Table() {
-    val date: Column<LocalDateTime> = datetime("date_created")
-    val player1_ID: Column<Int> = integer("player1")
-    val player1_deck: Column<ByteArray> = binary("player1_deck") // Array of card IDs as a ByteArray.
-    val player2_ID: Column<Int> = integer("player2")
-    val player2_deck: Column<ByteArray> = binary("player2_deck") // same here.
-    val winner: Column<Boolean> = bool("winner") // False for player 1, True for player 2.
-    val game_length: Column<Int> = integer("game_length")
-    val moves: Column<ByteArray> = binary("moves")
-    // Moves will be stored as nested lists encoded into a ByteArray.
-    // Like: [[Change 1, from, to, ...], [Change 2, ...]]
-    // Base state is the state of the board before the first move. Because it's always the same, we don't have to store it in the database.
-    // The changes are incremental.
-    // We can decode the ByteArray back into nested arrays with CBOR for replays or training.
+    val game_ID: Column<String> = text("game_id")
+    val player1_ID: Column<String> = reference("player1", Users.userId)
+    val player2_ID: Column<String> = reference("player2", Users.userId)
+    val current_game_state: Column<String> = text("current_game_state") // Array as a String. Parse with JSON.
+    val incremental_moves: Column<String> = text("incremental_moves") // same here.
+
+    override val primaryKey = PrimaryKey(game_ID)
 }
 
 // For now, store tactics as enums. We will change it to a few bits later.
@@ -521,6 +538,8 @@ object AdminTokens : Table("admin_tokens") {
     override val primaryKey = PrimaryKey(token)
 }
 
+// These all get inlined when serialized because they are value classes
+
 @JvmInline
 @Serializable
 value class TcgId(
@@ -555,4 +574,10 @@ value class Flag(
 @Serializable
 value class AuthProviderName(
     val name: String,
+)
+
+@JvmInline
+@Serializable
+value class GameId(
+    val id: String,
 )
