@@ -7,6 +7,7 @@ import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.pebble.*
 import io.ktor.server.plugins.contentnegotiation.*
+import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -18,20 +19,10 @@ import kotlinx.serialization.*
 import kotlinx.serialization.json.*
 import objects.*
 import objects.accounts.*
+import objects.packets.*
+import objects.packets.objects.UserInfo
 import java.util.*
 import java.util.concurrent.*
-
-fun getFirstOpenConnection(
-    queue: Queue<Pair<GameConnection, CompletableFuture<Pair<Game, Player>>>>,
-): Pair<GameConnection, CompletableFuture<Pair<Game, Player>>>? {
-    while (queue.isNotEmpty()) {
-        val (c, gf) = queue.remove()
-        if (c.isOpen) {
-            return Pair(c, gf)
-        }
-    }
-    return null
-}
 
 @OptIn(ExperimentalSerializationApi::class)
 fun main() {
@@ -41,8 +32,7 @@ fun main() {
     val db = GameDatabase(dbPath)
     db.createTables()
 
-    val playerQueue: Queue<Pair<GameConnection, CompletableFuture<Pair<Game, Player>>>> =
-        LinkedList()
+    val playerQueue = MatchmakingQueue(db)
 
     println("Listening for clients...")
 
@@ -53,6 +43,7 @@ fun main() {
             webserverBase,
             listOf(
                 DiscordLoginProvider(
+                    webserverBase,
                     "$webserverBase/auth/providers/discord/redirect",
                     dotenv["DISCORD_CLIENT_ID"],
                     dotenv["DISCORD_CLIENT_SECRET"],
@@ -82,6 +73,17 @@ fun main() {
             )
         }
 
+        install(CORS) {
+            allowSameOrigin
+
+            allowHost("0.0.0.0:8060") // the godot one-click-deploy server runs here
+            allowHost("neurotcg.github.io")
+
+            allowHeaders { true } // all headers
+
+            HttpMethod.DefaultMethods.forEach { allowMethod(it) } // all methods
+        }
+
         install(Authentication) {
             bearer("user") {
                 authenticate { tokenCredential -> db.getUserIdFromToken(Token(tokenCredential.token)) }
@@ -95,6 +97,10 @@ fun main() {
         install(WebSockets)
 
         routing {
+            get("/fire") {
+                call.respond("water")
+            }
+
             route("/auth") {
                 post("/begin") {
                     val authInfo = groupLoginProvider.beginAuth()
@@ -183,53 +189,50 @@ fun main() {
                     get("/@me") {
                         val mappedUserId = call.principal<TcgId>()!!
 
-                        @Serializable
-                        class UserInfo(
-                            val userId: TcgId,
-                        )
-
                         call.respond(UserInfo(mappedUserId))
                     }
                 }
             }
 
-            webSocket("/game") {
+            webSocket("/game") connectionHandler@{
                 println("New connection established")
-                val connection = GameConnection(this)
-                connection.connect()
-                val gameFuture = CompletableFuture<Pair<Game, Player>>()
-                playerQueue.add(Pair(connection, gameFuture))
-
-                while (playerQueue.count() >= 2) {
-                    val (p1c, p1gf) = getFirstOpenConnection(playerQueue) ?: break
-                    val p2 = getFirstOpenConnection(playerQueue)
-                    if (p2 == null) {
-                        playerQueue.add(Pair(p1c, p1gf))
-                        break
-                    }
-                    val (p2c, p2gf) = p2
-
-                    val newGame = Game(p1c, p2c, db)
-                    println("Starting game ${newGame.id}")
-                    p1gf.complete(Pair(newGame, Player.Player1))
-                    p2gf.complete(Pair(newGame, Player.Player2))
-
-                    println("Game finished")
+                val connection = GameConnection(this, db)
+                connection.connectAndAuthenticate(playerQueue)
+                if (!connection.isOpen) {
+                    connection.waitForClose()
+                    return@connectionHandler
                 }
+
+                val gameFuture = playerQueue.addPlayerIfNotInQueueOrGame(connection)
+
+                if (gameFuture == null) {
+                    connection.sendPacket(
+                        DisconnectPacket(DisconnectPacket.Reason.double_login, "You are already in the queue or in a game"),
+                    )
+                    connection.waitForClose()
+                    return@connectionHandler
+                }
+
+                playerQueue.matchmakeEveryone()
 
                 println("Waiting for opponent")
+                val match = gameFuture.await()
                 try {
-                    val (game, player) = gameFuture.await()
-                    game.mainLoop(player)
+                    match.game.mainLoop(match.player)
                 } catch (e: Exception) {
                     e.printStackTrace()
+                } finally {
+                    if (match.player == Player.Player1) {
+                        db.moveGameToArchive(match.game.id)
+                    }
                 }
                 println("Game finished")
+                connection.waitForClose()
             }
 
             authenticate("admin") {
                 route("/admin") {
-                    // authentication should probably be done by somme kind of middleware in here?
+                    // authentication should probably be done by some kind of middleware in here?
 
                     route("/users") {
                         route("/{userId}") {
@@ -239,7 +242,7 @@ fun main() {
 
                             route("/flags") {
                                 get {
-                                    call.respond(db.userListFlags(TcgId(call.request.queryParameters["userId"]!!)))
+                                    call.respond(db.userListFlags(TcgId(call.parameters["userId"]!!)))
                                 }
 
                                 route("/{flag}") {

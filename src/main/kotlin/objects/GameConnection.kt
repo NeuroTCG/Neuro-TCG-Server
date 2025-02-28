@@ -2,7 +2,9 @@ package objects
 
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
+import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
+import kotlinx.coroutines.delay
 import kotlinx.serialization.*
 import kotlinx.serialization.json.*
 import objects.packets.*
@@ -12,6 +14,7 @@ import java.net.*
 
 class GameConnection(
     socket: DefaultWebSocketServerSession,
+    val db: GameDatabase,
 ) {
     private val clientSocket = socket
     private var userInfo: UserInfo? = null
@@ -20,14 +23,14 @@ class GameConnection(
 
     fun getUserInfo(): UserInfo = userInfo!!
 
-    suspend fun connect() {
+    suspend fun connectAndAuthenticate(queue: MatchmakingQueue) {
         println("Waiting for client info")
         val clientInfo = receivePacket()
         println("client info received")
         when (clientInfo) {
             null -> {
                 close()
-                throw RuntimeException("Connection was closed unexpectedly")
+                return
             }
 
             is ClientInfoPacket -> {
@@ -40,6 +43,8 @@ class GameConnection(
                                 "please update to version $currentProtocolVersion",
                         ),
                     )
+                    close()
+                    return
                 } else {
                     println(
                         "Client '${clientInfo.client_name}' v${clientInfo.client_version} connected " +
@@ -51,6 +56,8 @@ class GameConnection(
 
             else -> {
                 sendPacket(UnknownPacketPacket("expected ${PacketType.CLIENT_INFO} packet"))
+                close()
+                return
             }
         }
 
@@ -60,23 +67,35 @@ class GameConnection(
         when (authPacket) {
             null -> {
                 close()
-                throw RuntimeException("Connection was closed unexpectedly")
+                return
             }
 
             is AuthenticatePacket -> {
-                userInfo = UserInfo(authPacket.username, "somewhere, idk")
-                sendPacket(AuthenticationValidPacket(false, userInfo!!))
-                println("User '${authPacket.username}' has connected")
+                if (db.checkToken(authPacket.token)) {
+                    val userId = db.getUserIdFromToken(authPacket.token)!!
+                    userInfo = UserInfo(userId)
+                    sendPacket(AuthenticationValidPacket(false, userInfo!!))
+                    println("User '$userId' has connected")
+                } else {
+                    sendPacket(DisconnectPacket(DisconnectPacket.Reason.auth_invalid, "Token is invalid"))
+                    close()
+                    return
+                }
             }
 
             else -> {
                 sendPacket(UnknownPacketPacket("expected ${PacketType.AUTHENTICATE} packet"))
+                close()
+                return
             }
         }
     }
 
     val isOpen: Boolean
-        get() = !clientSocket.outgoing.isClosedForSend
+        get() = !clientSocket.outgoing.isClosedForSend && !isClosing
+
+    private var isClosing = false
+    private var closingJob: Job? = null
 
     suspend fun receivePacket(): Packet? {
         var packet: Packet? = null
@@ -129,10 +148,25 @@ class GameConnection(
 
     suspend fun close() {
         if (isOpen) {
-            println("closing connection")
-            clientSocket.close(CloseReason(CloseReason.Codes.NORMAL, "Bye"))
+            println("closing connection in background")
+            isClosing = true
+            clientSocket.flush()
+
+            closingJob =
+                CoroutineScope(Dispatchers.Default).launch {
+                    delay(5000) // the last message won't get sent unless we wait
+                    clientSocket.close(CloseReason(CloseReason.Codes.NORMAL, "Bye"))
+                    println("Backgrounded closing task finished")
+                }
             return
         }
         println("connection was already closed")
+    }
+
+    suspend fun waitForClose() {
+        close()
+        println("Waiting for connection close")
+        closingJob!!.join()
+        println("Waiting for connection close finished")
     }
 }

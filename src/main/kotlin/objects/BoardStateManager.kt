@@ -24,8 +24,8 @@ class BoardStateManager(
     private val player2Connection: GameConnection,
 ) {
     private var boardState = BoardState()
-    private val player1ID: Int = 1
-    private val player2ID: Int = 2
+    private val player1ID: TcgId = player1Connection.getUserInfo().id
+    private val player2ID: TcgId = player2Connection.getUserInfo().id
     private val passiveManager: PassiveManager = PassiveManager(this)
     val gameID = db.createGame(player1ID, player2ID)
 

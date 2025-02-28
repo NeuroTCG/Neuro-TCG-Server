@@ -19,6 +19,7 @@ import java.util.concurrent.*
 import kotlin.collections.set
 
 class DiscordLoginProvider(
+    private val webserverBase: String,
     private val redirectUrl: String,
     private val clientId: String,
     private val clientSecret: String,
@@ -59,7 +60,7 @@ class DiscordLoginProvider(
         route.get("/redirect") {
             handleRedirect(call.request.queryParameters["code"]!!, call.request.queryParameters["state"]!!)
 
-            call.respondRedirect("/auth/safe_to_close")
+            call.respondRedirect("$webserverBase/auth/safe_to_close")
         }
     }
 
@@ -92,6 +93,7 @@ class DiscordLoginProvider(
             val tcgUserId = getTcgUserFromOauthCodeResponse(code)
             deferred.complete(LoginSuccess(tcgUserId))
         } catch (e: Exception) {
+            e.printStackTrace()
             deferred.complete(LoginException(e))
         }
     }

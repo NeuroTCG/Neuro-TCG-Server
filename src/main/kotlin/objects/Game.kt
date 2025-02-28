@@ -142,18 +142,18 @@ class Game(
             val packet = connection.receivePacket()
             when (packet) {
                 null -> {
-                    if (connection.isOpen) connection.close()
                     println(prefix + "Connection was closed unexpectedly")
+                    if (connection.isOpen) connection.close()
 
                     if (otherConnection.isOpen) {
                         println(prefix + "Informing opponent")
                         otherConnection.sendPacket(
                             DisconnectPacket(
                                 DisconnectPacket.Reason.opponent_disconnect,
-                                "The opponent has closed it's connection",
+                                "The opponent has closed their connection",
                             ),
                         )
-                        // otherConnection.close()
+                        otherConnection.close()
                     }
                 }
                 is GetBoardStatePacket -> {
