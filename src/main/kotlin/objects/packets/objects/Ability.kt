@@ -9,6 +9,7 @@ enum class AbilityEffect {
     SEAL,
     ATTACK,
     SHIELD,
+    DRAW_CARD,
 }
 
 @Serializable

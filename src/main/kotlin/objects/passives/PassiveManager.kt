@@ -73,6 +73,9 @@ class PassiveManager(
             PassiveEffectType.DRAW_ON_DESTRUCTION -> {
                 return DrawOnDestruction(this, card, player)
             }
+            PassiveEffectType.CARD_DISCOUNT -> {
+                return CardDiscount(this, card, player)
+            }
             else -> {
                 return null
             }
@@ -135,6 +138,23 @@ class PassiveManager(
         }
 
         return workingList.toMap()
+    }
+
+    fun getCardsInFieldOfType(
+        player: Player,
+        type: CardType,
+    ): Map<Card, Card> {
+        val workingMap: MutableMap<Card, Card> = mutableMapOf()
+
+        for (row: Array<Card?> in boardManager.getBoardState().cards[playerToIdx(player)]) {
+            for (c: Card? in row) {
+                if (c != null && CardStats.getCardByID(c.state.id)!!.card_type == type) {
+                    workingMap[c] = c
+                }
+            }
+        }
+
+        return workingMap.toMap()
     }
 
     private fun positionLeftOf(position: CardPosition): CardPosition? {

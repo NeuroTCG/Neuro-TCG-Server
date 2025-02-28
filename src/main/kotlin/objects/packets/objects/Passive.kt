@@ -1,14 +1,13 @@
 package objects.packets.objects
 
 import kotlinx.serialization.*
-import objects.*
-import objects.passives.*
 
 @Serializable
 enum class PassiveEffectType {
     NONE,
     DRAW_ON_DESTRUCTION,
     BUFF_ADJACENT,
+    CARD_DISCOUNT,
 }
 
 @Serializable
@@ -23,6 +22,7 @@ data class Passive(
                     PassiveEffectType.DRAW_ON_DESTRUCTION -> 0
                     PassiveEffectType.BUFF_ADJACENT -> 2
                     PassiveEffectType.NONE -> 0
+                    PassiveEffectType.CARD_DISCOUNT -> 3
                 },
         )
     }

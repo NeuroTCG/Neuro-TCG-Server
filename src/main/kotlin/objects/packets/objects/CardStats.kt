@@ -117,6 +117,18 @@ class CardStats(
                         Ability(AbilityEffect.ATTACK, 5, AbilityRange.ENEMY_ROW, 0),
                         Passive(),
                     ),
+                5 to
+                    CardStats(
+                        "Filian",
+                        null,
+                        0,
+                        2,
+                        22,
+                        arrayOf<Tactic>(),
+                        CardType.DECK_MASTER,
+                        Ability(AbilityEffect.DRAW_CARD, 5, AbilityRange.PLAYER_DECK, 4),
+                        Passive(PassiveEffectType.CARD_DISCOUNT, intArrayOf(1, 1, CardType.MAGIC.ordinal)),
+                    ),
             )
 
         fun getCardByID(id: Int): CardStats? = cardIDMapping.get(id)

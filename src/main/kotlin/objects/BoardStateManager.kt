@@ -47,6 +47,8 @@ class BoardStateManager(
             player2Connection
         }
 
+    private fun isHandFull(player: Player): Boolean = this.boardState.hands[playerToIndex(player)].size >= 5
+
     private fun handContains(
         player: Player,
         id: Int,
@@ -612,7 +614,6 @@ class BoardStateManager(
 
     suspend fun drawCard(player: Player) {
         val cardID = cardDecks[playerToIndex(player)].drawCard()
-
         placeInHand(player, cardID)
 
         getConnection(player).sendPacket(DrawCard(cardID, true))
@@ -743,6 +744,23 @@ class BoardStateManager(
 
                 return true
             }
+
+            AbilityEffect.DRAW_CARD -> {
+                if (ability.range != AbilityRange.PLAYER_DECK) {
+                    return false
+                }
+
+                if (isHandFull(player)) {
+                    return false
+                }
+
+                /*val cardID = cardDecks[playerToIndex(player)].drawCard()
+                placeInHand(player, cardID)*/
+
+                drawCard(player)
+
+                return true
+            }
         }
     }
 
@@ -824,6 +842,13 @@ class BoardStateManager(
         }
 
         val abilityCard = getCard(player, packet.ability_position)?.state
+
+        if (abilityCard != null) {
+            println("Card's name = ${CardStats.getCardByID(abilityCard.id)?.name}")
+            println("Ability was used: ${abilityCard.ability_was_used}")
+            println("Current turn phase: ${abilityCard.phase}")
+        }
+
         if (abilityCard == null || abilityCard.phase < CardTurnPhase.Action || abilityCard.ability_was_used) {
             sendInvalid()
             return
@@ -870,6 +895,12 @@ class BoardStateManager(
         removeRam(player, ability.cost)
         abilityCard.phase = CardTurnPhase.Done
         abilityCard.ability_was_used = true
+
+        if (abilityCard != null) {
+            print("Card's name = ${CardStats.getCardByID(abilityCard.id)?.name}")
+            print("Ability was used: ${abilityCard.ability_was_used}")
+            print("Current turn phase: ${abilityCard.phase}")
+        }
     }
 
     private fun foreachInRange(
@@ -895,8 +926,7 @@ class BoardStateManager(
                     }
                 }
             }
-
-            AbilityRange.PLAYER_DECK -> TODO()
+            AbilityRange.PLAYER_DECK -> {}
         }
     }
 }

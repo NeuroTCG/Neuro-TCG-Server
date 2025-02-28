@@ -7,7 +7,7 @@ package objects.passives
 import objects.*
 import objects.packets.*
 import objects.packets.objects.*
-import kotlin.math.max
+import kotlin.math.*
 
 abstract class PassiveEffect(
     // The passive manager
@@ -169,6 +169,109 @@ class BuffAdjacent(
             val removeBuffArray = removeBuffList.toTypedArray()
             actions.add(CardAction(CardActionNames.SUB_ATTACK, removeBuffArray, hpIncrease))
             actions.add(CardAction(CardActionNames.SUB_HP, removeBuffArray, atkIncrease, arrayOf(CardActionArgs.minHp(1))))
+        }
+
+        return CardActionList(card, actions.toTypedArray())
+    }
+}
+
+class CardDiscount(
+    passiveManager: PassiveManager,
+    card: Card,
+    player: Player,
+) : PassiveEffect(passiveManager, card, player) {
+    // Keep track of discount values in a dictionary so that we don't interfere with other abilities that
+    // may modify the cost of a card's ability.
+    private val currentDiscountValues: MutableMap<Card, Int> = mutableMapOf()
+    private var resetDiscountOnDestroy = false
+
+    private var discountAmount = 0
+    private var minAbilityCost = 0
+    private var cardType = 0
+
+    init {
+        val stats: CardStats? = CardStats.getCardByID(card.state.id)
+        stats?.let { cardStats ->
+            discountAmount = stats.passive.values[0]
+            minAbilityCost = stats.passive.values[1]
+            cardType = stats.passive.values[2]
+        } ?: run {
+            println("Warning: no card was found with ID ${card.state.id}")
+        }
+    }
+
+    override suspend fun update(
+        lastChange: Packet?,
+        boardState: BoardState,
+    ): CardActionList? {
+        val actions: MutableList<CardAction> = mutableListOf()
+
+        val removeBuffList: MutableList<Card> = mutableListOf()
+
+        if (cardWasDestroyed()) {
+            if (resetDiscountOnDestroy) {
+                return null
+            } else {
+                resetDiscountOnDestroy = true
+
+                for (c: Card in currentDiscountValues.keys) {
+                    val discount = currentDiscountValues[c]
+
+                    if (discount == null) {
+                        assert(false, { "Could not find a card with value: $c" })
+                    } else {
+                        c.state.ability_cost_modifier += discount
+
+                        actions.add(
+                            CardAction(
+                                CardActionNames.ADD_ABILITY_COST_MODIFIER,
+                                arrayOf(CardActionTarget(playerIdx(), c.position)),
+                                discount,
+                            ),
+                        )
+                    }
+                }
+
+                return CardActionList(card, actions.toTypedArray())
+            }
+        }
+
+        val newMagicCardMap = passiveManager.getCardsInFieldOfType(player, CardType.entries[cardType])
+
+        for (c: Card in newMagicCardMap.values) {
+            if (!currentDiscountValues.containsKey(c)) {
+                var discount = 0
+                if (c.state.currentAbilityCost() - discountAmount < minAbilityCost) {
+                    discount = c.state.currentAbilityCost() - minAbilityCost
+                } else {
+                    discount = discountAmount
+                }
+
+                currentDiscountValues[c] = discount
+                c.state.ability_cost_modifier -= discount
+                actions.add(
+                    CardAction(CardActionNames.SUB_ABILITY_COST_MODIFIER, arrayOf(CardActionTarget(playerIdx(), c.position)), discount),
+                )
+            }
+        }
+
+        for (c: Card in currentDiscountValues.keys) {
+            // Remove if card is no longer in player's field
+            if (!newMagicCardMap.containsKey(c)) {
+                removeBuffList.add(c)
+
+                val discount = currentDiscountValues[c]!!
+
+                c.state.ability_cost_modifier += discount
+
+                actions.add(
+                    CardAction(CardActionNames.ADD_ABILITY_COST_MODIFIER, arrayOf(CardActionTarget(playerIdx(), c.position)), discount),
+                )
+            }
+        }
+
+        for (c: Card in removeBuffList) {
+            currentDiscountValues.remove(c)
         }
 
         return CardActionList(card, actions.toTypedArray())

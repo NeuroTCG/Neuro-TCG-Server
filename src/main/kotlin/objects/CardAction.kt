@@ -73,6 +73,8 @@ object CardActionNames {
     const val SET_PHASE = "set_phase"
     const val SET_ABILITY_USED = "set_ability_used"
     const val DRAW_CARD = "draw_card"
+    const val ADD_ABILITY_COST_MODIFIER = "add_ability_cost_modifier"
+    const val SUB_ABILITY_COST_MODIFIER = "sub_ability_cost_modifier"
 }
 
 /**
