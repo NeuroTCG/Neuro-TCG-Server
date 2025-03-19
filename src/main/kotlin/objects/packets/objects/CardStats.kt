@@ -1,6 +1,7 @@
 package objects.packets.objects
 
 import kotlinx.serialization.*
+import objects.packets.objects.CardType
 
 @Serializable
 enum class Tactic {
@@ -43,6 +44,10 @@ class CardStats(
         if (graphics == null) {
             graphics = "$ASSET_PREFIX/${normalizeName(name)}.png"
         }
+
+        if (card_type == CardType.DECK_MASTER) {
+            assert(summoning_cost == 0)
+        }
     }
 
     companion object {
@@ -59,6 +64,25 @@ class CardStats(
 
         val cardIDMapping: HashMap<Int, CardStats> =
             hashMapOf(
+                maxID++ to
+                    CardStats(
+                        "Neuro",
+                        null,
+                        0,
+                        3,
+                        27,
+                        arrayOf<Tactic>(),
+                        CardType.DECK_MASTER,
+                        Ability(
+                            AbilityEffect.NONE, // revive creature
+                            0,
+                            AbilityRange.ALLY_FIELD,
+                            5,
+                        ),
+                        Passive(
+                            PassiveEffectType.NONE, // can move after attacking
+                        ),
+                    ),
                 maxID++ to
                     CardStats(
                         "Pirate Evil",
