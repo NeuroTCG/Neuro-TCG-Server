@@ -143,6 +143,25 @@ class CardStats(
                     ),
                 maxID++ to
                     CardStats(
+                        "Karaoke Neuro", // sheet also mentions evil version
+                        null,
+                        0,
+                        2,
+                        22,
+                        arrayOf<Tactic>(),
+                        CardType.DECK_MASTER,
+                        Ability(
+                            AbilityEffect.SEAL,
+                            2,
+                            AbilityRange.ENEMY_CARD,
+                            4,
+                        ),
+                        Passive(
+                            PassiveEffectType.NONE,
+                        ),
+                    ),
+                maxID++ to
+                    CardStats(
                         "Pirate Evil",
                         null,
                         2,
