@@ -338,6 +338,18 @@ class CardStats(
                     ),
                 maxID++ to
                     CardStats(
+                        "Judge Vedal",
+                        null,
+                        4,
+                        2,
+                        4,
+                        arrayOf<Tactic>(),
+                        CardType.CREATURE,
+                        Ability(),
+                        Passive(),
+                    ),
+                maxID++ to
+                    CardStats(
                         "Pirate Evil",
                         null,
                         2,
