@@ -676,7 +676,7 @@ class BoardStateManager(
                 foreachInRange(player, target_position, ability.range) { p, pos ->
                     val card = getCard(p, pos)
                     card?.let {
-                        it.state.shield += 1
+                        it.state.shield += ability.value
                     }
                     setCard(player, pos, card)
                 }
