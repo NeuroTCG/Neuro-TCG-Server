@@ -437,6 +437,21 @@ class CardStats(
                     ),
                 maxID++ to
                     CardStats(
+                        "Rizzdal",
+                        null,
+                        4,
+                        2,
+                        2,
+                        arrayOf<Tactic>(),
+                        CardType.CREATURE,
+                        Ability(),
+                        Passive(
+                            PassiveEffectType.NONE, // BUFF_IF_ALONE
+                            intArrayOf(2, 2), // atk, hp
+                        ),
+                    ),
+                maxID++ to
+                    CardStats(
                         "Pirate Evil",
                         null,
                         2,
