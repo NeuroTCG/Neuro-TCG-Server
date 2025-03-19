@@ -55,9 +55,11 @@ class CardStats(
             return name.replace(" ", "_").replace("'", "_").lowercase()
         }
 
+        var maxID = 0
+
         val cardIDMapping: HashMap<Int, CardStats> =
             hashMapOf(
-                0 to
+                maxID++ to
                     CardStats(
                         "Pirate Evil",
                         null,
@@ -69,7 +71,7 @@ class CardStats(
                         Ability(),
                         Passive(),
                     ),
-                1 to
+                maxID++ to
                     CardStats(
                         "Filipino Boy",
                         null,
@@ -81,7 +83,7 @@ class CardStats(
                         Ability(),
                         Passive(PassiveEffectType.DRAW_ON_DESTRUCTION),
                     ),
-                2 to
+                maxID++ to
                     CardStats(
                         "Angel Neuro",
                         null,
@@ -93,7 +95,7 @@ class CardStats(
                         Ability(AbilityEffect.ADD_HP, 3, AbilityRange.ALLY_CARD, 4),
                         Passive(PassiveEffectType.BUFF_ADJACENT, intArrayOf(1, 1)),
                     ),
-                3 to
+                maxID++ to
                     CardStats(
                         "That streaming site she uses",
                         null,
@@ -105,7 +107,7 @@ class CardStats(
                         Ability(AbilityEffect.SEAL, 1, AbilityRange.ENEMY_CARD, 0),
                         Passive(),
                     ),
-                4 to
+                maxID++ to
                     CardStats(
                         "10 Tins Cans 1 Stream",
                         null,
