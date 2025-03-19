@@ -407,6 +407,21 @@ class CardStats(
                     ),
                 maxID++ to
                     CardStats(
+                        "Harrison Temple",
+                        null,
+                        4,
+                        2,
+                        2,
+                        arrayOf<Tactic>(),
+                        CardType.CREATURE,
+                        Ability(),
+                        Passive(
+                            PassiveEffectType.NONE, // buff if swaps with the deckmaster as first thing in turn
+                            intArrayOf(1, 0), // atk, hp
+                        ),
+                    ),
+                maxID++ to
+                    CardStats(
                         "Pirate Evil",
                         null,
                         2,
