@@ -182,6 +182,26 @@ class CardStats(
                         ),
                     ),
                 maxID++ to
+                    CardStats( // maybe give ID 987 as an easter egg
+                        "Vedal",
+                        null,
+                        0,
+                        1,
+                        25,
+                        arrayOf<Tactic>(),
+                        CardType.DECK_MASTER,
+                        Ability(
+                            AbilityEffect.ATTACK,
+                            2,
+                            AbilityRange.ENEMY_FIELD,
+                            8,
+                        ),
+                        Passive(
+                            PassiveEffectType.BUFF_ADJACENT,
+                            intArrayOf(1, 0), // amount gained
+                        ),
+                    ),
+                maxID++ to
                     CardStats(
                         "Pirate Evil",
                         null,

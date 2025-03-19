@@ -9,7 +9,7 @@ import objects.passives.*
 enum class PassiveEffectType {
     NONE,
     DRAW_ON_DESTRUCTION,
-    BUFF_ADJACENT,
+    BUFF_ADJACENT, // atk, hp
 }
 
 @Serializable
