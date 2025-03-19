@@ -302,6 +302,26 @@ class CardStats(
                     ),
                 maxID++ to
                     CardStats(
+                        "Mini",
+                        null,
+                        0,
+                        0, // still does 2 dmg for counterattack and cannot gain atk
+                        32,
+                        arrayOf<Tactic>(Tactic.REACH),
+                        CardType.DECK_MASTER,
+                        Ability(
+                            AbilityEffect.SHIELD,
+                            2,
+                            AbilityRange.ALLY_CARD,
+                            6,
+                        ),
+                        Passive(
+                            PassiveEffectType.NONE, // the special atk property above
+                            intArrayOf(2), // dmg for counterattack
+                        ),
+                    ),
+                maxID++ to
+                    CardStats(
                         "Pirate Evil",
                         null,
                         2,
