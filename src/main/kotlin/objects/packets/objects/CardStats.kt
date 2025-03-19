@@ -222,6 +222,26 @@ class CardStats(
                     ),
                 maxID++ to
                     CardStats(
+                        "Filian",
+                        null,
+                        0,
+                        2,
+                        22,
+                        arrayOf<Tactic>(),
+                        CardType.DECK_MASTER,
+                        Ability(
+                            AbilityEffect.NONE, // DRAW_CARD
+                            1, // number of cards drawn
+                            AbilityRange.PLAYER_DECK, // not really relevant, but it's the closest we have
+                            4,
+                        ),
+                        Passive(
+                            PassiveEffectType.NONE, // magic cards are cheaper
+                            intArrayOf(1, 1), // reduction, minimum
+                        ),
+                    ),
+                maxID++ to
+                    CardStats(
                         "Pirate Evil",
                         null,
                         2,
