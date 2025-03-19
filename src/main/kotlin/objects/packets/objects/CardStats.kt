@@ -203,6 +203,25 @@ class CardStats(
                     ),
                 maxID++ to
                     CardStats(
+                        "Cerber",
+                        null,
+                        0,
+                        2,
+                        24,
+                        arrayOf<Tactic>(),
+                        CardType.DECK_MASTER,
+                        Ability(
+                            AbilityEffect.NONE, // REMOVE_CARD_AND_GAIN_ATK_HP
+                            1, // this has two parameters technically: atk and hp, both 1 here
+                            AbilityRange.ALLY_FIELD, // this is the possible range, only one card is affected per use
+                            2,
+                        ),
+                        Passive(
+                            PassiveEffectType.NONE, // can (or has to?) attack after using its ability
+                        ),
+                    ),
+                maxID++ to
+                    CardStats(
                         "Pirate Evil",
                         null,
                         2,
