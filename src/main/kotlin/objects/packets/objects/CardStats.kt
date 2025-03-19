@@ -350,6 +350,21 @@ class CardStats(
                     ),
                 maxID++ to
                     CardStats(
+                        "Neuro Bread",
+                        null,
+                        3,
+                        2,
+                        2,
+                        arrayOf<Tactic>(),
+                        CardType.CREATURE,
+                        Ability(),
+                        Passive(
+                            PassiveEffectType.NONE, // CONSUMABLE
+                            intArrayOf(2, 2), // atk, hp gained when a card moves onto this one
+                        ),
+                    ),
+                maxID++ to
+                    CardStats(
                         "Pirate Evil",
                         null,
                         2,
