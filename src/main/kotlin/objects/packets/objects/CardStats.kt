@@ -85,6 +85,25 @@ class CardStats(
                     ),
                 maxID++ to
                     CardStats(
+                        "Evil Neuro",
+                        null,
+                        0,
+                        3,
+                        22,
+                        arrayOf<Tactic>(Tactic.REACH),
+                        CardType.DECK_MASTER,
+                        Ability(
+                            AbilityEffect.NONE, // destroy random creature
+                            0,
+                            AbilityRange.ENEMY_FIELD,
+                            5,
+                        ),
+                        Passive(
+                            PassiveEffectType.NONE,
+                        ),
+                    ),
+                maxID++ to
+                    CardStats(
                         "Pirate Evil",
                         null,
                         2,
