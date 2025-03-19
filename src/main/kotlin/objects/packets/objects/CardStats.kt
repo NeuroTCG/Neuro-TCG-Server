@@ -464,6 +464,21 @@ class CardStats(
                     ),
                 maxID++ to
                     CardStats(
+                        "Ermshark",
+                        null,
+                        6,
+                        5,
+                        5,
+                        arrayOf<Tactic>(),
+                        CardType.CREATURE,
+                        Ability(),
+                        Passive(
+                            PassiveEffectType.NONE, // BUFF_ON_DESTRUCTION; only destructions caused by this card
+                            intArrayOf(1, 0), // atk, hp
+                        ),
+                    ),
+                maxID++ to
+                    CardStats(
                         "Pirate Evil",
                         null,
                         2,
