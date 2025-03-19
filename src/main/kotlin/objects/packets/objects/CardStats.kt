@@ -320,6 +320,22 @@ class CardStats(
                             intArrayOf(2), // dmg for counterattack
                         ),
                     ),
+                // ------------------------ Creatures ------------------------ //
+                maxID++ to
+                    CardStats(
+                        "Filipino Boy",
+                        null,
+                        4,
+                        2,
+                        2,
+                        arrayOf<Tactic>(Tactic.REACH),
+                        CardType.CREATURE,
+                        Ability(),
+                        Passive(
+                            PassiveEffectType.DRAW_ON_DESTRUCTION,
+                            intArrayOf(1), // num cards to draw
+                        ),
+                    ),
                 maxID++ to
                     CardStats(
                         "Pirate Evil",
@@ -331,18 +347,6 @@ class CardStats(
                         CardType.CREATURE,
                         Ability(),
                         Passive(),
-                    ),
-                maxID++ to
-                    CardStats(
-                        "Filipino Boy",
-                        null,
-                        4,
-                        2,
-                        2,
-                        arrayOf<Tactic>(Tactic.REACH),
-                        CardType.CREATURE,
-                        Ability(),
-                        Passive(PassiveEffectType.DRAW_ON_DESTRUCTION),
                     ),
                 maxID++ to
                     CardStats(

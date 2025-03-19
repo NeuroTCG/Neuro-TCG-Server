@@ -8,7 +8,7 @@ import objects.passives.*
 @Serializable
 enum class PassiveEffectType {
     NONE,
-    DRAW_ON_DESTRUCTION,
+    DRAW_ON_DESTRUCTION, // TODO: make num cards configurable
     BUFF_ADJACENT, // atk, hp
 }
 
@@ -24,7 +24,7 @@ data class Passive(
             require(
                 values.size ==
                     when (effect) {
-                        PassiveEffectType.DRAW_ON_DESTRUCTION -> 0
+                        PassiveEffectType.DRAW_ON_DESTRUCTION -> 1
                         PassiveEffectType.BUFF_ADJACENT -> 2
                         PassiveEffectType.NONE -> 0
                     },
