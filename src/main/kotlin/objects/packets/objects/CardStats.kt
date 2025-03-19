@@ -213,7 +213,7 @@ class CardStats(
                         Ability(
                             AbilityEffect.NONE, // REMOVE_CARD_AND_GAIN_ATK_HP
                             1, // this has two parameters technically: atk and hp, both 1 here
-                            AbilityRange.ALLY_FIELD, // this is the possible range, only one card is affected per use
+                            AbilityRange.ALLY_CARD,
                             2,
                         ),
                         Passive(
@@ -238,6 +238,26 @@ class CardStats(
                         Passive(
                             PassiveEffectType.NONE, // magic cards are cheaper
                             intArrayOf(1, 1), // reduction, minimum
+                        ),
+                    ),
+                maxID++ to
+                    CardStats(
+                        "Anny",
+                        null,
+                        0,
+                        2,
+                        28,
+                        arrayOf<Tactic>(),
+                        CardType.DECK_MASTER,
+                        Ability(
+                            AbilityEffect.NONE, // ADD_HP_AND_ATK
+                            1, // card gains 1 atk and 1 hp, but they should be independently configurable
+                            AbilityRange.ALLY_CARD,
+                            3,
+                        ),
+                        Passive(
+                            PassiveEffectType.NONE, // BUFF_ALL_ALLIES, but only after reaching 12 hp for the first time
+                            intArrayOf(2, 2), // atk, hp
                         ),
                     ),
                 maxID++ to
