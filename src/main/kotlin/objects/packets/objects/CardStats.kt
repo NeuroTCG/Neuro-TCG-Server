@@ -452,6 +452,18 @@ class CardStats(
                     ),
                 maxID++ to
                     CardStats(
+                        "Ermfish",
+                        null,
+                        1,
+                        1,
+                        1,
+                        arrayOf<Tactic>(Tactic.NIMBLE),
+                        CardType.CREATURE,
+                        Ability(),
+                        Passive(),
+                    ),
+                maxID++ to
+                    CardStats(
                         "Pirate Evil",
                         null,
                         2,
