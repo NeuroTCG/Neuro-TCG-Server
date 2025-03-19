@@ -395,6 +395,18 @@ class CardStats(
                     ),
                 maxID++ to
                     CardStats(
+                        "Roaster Neuro",
+                        null,
+                        5,
+                        5,
+                        2,
+                        arrayOf<Tactic>(Tactic.REACH),
+                        CardType.CREATURE,
+                        Ability(),
+                        Passive(),
+                    ),
+                maxID++ to
+                    CardStats(
                         "Pirate Evil",
                         null,
                         2,
