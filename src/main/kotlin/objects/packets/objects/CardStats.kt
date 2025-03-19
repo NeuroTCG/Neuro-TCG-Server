@@ -104,6 +104,45 @@ class CardStats(
                     ),
                 maxID++ to
                     CardStats(
+                        "Angel Neuro",
+                        null,
+                        0,
+                        2,
+                        24,
+                        arrayOf<Tactic>(),
+                        CardType.DECK_MASTER,
+                        Ability(
+                            AbilityEffect.ADD_HP,
+                            3,
+                            AbilityRange.ALLY_CARD,
+                            4,
+                        ),
+                        Passive(
+                            PassiveEffectType.BUFF_ADJACENT,
+                            intArrayOf(1, 1),
+                        ),
+                    ),
+                maxID++ to
+                    CardStats(
+                        "Study-Sama",
+                        null,
+                        0,
+                        3,
+                        28,
+                        arrayOf<Tactic>(),
+                        CardType.DECK_MASTER,
+                        Ability(
+                            AbilityEffect.NONE, // ADD_ATK
+                            2,
+                            AbilityRange.ALLY_FIELD,
+                            6,
+                        ),
+                        Passive(
+                            PassiveEffectType.NONE,
+                        ),
+                    ),
+                maxID++ to
+                    CardStats(
                         "Pirate Evil",
                         null,
                         2,
@@ -125,18 +164,6 @@ class CardStats(
                         CardType.CREATURE,
                         Ability(),
                         Passive(PassiveEffectType.DRAW_ON_DESTRUCTION),
-                    ),
-                maxID++ to
-                    CardStats(
-                        "Angel Neuro",
-                        null,
-                        0,
-                        2,
-                        24,
-                        arrayOf<Tactic>(),
-                        CardType.DECK_MASTER,
-                        Ability(AbilityEffect.ADD_HP, 3, AbilityRange.ALLY_CARD, 4),
-                        Passive(PassiveEffectType.BUFF_ADJACENT, intArrayOf(1, 1)),
                     ),
                 maxID++ to
                     CardStats(
