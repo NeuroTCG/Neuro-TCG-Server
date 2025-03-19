@@ -380,6 +380,21 @@ class CardStats(
                     ),
                 maxID++ to
                     CardStats(
+                        "The Time God",
+                        null,
+                        4,
+                        2,
+                        1,
+                        arrayOf<Tactic>(),
+                        CardType.CREATURE,
+                        Ability(),
+                        Passive(
+                            PassiveEffectType.NONE, // PASS_TURN; turn counters (like seal) are reduced for both players
+                            intArrayOf(1), // num turns to pass
+                        ),
+                    ),
+                maxID++ to
+                    CardStats(
                         "Pirate Evil",
                         null,
                         2,
