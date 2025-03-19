@@ -95,7 +95,7 @@ class CardStats(
                         Ability(
                             AbilityEffect.NONE, // destroy random creature
                             0,
-                            AbilityRange.ENEMY_FIELD,
+                            AbilityRange.NONE, // ENEMY_CREATURE
                             5,
                         ),
                         Passive(
@@ -258,6 +258,26 @@ class CardStats(
                         Passive(
                             PassiveEffectType.NONE, // BUFF_ALL_ALLIES, but only after reaching 12 hp for the first time
                             intArrayOf(2, 2), // atk, hp
+                        ),
+                    ),
+                maxID++ to
+                    CardStats(
+                        "Koko",
+                        null,
+                        0,
+                        3,
+                        28,
+                        arrayOf<Tactic>(),
+                        CardType.DECK_MASTER,
+                        Ability(
+                            AbilityEffect.NONE, // return card to default state (unsure if hp too); doesn't affect ability
+                            0, // no parameter
+                            AbilityRange.NONE, // ENEMY_CREATURES
+                            4,
+                        ),
+                        Passive(
+                            PassiveEffectType.NONE, // COUNTER_ATTACK_BUFF
+                            intArrayOf(1), // additional damage for counterattack
                         ),
                     ),
                 maxID++ to
