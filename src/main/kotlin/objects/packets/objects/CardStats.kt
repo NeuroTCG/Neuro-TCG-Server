@@ -365,6 +365,21 @@ class CardStats(
                     ),
                 maxID++ to
                     CardStats(
+                        "Astronaut Neuro",
+                        null,
+                        5,
+                        3,
+                        3,
+                        arrayOf<Tactic>(),
+                        CardType.CREATURE,
+                        Ability(),
+                        Passive(
+                            PassiveEffectType.NONE, // BOUNCE_AND_GAIN_HP_IN_CORNER; hp only stays for the opponents turn
+                            intArrayOf(2), // hp gained in corner
+                        ),
+                    ),
+                maxID++ to
+                    CardStats(
                         "Pirate Evil",
                         null,
                         2,
