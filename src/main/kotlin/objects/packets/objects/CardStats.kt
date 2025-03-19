@@ -162,6 +162,27 @@ class CardStats(
                     ),
                 maxID++ to
                     CardStats(
+                        "The Swarm",
+                        null,
+                        0,
+                        3,
+                        27,
+                        arrayOf<Tactic>(),
+                        CardType.DECK_MASTER,
+                        Ability(
+                            AbilityEffect.ATTACK,
+                            1,
+                            AbilityRange.ENEMY_ROW,
+                            4,
+                        ),
+                        Passive(
+                            PassiveEffectType.NONE, // gains attack for every card it destroys;
+                            // maybe implement together with hp gain per attack
+                            intArrayOf(1), // amount gained
+                        ),
+                    ),
+                maxID++ to
+                    CardStats(
                         "Pirate Evil",
                         null,
                         2,

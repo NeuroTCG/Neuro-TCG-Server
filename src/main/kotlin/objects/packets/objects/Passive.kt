@@ -2,6 +2,7 @@ package objects.packets.objects
 
 import kotlinx.serialization.*
 import objects.*
+import objects.packets.objects.PassiveEffectType
 import objects.passives.*
 
 @Serializable
@@ -17,14 +18,18 @@ data class Passive(
     @Required val values: IntArray = IntArray(0),
 ) {
     init {
-        require(
-            values.size ==
-                when (effect) {
-                    PassiveEffectType.DRAW_ON_DESTRUCTION -> 0
-                    PassiveEffectType.BUFF_ADJACENT -> 2
-                    PassiveEffectType.NONE -> 0
-                },
-        )
+        // TODO: remove after all missing effects are implemented and
+        // NONE actually means none, instead of being a placeholder
+        if (effect != PassiveEffectType.NONE) {
+            require(
+                values.size ==
+                    when (effect) {
+                        PassiveEffectType.DRAW_ON_DESTRUCTION -> 0
+                        PassiveEffectType.BUFF_ADJACENT -> 2
+                        PassiveEffectType.NONE -> 0
+                    },
+            )
+        }
     }
 
     override fun equals(other: Any?): Boolean {
