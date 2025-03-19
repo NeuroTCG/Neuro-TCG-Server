@@ -282,6 +282,26 @@ class CardStats(
                     ),
                 maxID++ to
                     CardStats(
+                        "Tenma",
+                        null,
+                        0,
+                        2,
+                        24,
+                        arrayOf<Tactic>(),
+                        CardType.DECK_MASTER,
+                        Ability(
+                            AbilityEffect.NONE, // REDUCE_ATK
+                            2, // reduction; either second param for minimum or implicitly use 1
+                            AbilityRange.ENEMY_CARD,
+                            5,
+                        ),
+                        Passive(
+                            PassiveEffectType.NONE, // ACT_MULTIPLE_TIMES
+                            intArrayOf(1), // number of additional times; could also store n+1
+                        ),
+                    ),
+                maxID++ to
+                    CardStats(
                         "Pirate Evil",
                         null,
                         2,
