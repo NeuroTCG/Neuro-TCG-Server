@@ -422,6 +422,21 @@ class CardStats(
                     ),
                 maxID++ to
                     CardStats(
+                        "Fisherman Neuro",
+                        null,
+                        2,
+                        1,
+                        1,
+                        arrayOf<Tactic>(),
+                        CardType.CREATURE,
+                        Ability(),
+                        Passive(
+                            PassiveEffectType.NONE, // ON_DESTROY CHOOSE_AND_SHUFFLE_CARD
+                            intArrayOf(3, 1), // num cards to look at, num cards to pick
+                        ),
+                    ),
+                maxID++ to
+                    CardStats(
                         "Pirate Evil",
                         null,
                         2,
