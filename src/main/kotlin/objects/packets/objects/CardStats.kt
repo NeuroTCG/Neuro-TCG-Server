@@ -498,6 +498,38 @@ class CardStats(
                     ),
                 maxID++ to
                     CardStats(
+                        "Void Sama",
+                        null,
+                        1,
+                        1,
+                        1,
+                        arrayOf<Tactic>(),
+                        CardType.CREATURE,
+                        Ability(),
+                        Passive(
+                            PassiveEffectType.DRAW_ON_DESTRUCTION,
+                            intArrayOf(1), // num cards
+                        ),
+                    ),
+                maxID++ to
+                    CardStats(
+                        "Architect Neuro",
+                        null,
+                        1,
+                        1,
+                        2,
+                        arrayOf<Tactic>(),
+                        CardType.CREATURE,
+                        Ability(
+                            AbilityEffect.NONE, // SPAWN_CARD
+                            -1, // card id to spawn; will be the id for house token
+                            AbilityRange.NONE, // RANDOM_FRONT_ROW_ALLY
+                            0, // cost unknown
+                        ),
+                        Passive(),
+                    ),
+                maxID++ to
+                    CardStats(
                         "Pirate Evil",
                         null,
                         2,
