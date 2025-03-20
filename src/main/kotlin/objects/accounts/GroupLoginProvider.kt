@@ -46,7 +46,7 @@ class GroupLoginProvider(
     private fun generateCorrelationId(): CorrelationId {
         val id = CorrelationId(UUID.randomUUID().toString())
 
-        assert(!results.containsKey(id)) { "id generated already exists" }
+        check(!results.containsKey(id)) { "id generated already exists" }
 
         results[id] = CompletableDeferred()
 

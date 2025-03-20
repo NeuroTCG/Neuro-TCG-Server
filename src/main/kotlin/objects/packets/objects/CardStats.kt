@@ -35,7 +35,7 @@ class CardStats(
     @Required val passive: Passive = Passive(),
 ) {
     init {
-        assert(summoning_cost in 0..10)
+        require(summoning_cost in 0..10) { "A card must cost 0-10 ram to summon" }
 
         if (FREE_EVERYTHING) {
             summoning_cost = 0
@@ -46,7 +46,7 @@ class CardStats(
         }
 
         if (card_type == CardType.DECK_MASTER) {
-            assert(summoning_cost == 0)
+            require(summoning_cost == 0) { "deck masters must always have a cost of 0" }
         }
     }
 
@@ -56,8 +56,12 @@ class CardStats(
 
         fun normalizeName(name: String): String {
             // expand when needed
-            assert(name.matches("[ a-zA-Z'_]".toRegex()))
-            return name.replace(" ", "_").replace("'", "_").lowercase()
+            require(name.matches("[ a-zA-Z0-9'_\\-]+".toRegex())) { "'$name' contains unhandled characters" }
+            return name
+                .replace(" ", "_")
+                .replace("'", "_")
+                .replace("-", "_")
+                .lowercase()
         }
 
         var maxID = 0

@@ -27,7 +27,7 @@ class PassiveManager(
     }
 
     fun idxToPlayer(idx: Int): Player {
-        assert(idx == 0 || idx == 1, { "player index out of range!" })
+        require(idx == 0 || idx == 1, { "player index out of range!" })
         if (idx == 0) {
             return Player.Player1
         } else {
@@ -49,7 +49,7 @@ class PassiveManager(
                 passives[card] = newPassive
             }
             else -> {
-                assert(false) {
+                check(false) {
                     "Tried to add passive of unknown card id. +" +
                         "If a card has no passive associated with it, use NullPassive instead."
                 }
@@ -104,7 +104,7 @@ class PassiveManager(
         }
 
         for (c: Card in removalQueue) {
-            assert(passives.remove(c) != null, { "Passive associated with Card object " + c + " does not exist." })
+            check(passives.remove(c) != null, { "Passive associated with Card object " + c + " does not exist." })
         }
 
         return PassiveUpdatePacket(updateActions.toTypedArray())
