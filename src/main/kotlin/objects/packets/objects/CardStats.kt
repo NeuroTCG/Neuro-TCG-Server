@@ -479,6 +479,21 @@ class CardStats(
                     ),
                 maxID++ to
                     CardStats(
+                        "Teacher Cerber",
+                        null,
+                        6,
+                        3,
+                        4,
+                        arrayOf<Tactic>(),
+                        CardType.CREATURE,
+                        Ability(),
+                        Passive(
+                            PassiveEffectType.NONE, // BUFF_ADJACIENT_AT_END_OF_TURN
+                            intArrayOf(1, 0), // atk, hp
+                        ),
+                    ),
+                maxID++ to
+                    CardStats(
                         "Pirate Evil",
                         null,
                         2,
