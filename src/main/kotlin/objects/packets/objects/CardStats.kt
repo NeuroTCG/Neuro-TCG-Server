@@ -530,7 +530,149 @@ class CardStats(
                     ),
                 maxID++ to
                     CardStats(
-                        "Pirate Evil",
+                        "The Baker Twins",
+                        null,
+                        2,
+                        1,
+                        3,
+                        arrayOf<Tactic>(),
+                        CardType.CREATURE,
+                        Ability(
+                            AbilityEffect.ADD_HP,
+                            2,
+                            AbilityRange.ALLY_CARD,
+                            0, // cost unknown
+                        ),
+                        Passive(
+                            PassiveEffectType.NONE, // ACT_MULTIPLE_TIMES
+                            intArrayOf(1), // number of additional times; could also store n+1
+                        ),
+                    ),
+                maxID++ to
+                    CardStats(
+                        "Grenedier Evil",
+                        null,
+                        3,
+                        2,
+                        3,
+                        arrayOf<Tactic>(Tactic.REACH),
+                        CardType.CREATURE,
+                        Ability(
+                            AbilityEffect.ATTACK,
+                            2,
+                            AbilityRange.ENEMY_ROW,
+                            0, // cost unknown
+                        ),
+                        Passive(),
+                    ),
+                maxID++ to
+                    CardStats(
+                        "ASMR Evil",
+                        null,
+                        4,
+                        2,
+                        3,
+                        arrayOf<Tactic>(),
+                        CardType.CREATURE,
+                        Ability(),
+                        Passive(),
+                    ),
+                maxID++ to
+                    CardStats(
+                        "Corpa Vedal",
+                        null,
+                        7,
+                        6,
+                        8,
+                        arrayOf<Tactic>(),
+                        CardType.CREATURE,
+                        Ability(),
+                        Passive(),
+                    ),
+                maxID++ to
+                    CardStats(
+                        "Chat",
+                        null,
+                        8,
+                        4,
+                        6,
+                        arrayOf<Tactic>(Tactic.NIMBLE),
+                        CardType.CREATURE,
+                        Ability(
+                            AbilityEffect.SEAL,
+                            2,
+                            AbilityRange.ENEMY_CARD,
+                            0, // cost unknown
+                        ),
+                        Passive(),
+                    ),
+                maxID++ to
+                    CardStats(
+                        "Bartender Neuro",
+                        null,
+                        3,
+                        2,
+                        3,
+                        arrayOf<Tactic>(),
+                        CardType.CREATURE,
+                        Ability(
+                            AbilityEffect.ADD_HP,
+                            3,
+                            AbilityRange.ALLY_CARD,
+                            0, // cost unknown
+                        ),
+                        Passive(),
+                    ),
+                maxID++ to
+                    CardStats(
+                        "Neuro Archiver",
+                        null,
+                        7,
+                        2,
+                        2,
+                        arrayOf<Tactic>(),
+                        CardType.CREATURE,
+                        Ability(),
+                        Passive(
+                            PassiveEffectType.NONE, // RESPAWN_RANDOM_CARD_ON_SUMMON
+                            intArrayOf(),
+                        ),
+                    ),
+                maxID++ to
+                    CardStats(
+                        "2020 Dodge Charger",
+                        null,
+                        1,
+                        2,
+                        2,
+                        arrayOf<Tactic>(),
+                        CardType.CREATURE,
+                        Ability(),
+                        Passive(),
+                    ),
+                maxID++ to
+                    CardStats(
+                        "Rum Drunk Vedal",
+                        null,
+                        3,
+                        1,
+                        3,
+                        arrayOf<Tactic>(),
+                        CardType.CREATURE,
+                        Ability(
+                            AbilityEffect.ATTACK,
+                            1,
+                            AbilityRange.ENEMY_ROW,
+                            0, // cost unknown
+                        ),
+                        Passive(
+                            PassiveEffectType.NONE, // ATTACK_CAUSES_MEMORYLEAK
+                            intArrayOf(),
+                        ),
+                    ),
+                maxID++ to
+                    CardStats(
+                        "Pirate Neuro", // sheet also mentions evil version                        null,
                         null,
                         2,
                         2,
@@ -542,15 +684,273 @@ class CardStats(
                     ),
                 maxID++ to
                     CardStats(
-                        "That streaming site she uses",
+                        "Femboy Vedal",
+                        null,
+                        7,
+                        4,
+                        5,
+                        arrayOf<Tactic>(Tactic.NIMBLE),
+                        CardType.CREATURE,
+                        Ability(),
+                        Passive(
+                            PassiveEffectType.NONE, // ATTACK_CAUSES_MEMORYLEAK
+                            intArrayOf(),
+                        ),
+                    ),
+                maxID++ to
+                    CardStats(
+                        "Abber Demon",
+                        null,
+                        6,
+                        4,
+                        4,
+                        arrayOf<Tactic>(),
+                        CardType.CREATURE,
+                        Ability(
+                            AbilityEffect.ATTACK, // direct damage
+                            5,
+                            AbilityRange.ENEMY_CARD,
+                            0, // cost unknown
+                        ),
+                        Passive(),
+                    ),
+                maxID++ to
+                    CardStats(
+                        "Hacker Vedal",
+                        null,
+                        4,
+                        2,
+                        2,
+                        arrayOf<Tactic>(Tactic.NIMBLE, Tactic.REACH),
+                        CardType.CREATURE,
+                        Ability(),
+                        Passive(
+                            PassiveEffectType.NONE, // ATTACK_CAUSES_MEMORYLEAK
+                            intArrayOf(),
+                        ),
+                    ),
+                maxID++ to
+                    CardStats(
+                        "Gymbag",
+                        null,
+                        6,
+                        0,
+                        8,
+                        arrayOf<Tactic>(),
+                        CardType.CREATURE,
+                        Ability(
+                            AbilityEffect.ATTACK,
+                            2,
+                            AbilityRange.ENEMY_ROW,
+                            0, // cost unknown
+                        ),
+                        Passive(
+                            PassiveEffectType.NONE, // DEAL_DAMAGE_TO_ALL_ENEMIES_ON_SUMMON, cannot act or counterattack
+                            intArrayOf(2), // damage
+                        ),
+                    ),
+                maxID++ to
+                    CardStats(
+                        "That streaming site she uses", // TM missing
                         null,
                         4,
                         4,
                         3,
                         arrayOf<Tactic>(),
                         CardType.CREATURE,
-                        Ability(AbilityEffect.SEAL, 1, AbilityRange.ENEMY_CARD, 0),
+                        Ability(
+                            AbilityEffect.SEAL,
+                            1,
+                            AbilityRange.ENEMY_CARD,
+                            0, // cost unknown
+                        ),
                         Passive(),
+                    ),
+                maxID++ to
+                    CardStats(
+                        "Toffee",
+                        null,
+                        1,
+                        2,
+                        2,
+                        arrayOf<Tactic>(),
+                        CardType.CREATURE,
+                        Ability(),
+                        Passive(
+                            PassiveEffectType.NONE, // BUFF_IF_IS_DECKMASTER
+                            intArrayOf(0, 1, 1), // ID of deckmaster (anny here, but unknown for now), atk/hp
+                        ),
+                    ),
+                maxID++ to
+                    CardStats(
+                        "Fanny pack Vedal",
+                        null,
+                        2,
+                        1,
+                        1,
+                        arrayOf<Tactic>(Tactic.NIMBLE),
+                        CardType.CREATURE,
+                        Ability(),
+                        Passive(
+                            PassiveEffectType.NONE, // CANT_BE_COUNTERATTACKED
+                            intArrayOf(),
+                        ),
+                    ),
+                maxID++ to
+                    CardStats(
+                        "Cowboy Neuro",
+                        null,
+                        2,
+                        2,
+                        2,
+                        arrayOf<Tactic>(Tactic.REACH),
+                        CardType.CREATURE,
+                        Ability(),
+                        Passive(),
+                    ),
+                maxID++ to
+                    CardStats(
+                        "Hello Chat",
+                        null,
+                        0, // 2 or 0
+                        2,
+                        3,
+                        arrayOf<Tactic>(),
+                        CardType.CREATURE,
+                        Ability(),
+                        Passive(
+                            PassiveEffectType.NONE, // FREE_IF_SUMMONED_ON_FIRST_TURN
+                            intArrayOf(),
+                        ),
+                    ),
+                maxID++ to
+                    CardStats(
+                        "5 Million Evil Fumos",
+                        null,
+                        5,
+                        5,
+                        5,
+                        arrayOf<Tactic>(Tactic.REACH),
+                        CardType.CREATURE,
+                        Ability(),
+                        Passive(),
+                    ),
+                maxID++ to
+                    CardStats(
+                        "Neuro Fumo",
+                        null,
+                        5,
+                        2,
+                        5,
+                        arrayOf<Tactic>(Tactic.NIMBLE),
+                        CardType.CREATURE,
+                        Ability(
+                            AbilityEffect.ADD_HP,
+                            5,
+                            AbilityRange.ALLY_CARD, // not sure if ally only
+                            0, // cost unknown
+                        ),
+                        Passive(),
+                    ),
+                maxID++ to
+                    CardStats(
+                        "Ninja Evil",
+                        null,
+                        2,
+                        1,
+                        1,
+                        arrayOf<Tactic>(Tactic.NIMBLE, Tactic.REACH),
+                        CardType.CREATURE,
+                        Ability(),
+                        Passive(
+                            PassiveEffectType.NONE, // PIN_ON_ATTACK
+                            intArrayOf(1), // num turns
+                        ),
+                    ),
+                maxID++ to
+                    CardStats(
+                        "Cat Neuro",
+                        null,
+                        0, // unknown
+                        0, // unknown
+                        0, // unknown
+                        arrayOf<Tactic>(),
+                        CardType.CREATURE,
+                        Ability(),
+                        Passive(),
+                    ),
+                maxID++ to
+                    CardStats(
+                        "Axel",
+                        null,
+                        0, // unknown
+                        0, // unknown
+                        0, // unknown
+                        arrayOf<Tactic>(),
+                        CardType.CREATURE,
+                        Ability(),
+                        Passive(),
+                    ),
+                maxID++ to
+                    CardStats(
+                        "Cerby",
+                        null,
+                        0, // unknown
+                        0, // unknown
+                        0, // unknown
+                        arrayOf<Tactic>(),
+                        CardType.CREATURE,
+                        Ability(),
+                        Passive(),
+                    ),
+                maxID++ to
+                    CardStats(
+                        "Harpoon Queen",
+                        null,
+                        5,
+                        2,
+                        2,
+                        arrayOf<Tactic>(Tactic.REACH),
+                        CardType.CREATURE,
+                        Ability(
+                            AbilityEffect.NONE, // MOVE_TO_FRONT_ROW_AND_DAMAGE
+                            1, // damage
+                            AbilityRange.ENEMY_CARD,
+                            0, // cost unknown
+                        ),
+                        Passive(),
+                    ),
+                maxID++ to
+                    CardStats(
+                        "Minyan",
+                        null,
+                        2,
+                        0,
+                        4,
+                        arrayOf<Tactic>(),
+                        CardType.CREATURE,
+                        Ability(
+                        ),
+                        Passive(
+                            PassiveEffectType.NONE, // BUFF_IF_IS_DECKMASTER
+                            intArrayOf(0, 0, 1), // ID of deckmaster (mini here, but unknown for now), atk/hp
+                        ),
+                    ),
+                maxID++ to
+                    CardStats(
+                        "Record Breaking Subathon",
+                        null,
+                        5,
+                        0,
+                        3,
+                        arrayOf<Tactic>(),
+                        CardType.CREATURE,
+                        Ability(
+                        ),
+                        Passive(
+                            PassiveEffectType.NONE, // DECKMASTERS_CANT_DIE, can't be buffed, only summonable in first row
+                            intArrayOf(1), // minimal HP limit for deckmasters
+                        ),
                     ),
                 maxID++ to
                     CardStats(
