@@ -315,7 +315,7 @@ class CardStats(
                         CardType.DECK_MASTER,
                         Ability(
                             AbilityEffect.SHIELD,
-                            2,
+                            1,
                             AbilityRange.ALLY_CARD,
                             6,
                         ),
@@ -954,7 +954,7 @@ class CardStats(
                     ),
                 maxID++ to
                     CardStats(
-                        "10 Tins Cans 1 Stream",
+                        "10 Tin Cans 1 Stream",
                         null,
                         5,
                         0,
