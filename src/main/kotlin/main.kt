@@ -20,12 +20,27 @@ import kotlinx.serialization.json.*
 import objects.*
 import objects.accounts.*
 import objects.packets.*
+import objects.packets.objects.CardStats
 import objects.packets.objects.UserInfo
 import java.util.*
 import java.util.concurrent.*
+import kotlin.system.exitProcess
 
 @OptIn(ExperimentalSerializationApi::class)
-fun main() {
+fun main(args: Array<String>) {
+    for (arg in args) {
+        when (arg) {
+            "--dump-cards" -> {
+                println(Json.encodeToString(CardStats.cardIDMapping))
+                exitProcess(0)
+            }
+            else -> {
+                println("Invalid commandline argument '$arg'")
+                exitProcess(1)
+            }
+        }
+    }
+
     val dotenv = dotenv()
 
     val dbPath = "data/data.db"
