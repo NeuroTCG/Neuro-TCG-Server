@@ -295,7 +295,7 @@ class BoardStateManager(
 
         val newCard =
             Card(
-                packet.card_id,
+                playerToIndex(player),
                 packet.position,
                 newCardState,
             )
