@@ -929,8 +929,7 @@ class CardStats(
                         4,
                         arrayOf<Tactic>(),
                         CardType.CREATURE,
-                        Ability(
-                        ),
+                        Ability(),
                         Passive(
                             PassiveEffectType.NONE, // BUFF_IF_IS_DECKMASTER
                             intArrayOf(0, 0, 1), // ID of deckmaster (mini here, but unknown for now), atk/hp
@@ -945,8 +944,7 @@ class CardStats(
                         3,
                         arrayOf<Tactic>(),
                         CardType.CREATURE,
-                        Ability(
-                        ),
+                        Ability(),
                         Passive(
                             PassiveEffectType.NONE, // DECKMASTERS_CANT_DIE, can't be buffed, only summonable in first row
                             intArrayOf(1), // minimal HP limit for deckmasters
