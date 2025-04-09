@@ -2,13 +2,15 @@ package objects.packets.objects
 
 import kotlinx.serialization.*
 import objects.*
+import objects.packets.objects.PassiveEffectType
 import objects.passives.*
 
 @Serializable
 enum class PassiveEffectType {
     NONE,
-    DRAW_ON_DESTRUCTION,
-    BUFF_ADJACENT,
+    NOT_IMPLEMENTED,
+    DRAW_ON_DESTRUCTION, // TODO: make num cards configurable
+    BUFF_ADJACENT, // atk, hp
 }
 
 @Serializable
@@ -17,14 +19,17 @@ data class Passive(
     @Required val values: IntArray = IntArray(0),
 ) {
     init {
-        require(
-            values.size ==
-                when (effect) {
-                    PassiveEffectType.DRAW_ON_DESTRUCTION -> 0
-                    PassiveEffectType.BUFF_ADJACENT -> 2
-                    PassiveEffectType.NONE -> 0
-                },
-        )
+        if (effect != PassiveEffectType.NOT_IMPLEMENTED) {
+            require(
+                values.size ==
+                    when (effect) {
+                        PassiveEffectType.DRAW_ON_DESTRUCTION -> 1
+                        PassiveEffectType.BUFF_ADJACENT -> 2
+                        PassiveEffectType.NONE -> 0
+                        PassiveEffectType.NOT_IMPLEMENTED -> require(false)
+                    },
+            )
+        }
     }
 
     override fun equals(other: Any?): Boolean {
