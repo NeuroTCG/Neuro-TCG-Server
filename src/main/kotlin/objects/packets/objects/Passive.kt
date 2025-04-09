@@ -8,6 +8,7 @@ import objects.passives.*
 @Serializable
 enum class PassiveEffectType {
     NONE,
+    NOT_IMPLEMENTED,
     DRAW_ON_DESTRUCTION, // TODO: make num cards configurable
     BUFF_ADJACENT, // atk, hp
 }
@@ -18,15 +19,14 @@ data class Passive(
     @Required val values: IntArray = IntArray(0),
 ) {
     init {
-        // TODO: remove after all missing effects are implemented and
-        // NONE actually means none, instead of being a placeholder
-        if (effect != PassiveEffectType.NONE) {
+        if (effect != PassiveEffectType.NOT_IMPLEMENTED) {
             require(
                 values.size ==
                     when (effect) {
                         PassiveEffectType.DRAW_ON_DESTRUCTION -> 1
                         PassiveEffectType.BUFF_ADJACENT -> 2
                         PassiveEffectType.NONE -> 0
+                        PassiveEffectType.NOT_IMPLEMENTED -> require(false)
                     },
             )
         }

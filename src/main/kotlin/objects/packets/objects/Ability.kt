@@ -5,6 +5,7 @@ import kotlinx.serialization.*
 @Serializable
 enum class AbilityEffect {
     NONE,
+    NOT_IMPLEMENTED,
     ADD_HP,
     SEAL,
     ATTACK,

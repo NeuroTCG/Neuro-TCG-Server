@@ -78,13 +78,13 @@ class CardStats(
                         arrayOf<Tactic>(),
                         CardType.DECK_MASTER,
                         Ability(
-                            AbilityEffect.NONE, // revive creature
+                            AbilityEffect.NOT_IMPLEMENTED, // revive creature
                             0,
                             AbilityRange.ALLY_FIELD,
                             5,
                         ),
                         Passive(
-                            PassiveEffectType.NONE, // can move after attacking
+                            PassiveEffectType.NOT_IMPLEMENTED, // can move after attacking
                         ),
                     ),
                 maxID++ to
@@ -97,13 +97,13 @@ class CardStats(
                         arrayOf<Tactic>(Tactic.REACH),
                         CardType.DECK_MASTER,
                         Ability(
-                            AbilityEffect.NONE, // destroy random creature
+                            AbilityEffect.NOT_IMPLEMENTED, // destroy random creature
                             0,
                             AbilityRange.NONE, // ENEMY_CREATURE
                             5,
                         ),
                         Passive(
-                            PassiveEffectType.NONE,
+                            PassiveEffectType.NOT_IMPLEMENTED,
                         ),
                     ),
                 maxID++ to
@@ -136,13 +136,13 @@ class CardStats(
                         arrayOf<Tactic>(),
                         CardType.DECK_MASTER,
                         Ability(
-                            AbilityEffect.NONE, // ADD_ATK
+                            AbilityEffect.NOT_IMPLEMENTED, // ADD_ATK
                             2,
                             AbilityRange.ALLY_FIELD,
                             6,
                         ),
                         Passive(
-                            PassiveEffectType.NONE,
+                            PassiveEffectType.NOT_IMPLEMENTED,
                         ),
                     ),
                 maxID++ to
@@ -161,7 +161,7 @@ class CardStats(
                             4,
                         ),
                         Passive(
-                            PassiveEffectType.NONE,
+                            PassiveEffectType.NOT_IMPLEMENTED,
                         ),
                     ),
                 maxID++ to
@@ -180,7 +180,7 @@ class CardStats(
                             4,
                         ),
                         Passive(
-                            PassiveEffectType.NONE, // gains attack for every card it destroys;
+                            PassiveEffectType.NOT_IMPLEMENTED, // gains attack for every card it destroys;
                             // maybe implement together with hp gain per attack
                             intArrayOf(1), // amount gained
                         ),
@@ -215,13 +215,13 @@ class CardStats(
                         arrayOf<Tactic>(),
                         CardType.DECK_MASTER,
                         Ability(
-                            AbilityEffect.NONE, // REMOVE_CARD_AND_GAIN_ATK_HP
+                            AbilityEffect.NOT_IMPLEMENTED, // REMOVE_CARD_AND_GAIN_ATK_HP
                             1, // this has two parameters technically: atk and hp, both 1 here
                             AbilityRange.ALLY_CARD,
                             2,
                         ),
                         Passive(
-                            PassiveEffectType.NONE, // can (or has to?) attack after using its ability
+                            PassiveEffectType.NOT_IMPLEMENTED, // can (or has to?) attack after using its ability
                         ),
                     ),
                 maxID++ to
@@ -234,13 +234,13 @@ class CardStats(
                         arrayOf<Tactic>(),
                         CardType.DECK_MASTER,
                         Ability(
-                            AbilityEffect.NONE, // DRAW_CARD
+                            AbilityEffect.NOT_IMPLEMENTED, // DRAW_CARD
                             1, // number of cards drawn
                             AbilityRange.PLAYER_DECK, // not really relevant, but it's the closest we have
                             4,
                         ),
                         Passive(
-                            PassiveEffectType.NONE, // magic cards are cheaper
+                            PassiveEffectType.NOT_IMPLEMENTED, // magic cards are cheaper
                             intArrayOf(1, 1), // reduction, minimum
                         ),
                     ),
@@ -254,13 +254,13 @@ class CardStats(
                         arrayOf<Tactic>(),
                         CardType.DECK_MASTER,
                         Ability(
-                            AbilityEffect.NONE, // ADD_HP_AND_ATK
+                            AbilityEffect.NOT_IMPLEMENTED, // ADD_HP_AND_ATK
                             1, // card gains 1 atk and 1 hp, but they should be independently configurable
                             AbilityRange.ALLY_CARD,
                             3,
                         ),
                         Passive(
-                            PassiveEffectType.NONE, // BUFF_ALL_ALLIES, but only after reaching 12 hp for the first time
+                            PassiveEffectType.NOT_IMPLEMENTED, // BUFF_ALL_ALLIES, but only after reaching 12 hp for the first time
                             intArrayOf(2, 2), // atk, hp
                         ),
                     ),
@@ -274,13 +274,13 @@ class CardStats(
                         arrayOf<Tactic>(),
                         CardType.DECK_MASTER,
                         Ability(
-                            AbilityEffect.NONE, // return card to default state (unsure if hp too); doesn't affect ability
+                            AbilityEffect.NOT_IMPLEMENTED, // return card to default state (unsure if hp too); doesn't affect ability
                             0, // no parameter
                             AbilityRange.NONE, // ENEMY_CREATURES
                             4,
                         ),
                         Passive(
-                            PassiveEffectType.NONE, // COUNTER_ATTACK_BUFF
+                            PassiveEffectType.NOT_IMPLEMENTED, // COUNTER_ATTACK_BUFF
                             intArrayOf(1), // additional damage for counterattack
                         ),
                     ),
@@ -294,13 +294,13 @@ class CardStats(
                         arrayOf<Tactic>(),
                         CardType.DECK_MASTER,
                         Ability(
-                            AbilityEffect.NONE, // REDUCE_ATK
+                            AbilityEffect.NOT_IMPLEMENTED, // REDUCE_ATK
                             2, // reduction; either second param for minimum or implicitly use 1
                             AbilityRange.ENEMY_CARD,
                             5,
                         ),
                         Passive(
-                            PassiveEffectType.NONE, // ACT_MULTIPLE_TIMES
+                            PassiveEffectType.NOT_IMPLEMENTED, // ACT_MULTIPLE_TIMES
                             intArrayOf(1), // number of additional times; could also store n+1
                         ),
                     ),
@@ -320,7 +320,7 @@ class CardStats(
                             6,
                         ),
                         Passive(
-                            PassiveEffectType.NONE, // the special atk property above
+                            PassiveEffectType.NOT_IMPLEMENTED, // the special atk property above
                             intArrayOf(2), // dmg for counterattack
                         ),
                     ),
@@ -363,7 +363,7 @@ class CardStats(
                         CardType.CREATURE,
                         Ability(),
                         Passive(
-                            PassiveEffectType.NONE, // CONSUMABLE
+                            PassiveEffectType.NOT_IMPLEMENTED, // CONSUMABLE
                             intArrayOf(2, 2), // atk, hp gained when a card moves onto this one
                         ),
                     ),
@@ -378,7 +378,7 @@ class CardStats(
                         CardType.CREATURE,
                         Ability(),
                         Passive(
-                            PassiveEffectType.NONE, // BOUNCE_AND_GAIN_HP_IN_CORNER; hp only stays for the opponents turn
+                            PassiveEffectType.NOT_IMPLEMENTED, // BOUNCE_AND_GAIN_HP_IN_CORNER; hp only stays for the opponents turn
                             intArrayOf(2), // hp gained in corner
                         ),
                     ),
@@ -393,7 +393,7 @@ class CardStats(
                         CardType.CREATURE,
                         Ability(),
                         Passive(
-                            PassiveEffectType.NONE, // PASS_TURN; turn counters (like seal) are reduced for both players
+                            PassiveEffectType.NOT_IMPLEMENTED, // PASS_TURN; turn counters (like seal) are reduced for both players
                             intArrayOf(1), // num turns to pass
                         ),
                     ),
@@ -420,7 +420,7 @@ class CardStats(
                         CardType.CREATURE,
                         Ability(),
                         Passive(
-                            PassiveEffectType.NONE, // buff if swaps with the deckmaster as first thing in turn
+                            PassiveEffectType.NOT_IMPLEMENTED, // buff if swaps with the deckmaster as first thing in turn
                             intArrayOf(1, 0), // atk, hp
                         ),
                     ),
@@ -435,7 +435,7 @@ class CardStats(
                         CardType.CREATURE,
                         Ability(),
                         Passive(
-                            PassiveEffectType.NONE, // ON_DESTROY CHOOSE_AND_SHUFFLE_CARD
+                            PassiveEffectType.NOT_IMPLEMENTED, // ON_DESTROY CHOOSE_AND_SHUFFLE_CARD
                             intArrayOf(3, 1), // num cards to look at, num cards to pick
                         ),
                     ),
@@ -450,7 +450,7 @@ class CardStats(
                         CardType.CREATURE,
                         Ability(),
                         Passive(
-                            PassiveEffectType.NONE, // BUFF_IF_ALONE
+                            PassiveEffectType.NOT_IMPLEMENTED, // BUFF_IF_ALONE
                             intArrayOf(2, 2), // atk, hp
                         ),
                     ),
@@ -477,7 +477,7 @@ class CardStats(
                         CardType.CREATURE,
                         Ability(),
                         Passive(
-                            PassiveEffectType.NONE, // BUFF_ON_DESTRUCTION; only destructions caused by this card
+                            PassiveEffectType.NOT_IMPLEMENTED, // BUFF_ON_DESTRUCTION; only destructions caused by this card
                             intArrayOf(1, 0), // atk, hp
                         ),
                     ),
@@ -492,7 +492,7 @@ class CardStats(
                         CardType.CREATURE,
                         Ability(),
                         Passive(
-                            PassiveEffectType.NONE, // BUFF_ADJACIENT_AT_END_OF_TURN
+                            PassiveEffectType.NOT_IMPLEMENTED, // BUFF_ADJACIENT_AT_END_OF_TURN
                             intArrayOf(1, 0), // atk, hp
                         ),
                     ),
@@ -521,7 +521,7 @@ class CardStats(
                         arrayOf<Tactic>(),
                         CardType.CREATURE,
                         Ability(
-                            AbilityEffect.NONE, // SPAWN_CARD
+                            AbilityEffect.NOT_IMPLEMENTED, // SPAWN_CARD
                             -1, // card id to spawn; will be the id for house token
                             AbilityRange.NONE, // RANDOM_FRONT_ROW_ALLY
                             0, // cost unknown
@@ -544,7 +544,7 @@ class CardStats(
                             0, // cost unknown
                         ),
                         Passive(
-                            PassiveEffectType.NONE, // ACT_MULTIPLE_TIMES
+                            PassiveEffectType.NOT_IMPLEMENTED, // ACT_MULTIPLE_TIMES
                             intArrayOf(1), // number of additional times; could also store n+1
                         ),
                     ),
@@ -634,7 +634,7 @@ class CardStats(
                         CardType.CREATURE,
                         Ability(),
                         Passive(
-                            PassiveEffectType.NONE, // RESPAWN_RANDOM_CARD_ON_SUMMON
+                            PassiveEffectType.NOT_IMPLEMENTED, // RESPAWN_RANDOM_CARD_ON_SUMMON
                             intArrayOf(),
                         ),
                     ),
@@ -666,7 +666,7 @@ class CardStats(
                             0, // cost unknown
                         ),
                         Passive(
-                            PassiveEffectType.NONE, // ATTACK_CAUSES_MEMORYLEAK
+                            PassiveEffectType.NOT_IMPLEMENTED, // ATTACK_CAUSES_MEMORYLEAK
                             intArrayOf(),
                         ),
                     ),
@@ -693,7 +693,7 @@ class CardStats(
                         CardType.CREATURE,
                         Ability(),
                         Passive(
-                            PassiveEffectType.NONE, // ATTACK_CAUSES_MEMORYLEAK
+                            PassiveEffectType.NOT_IMPLEMENTED, // ATTACK_CAUSES_MEMORYLEAK
                             intArrayOf(),
                         ),
                     ),
@@ -725,7 +725,7 @@ class CardStats(
                         CardType.CREATURE,
                         Ability(),
                         Passive(
-                            PassiveEffectType.NONE, // ATTACK_CAUSES_MEMORYLEAK
+                            PassiveEffectType.NOT_IMPLEMENTED, // ATTACK_CAUSES_MEMORYLEAK
                             intArrayOf(),
                         ),
                     ),
@@ -745,7 +745,7 @@ class CardStats(
                             0, // cost unknown
                         ),
                         Passive(
-                            PassiveEffectType.NONE, // DEAL_DAMAGE_TO_ALL_ENEMIES_ON_SUMMON, cannot act or counterattack
+                            PassiveEffectType.NOT_IMPLEMENTED, // DEAL_DAMAGE_TO_ALL_ENEMIES_ON_SUMMON, cannot act or counterattack
                             intArrayOf(2), // damage
                         ),
                     ),
@@ -777,7 +777,7 @@ class CardStats(
                         CardType.CREATURE,
                         Ability(),
                         Passive(
-                            PassiveEffectType.NONE, // BUFF_IF_IS_DECKMASTER
+                            PassiveEffectType.NOT_IMPLEMENTED, // BUFF_IF_IS_DECKMASTER
                             intArrayOf(0, 1, 1), // ID of deckmaster (anny here, but unknown for now), atk/hp
                         ),
                     ),
@@ -792,7 +792,7 @@ class CardStats(
                         CardType.CREATURE,
                         Ability(),
                         Passive(
-                            PassiveEffectType.NONE, // CANT_BE_COUNTERATTACKED
+                            PassiveEffectType.NOT_IMPLEMENTED, // CANT_BE_COUNTERATTACKED
                             intArrayOf(),
                         ),
                     ),
@@ -819,7 +819,7 @@ class CardStats(
                         CardType.CREATURE,
                         Ability(),
                         Passive(
-                            PassiveEffectType.NONE, // FREE_IF_SUMMONED_ON_FIRST_TURN
+                            PassiveEffectType.NOT_IMPLEMENTED, // FREE_IF_SUMMONED_ON_FIRST_TURN
                             intArrayOf(),
                         ),
                     ),
@@ -863,7 +863,7 @@ class CardStats(
                         CardType.CREATURE,
                         Ability(),
                         Passive(
-                            PassiveEffectType.NONE, // PIN_ON_ATTACK
+                            PassiveEffectType.NOT_IMPLEMENTED, // PIN_ON_ATTACK
                             intArrayOf(1), // num turns
                         ),
                     ),
@@ -913,7 +913,7 @@ class CardStats(
                         arrayOf<Tactic>(Tactic.REACH),
                         CardType.CREATURE,
                         Ability(
-                            AbilityEffect.NONE, // MOVE_TO_FRONT_ROW_AND_DAMAGE
+                            AbilityEffect.NOT_IMPLEMENTED, // MOVE_TO_FRONT_ROW_AND_DAMAGE
                             1, // damage
                             AbilityRange.ENEMY_CARD,
                             0, // cost unknown
@@ -931,7 +931,7 @@ class CardStats(
                         CardType.CREATURE,
                         Ability(),
                         Passive(
-                            PassiveEffectType.NONE, // BUFF_IF_IS_DECKMASTER
+                            PassiveEffectType.NOT_IMPLEMENTED, // BUFF_IF_IS_DECKMASTER
                             intArrayOf(0, 0, 1), // ID of deckmaster (mini here, but unknown for now), atk/hp
                         ),
                     ),
@@ -946,7 +946,7 @@ class CardStats(
                         CardType.CREATURE,
                         Ability(),
                         Passive(
-                            PassiveEffectType.NONE, // DECKMASTERS_CANT_DIE, can't be buffed, only summonable in first row
+                            PassiveEffectType.NOT_IMPLEMENTED, // DECKMASTERS_CANT_DIE, can't be buffed, only summonable in first row
                             intArrayOf(1), // minimal HP limit for deckmasters
                         ),
                     ),

@@ -566,6 +566,7 @@ class BoardStateManager(
     ): Boolean {
         when (ability.effect) {
             AbilityEffect.NONE -> TODO()
+            AbilityEffect.NOT_IMPLEMENTED -> TODO()
             AbilityEffect.ADD_HP -> {
                 if (ability.range != AbilityRange.ALLY_CARD && ability.range != AbilityRange.ALLY_FIELD) {
                     return false
