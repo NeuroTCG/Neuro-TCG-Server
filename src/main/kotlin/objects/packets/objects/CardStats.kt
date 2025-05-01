@@ -117,6 +117,7 @@ class CardStats(
                         Ability(AbilityEffect.ATTACK, 5, AbilityRange.ENEMY_ROW, 0),
                         Passive(),
                     ),
+                /* Holding off on development of Filian until superpowers are added.
                 5 to
                     CardStats(
                         "Filian",
@@ -128,9 +129,21 @@ class CardStats(
                         CardType.DECK_MASTER,
                         Ability(AbilityEffect.DRAW_CARD, 5, AbilityRange.PLAYER_DECK, 4),
                         Passive(PassiveEffectType.CARD_DISCOUNT, intArrayOf(1, 1, CardType.MAGIC.ordinal)),
+                    ),*/
+                6 to
+                    CardStats(
+                        "Anny",
+                        null,
+                        0,
+                        2,
+                        13, // Was 28, just lowering it for the sake of testing
+                        arrayOf<Tactic>(),
+                        CardType.DECK_MASTER,
+                        Ability(AbilityEffect.ADD_ATTACK_HP, 1, AbilityRange.ALLY_CARD, 3),
+                        Passive(PassiveEffectType.REACH_HP_THRESHOLD, intArrayOf(12, 1, 1)),
                     ),
             )
 
-        fun getCardByID(id: Int): CardStats? = cardIDMapping.get(id)
+        fun getCardByID(id: Int): CardStats? = cardIDMapping[id]
     }
 }

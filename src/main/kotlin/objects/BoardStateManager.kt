@@ -164,12 +164,6 @@ class BoardStateManager(
                 getConnection(player).sendPacket(DeckMasterSelectedPacket(false, true))
             }
 
-        // Check if requested card ID is in valid range.
-        if (packet.card_id < 0 || packet.card_id > CardStats.cardIDMapping.size - 1) {
-            sendInvalid()
-            return -1
-        }
-
         val card: CardStats? = CardStats.getCardByID(packet.card_id)
 
         // Check if id belongs to a valid Deck Master.
@@ -595,6 +589,16 @@ class BoardStateManager(
         } else {
             cardState.phase = CardTurnPhase.MoveOrAction
         }
+
+        // Refresh Deck Master's abilities
+        val cardstat: CardStats = CardStats.getCardByID(cardState.id)!!
+
+        println("End Turn For ${cardstat.name}")
+        println(cardstat.card_type)
+
+        if (cardstat.card_type == CardType.DECK_MASTER) {
+            cardState.ability_was_used = false
+        }
     }
 
     val cardDecks = listOf(CardDeck(), CardDeck())
@@ -645,6 +649,36 @@ class BoardStateManager(
                     val card = getCard(p, pos)
                     if (card != null) {
                         card.state!!.health += ability.value // isn't capped by design
+                    }
+                    setCard(player, pos, card)
+                }
+
+                return true
+            }
+
+            /**
+             * This might be something to look at later.
+             *  Adding the ability to have separate values for attack and hp.
+             */
+            AbilityEffect.ADD_ATTACK_HP -> {
+                if (ability.range != AbilityRange.ALLY_CARD && ability.range != AbilityRange.ALLY_FIELD) {
+                    return false
+                }
+
+                if (target_position == null) {
+                    return false
+                }
+
+                val ally = getCard(player, target_position)
+                if (ally == null && ability.range == AbilityRange.ALLY_CARD) {
+                    return false
+                }
+
+                foreachInRange(player, target_position, ability.range) { p, pos ->
+                    val card = getCard(p, pos)
+                    if (card != null) {
+                        card.state!!.health += ability.value // isn't capped by design
+                        card.state!!.attack_bonus += ability.value
                     }
                     setCard(player, pos, card)
                 }

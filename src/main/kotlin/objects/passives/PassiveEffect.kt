@@ -277,3 +277,56 @@ class CardDiscount(
         return CardActionList(card, actions.toTypedArray())
     }
 }
+
+class ReachHPThreshold(
+    passiveManager: PassiveManager,
+    card: Card,
+    player: Player,
+) : PassiveEffect(passiveManager, card, player) {
+    private var hpThreshold: Int = 0
+    private var hpBuffAmount: Int = 0
+    private var attackBuffAmount: Int = 0
+
+    private var hpThresholdReached = false
+
+    init {
+        val stats: CardStats? = CardStats.getCardByID(card.state.id)
+        stats?.let { cardStats ->
+            hpThreshold = stats.passive.values[0]
+            hpBuffAmount = stats.passive.values[1]
+            attackBuffAmount = stats.passive.values[2]
+        } ?: run {
+            println("Warning: no card was found with ID ${card.state.id}")
+        }
+    }
+
+    override suspend fun update(
+        lastChange: Packet?,
+        boardState: BoardState,
+    ): CardActionList? {
+        // Buff has been applied. Remove passive
+        if (hpThresholdReached) {
+            return null
+        }
+
+        if (card.state.health <= hpThreshold) {
+            hpThresholdReached = true
+            val allyCards = passiveManager.getAllAllyCardsOf(card, false)
+            val targets: MutableList<CardActionTarget> = mutableListOf()
+
+            for (c: Card in allyCards.values) {
+                targets.add(CardActionTarget(c.playerIdx, c.position))
+            }
+
+            val actions =
+                arrayOf(
+                    CardAction(CardActionNames.ADD_HP, targets.toTypedArray(), hpBuffAmount),
+                    CardAction(CardActionNames.ADD_ATTACK, targets.toTypedArray(), attackBuffAmount),
+                )
+
+            return CardActionList(card, actions)
+        }
+
+        return CardActionList.emptyActionList(card)
+    }
+}

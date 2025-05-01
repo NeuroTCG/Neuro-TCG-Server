@@ -76,6 +76,9 @@ class PassiveManager(
             PassiveEffectType.CARD_DISCOUNT -> {
                 return CardDiscount(this, card, player)
             }
+            PassiveEffectType.REACH_HP_THRESHOLD -> {
+                return ReachHPThreshold(this, card, player)
+            }
             else -> {
                 return null
             }
@@ -149,6 +152,26 @@ class PassiveManager(
         for (row: Array<Card?> in boardManager.getBoardState().cards[playerToIdx(player)]) {
             for (c: Card? in row) {
                 if (c != null && CardStats.getCardByID(c.state.id)!!.card_type == type) {
+                    workingMap[c] = c
+                }
+            }
+        }
+
+        return workingMap.toMap()
+    }
+
+    /*
+        Gets all the cards in the field that are allies of the given card
+     */
+    fun getAllAllyCardsOf(
+        card: Card,
+        includeMe: Boolean = true,
+    ): Map<Card, Card> {
+        val workingMap: MutableMap<Card, Card> = mutableMapOf()
+
+        for (row: Array<Card?> in boardManager.getBoardState().cards[card.playerIdx]) {
+            for (c: Card? in row) {
+                if (c != null && (c.state.id != card.state.id || includeMe)) {
                     workingMap[c] = c
                 }
             }
