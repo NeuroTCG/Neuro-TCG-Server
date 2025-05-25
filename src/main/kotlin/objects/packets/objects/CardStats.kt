@@ -215,13 +215,13 @@ class CardStats(
                         arrayOf<Tactic>(),
                         CardType.DECK_MASTER,
                         Ability(
-                            AbilityEffect.NOT_IMPLEMENTED, // REMOVE_CARD_AND_GAIN_ATK_HP
+                            AbilityEffect.BUFF_SELF_REMOVE_CARD, // REMOVE_CARD_AND_GAIN_ATK_HP
                             1, // this has two parameters technically: atk and hp, both 1 here
                             AbilityRange.ALLY_CARD,
                             2,
                         ),
                         Passive(
-                            PassiveEffectType.NOT_IMPLEMENTED, // can (or has to?) attack after using its ability
+                            PassiveEffectType.ATTACK_AFTER_ABILITY, // can (or has to?) attack after using its ability
                         ),
                     ),
                 maxID++ to
@@ -234,14 +234,14 @@ class CardStats(
                         arrayOf<Tactic>(),
                         CardType.DECK_MASTER,
                         Ability(
-                            AbilityEffect.NOT_IMPLEMENTED, // DRAW_CARD
+                            AbilityEffect.DRAW_CARD, // DRAW_CARD
                             1, // number of cards drawn
                             AbilityRange.PLAYER_DECK, // not really relevant, but it's the closest we have
                             4,
                         ),
                         Passive(
-                            PassiveEffectType.NOT_IMPLEMENTED, // magic cards are cheaper
-                            intArrayOf(1, 1), // reduction, minimum
+                            PassiveEffectType.CARD_DISCOUNT, // magic cards are cheaper
+                            intArrayOf(1, 1, 2), // reduction, minimum, card
                         ),
                     ),
                 maxID++ to
@@ -254,14 +254,14 @@ class CardStats(
                         arrayOf<Tactic>(),
                         CardType.DECK_MASTER,
                         Ability(
-                            AbilityEffect.NOT_IMPLEMENTED, // ADD_HP_AND_ATK
+                            AbilityEffect.ADD_ATTACK_HP, // ADD_HP_AND_ATK
                             1, // card gains 1 atk and 1 hp, but they should be independently configurable
                             AbilityRange.ALLY_CARD,
                             3,
                         ),
                         Passive(
-                            PassiveEffectType.NOT_IMPLEMENTED, // BUFF_ALL_ALLIES, but only after reaching 12 hp for the first time
-                            intArrayOf(2, 2), // atk, hp
+                            PassiveEffectType.REACH_HP_THRESHOLD, // BUFF_ALL_ALLIES, but only after reaching 12 hp for the first time
+                            intArrayOf(12, 2, 2), // threshold, atk, hp
                         ),
                     ),
                 maxID++ to
@@ -337,7 +337,6 @@ class CardStats(
                         Ability(),
                         Passive(
                             PassiveEffectType.DRAW_ON_DESTRUCTION,
-                            intArrayOf(1), // num cards to draw
                         ),
                     ),
                 maxID++ to
@@ -508,7 +507,6 @@ class CardStats(
                         Ability(),
                         Passive(
                             PassiveEffectType.DRAW_ON_DESTRUCTION,
-                            intArrayOf(1), // num cards
                         ),
                     ),
                 maxID++ to
@@ -961,43 +959,6 @@ class CardStats(
                         CardType.MAGIC,
                         Ability(AbilityEffect.ATTACK, 5, AbilityRange.ENEMY_ROW, 0),
                         Passive(),
-                    ),
-                /* Holding off on development of Filian until superpowers are added.
-                5 to
-                    CardStats(
-                        "Filian",
-                        null,
-                        0,
-                        2,
-                        22,
-                        arrayOf<Tactic>(),
-                        CardType.DECK_MASTER,
-                        Ability(AbilityEffect.DRAW_CARD, 5, AbilityRange.PLAYER_DECK, 4),
-                        Passive(PassiveEffectType.CARD_DISCOUNT, intArrayOf(1, 1, CardType.MAGIC.ordinal)),
-                    ),*/
-                6 to
-                    CardStats(
-                        "Anny",
-                        null,
-                        0,
-                        2,
-                        28, // Was 28, just lowering it for the sake of testing
-                        arrayOf<Tactic>(),
-                        CardType.DECK_MASTER,
-                        Ability(AbilityEffect.ADD_ATTACK_HP, 1, AbilityRange.ALLY_CARD, 3),
-                        Passive(PassiveEffectType.REACH_HP_THRESHOLD, intArrayOf(12, 1, 1)),
-                    ),
-                7 to
-                    CardStats(
-                        "Cerber",
-                        null,
-                        0,
-                        2,
-                        24,
-                        arrayOf<Tactic>(),
-                        CardType.DECK_MASTER,
-                        Ability(AbilityEffect.BUFF_SELF_REMOVE_CARD, 1, AbilityRange.ALLY_FIELD, 2),
-                        Passive(PassiveEffectType.ATTACK_AFTER_ABILITY, intArrayOf()),
                     ),
             )
 

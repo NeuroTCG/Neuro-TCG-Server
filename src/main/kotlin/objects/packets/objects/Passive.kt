@@ -8,7 +8,6 @@ import objects.passives.*
 @Serializable
 enum class PassiveEffectType {
     NONE,
-    BUFF_ADJACENT,
     CARD_DISCOUNT,
     REACH_HP_THRESHOLD,
     ATTACK_AFTER_ABILITY,
@@ -27,14 +26,16 @@ data class Passive(
             require(
                 values.size ==
                     when (effect) {
-                    PassiveEffectType.DRAW_ON_DESTRUCTION -> 0
-                    PassiveEffectType.BUFF_ADJACENT -> 2
-                    PassiveEffectType.NONE -> 0
-                    PassiveEffectType.CARD_DISCOUNT -> 3
-                    PassiveEffectType.REACH_HP_THRESHOLD -> 3 // Threshold, +HP, +ATTACK
-                    PassiveEffectType.ATTACK_AFTER_ABILITY -> 0
-                    PassiveEffectType.NOT_IMPLEMENTED -> require(false)
-                },
+                        PassiveEffectType.DRAW_ON_DESTRUCTION -> 0
+                        PassiveEffectType.BUFF_ADJACENT -> 2
+                        PassiveEffectType.NONE -> 0
+                        PassiveEffectType.CARD_DISCOUNT -> 3 // discount, minimum, card type
+                        PassiveEffectType.REACH_HP_THRESHOLD -> 3 // Threshold, +HP, +ATTACK
+                        PassiveEffectType.ATTACK_AFTER_ABILITY -> 0
+                        else -> {
+                            require(false)
+                        }
+                    },
             )
         }
     }

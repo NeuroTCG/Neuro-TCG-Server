@@ -626,6 +626,7 @@ class BoardStateManager(
 
     suspend fun useAbility(
         player: Player,
+        abilityCard: Card?,
         ability: Ability,
         target_position: CardPosition?,
     ): Boolean {
@@ -796,6 +797,35 @@ class BoardStateManager(
 
                 return true
             }
+
+            AbilityEffect.BUFF_SELF_REMOVE_CARD -> {
+                if (!arrayOf(
+                        AbilityRange.ALLY_FIELD,
+                        AbilityRange.ALLY_CARD,
+                    ).contains(ability.range)
+                ) {
+                    return false
+                }
+
+                if (target_position == null) {
+                    return false
+                }
+
+                var target = getCard(player, target_position)
+                if (target == null && ability.range == AbilityRange.ENEMY_CARD) {
+                    return false
+                }
+
+                if (abilityCard == null) {
+                    return false
+                }
+
+                // Apply +1/+1 to self
+                abilityCard.state.attack_bonus += ability.value
+
+                // TODO: Set up removing cards
+                return true
+            }
         }
     }
 
@@ -825,7 +855,8 @@ class BoardStateManager(
         }
 
         val ability = cardStat.ability
-        val targetCards = useAbility(player, ability, packet.target_position)
+        // Cards aren't initialized when in hand, so abilityCard is left null here.
+        val targetCards = useAbility(player, null, ability, packet.target_position)
 
         if (!targetCards) {
             sendInvalid()
@@ -876,27 +907,27 @@ class BoardStateManager(
             return
         }
 
-        val abilityCard = getCard(player, packet.ability_position)?.state
+        val abilityCard = getCard(player, packet.ability_position)
 
         if (abilityCard != null) {
-            println("Card's name = ${CardStats.getCardByID(abilityCard.id)?.name}")
-            println("Ability was used: ${abilityCard.ability_was_used}")
-            println("Current turn phase: ${abilityCard.phase}")
+            println("Card's name = ${CardStats.getCardByID(abilityCard.state.id)?.name}")
+            println("Ability was used: ${abilityCard.state.ability_was_used}")
+            println("Current turn phase: ${abilityCard.state.phase}")
         }
 
-        if (abilityCard == null || abilityCard.phase < CardTurnPhase.Action || abilityCard.ability_was_used) {
+        if (abilityCard == null || abilityCard.state.phase < CardTurnPhase.Action || abilityCard.state.ability_was_used) {
             sendInvalid()
             return
         }
 
-        val cardStat = CardStats.getCardByID(abilityCard.id)
+        val cardStat = CardStats.getCardByID(abilityCard.state.id)
         if (cardStat == null) {
             sendInvalid()
             return
         }
 
         val ability = cardStat.ability
-        val targetCards = useAbility(player, ability, packet.target_position)
+        val targetCards = useAbility(player, abilityCard, ability, packet.target_position)
 
         if (!targetCards) {
             sendInvalid()
@@ -915,7 +946,7 @@ class BoardStateManager(
                 isYou = true,
                 valid = true,
                 targetCard = target,
-                abilityCard = abilityCard,
+                abilityCard = abilityCard.state,
             ),
         )
         getConnection(!player).sendPacket(
@@ -923,18 +954,18 @@ class BoardStateManager(
                 isYou = false,
                 valid = true,
                 targetCard = target,
-                abilityCard = abilityCard,
+                abilityCard = abilityCard.state,
             ),
         )
 
         removeRam(player, ability.cost)
-        abilityCard.phase = CardTurnPhase.Done
-        abilityCard.ability_was_used = true
+        abilityCard.state.phase = CardTurnPhase.Done
+        abilityCard.state.ability_was_used = true
 
         if (abilityCard != null) {
-            print("Card's name = ${CardStats.getCardByID(abilityCard.id)?.name}")
-            print("Ability was used: ${abilityCard.ability_was_used}")
-            print("Current turn phase: ${abilityCard.phase}")
+            print("Card's name = ${CardStats.getCardByID(abilityCard.state.id)?.name}")
+            print("Ability was used: ${abilityCard.state.ability_was_used}")
+            print("Current turn phase: ${abilityCard.state.phase}")
         }
     }
 
