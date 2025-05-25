@@ -5,6 +5,7 @@ import kotlinx.serialization.*
 @Serializable
 enum class AbilityEffect {
     NONE,
+    NOT_IMPLEMENTED,
     ADD_HP,
     ADD_ATTACK_HP,
     SEAL,
@@ -33,6 +34,8 @@ data class Ability(
     @Required var cost: Int = 0,
 ) {
     init {
+        require(cost in 0..10) { "an ability must cost 0-10 ram" }
+
         if (CardStats.FREE_EVERYTHING) {
             cost = 0
         }

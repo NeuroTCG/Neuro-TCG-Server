@@ -89,9 +89,9 @@ class BoardStateManager(
         player: Player,
         amount: Int,
     ) {
-        assert(amount > 0)
+        require(amount > 0)
         this.boardState.ram[playerToIndex(player)] -= amount
-        assert(this.boardState.ram[playerToIndex(player)] in 0..getMaxRam(player))
+        check(this.boardState.ram[playerToIndex(player)] in 0..getMaxRam(player))
     }
 
     private fun refreshRam(player: Player) {
@@ -459,8 +459,8 @@ class BoardStateManager(
 
         val attackerHasReach = cardStat.tactics.contains(Tactic.REACH)
 
-        assert(attackerPosition.row in 0..1)
-        assert(targetPosition.row in 0..1)
+        require(attackerPosition.row in 0..1)
+        require(targetPosition.row in 0..1)
 
         return when (attackerPosition.row to targetPosition.row) {
             CardPosition.FRONT_ROW to CardPosition.FRONT_ROW -> true
@@ -468,7 +468,7 @@ class BoardStateManager(
             CardPosition.BACK_ROW to CardPosition.FRONT_ROW -> isPlayerFrontEmpty || attackerHasReach
             CardPosition.BACK_ROW to CardPosition.BACK_ROW -> attackerHasReach
             else -> {
-                assert(false) { "unreachable" }
+                check(false) { "unreachable" }
                 false
             }
         }
@@ -631,6 +631,7 @@ class BoardStateManager(
     ): Boolean {
         when (ability.effect) {
             AbilityEffect.NONE -> TODO()
+            AbilityEffect.NOT_IMPLEMENTED -> TODO()
             AbilityEffect.ADD_HP -> {
                 if (ability.range != AbilityRange.ALLY_CARD && ability.range != AbilityRange.ALLY_FIELD) {
                     return false
@@ -771,7 +772,7 @@ class BoardStateManager(
                 foreachInRange(player, target_position, ability.range) { p, pos ->
                     val card = getCard(p, pos)
                     card?.let {
-                        it.state.shield += 1
+                        it.state.shield += ability.value
                     }
                     setCard(player, pos, card)
                 }
