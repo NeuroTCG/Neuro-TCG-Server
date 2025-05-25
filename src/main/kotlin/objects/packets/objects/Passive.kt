@@ -9,6 +9,7 @@ enum class PassiveEffectType {
     BUFF_ADJACENT,
     CARD_DISCOUNT,
     REACH_HP_THRESHOLD,
+    ATTACK_AFTER_ABILITY,
 }
 
 @Serializable
@@ -25,6 +26,7 @@ data class Passive(
                     PassiveEffectType.NONE -> 0
                     PassiveEffectType.CARD_DISCOUNT -> 3
                     PassiveEffectType.REACH_HP_THRESHOLD -> 3 // Threshold, +HP, +ATTACK
+                    PassiveEffectType.ATTACK_AFTER_ABILITY -> 0
                 },
         )
     }

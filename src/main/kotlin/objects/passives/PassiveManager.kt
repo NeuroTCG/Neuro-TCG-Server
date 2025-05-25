@@ -63,7 +63,6 @@ class PassiveManager(
     ): PassiveEffect? {
         println("Card's ID is ${card.state.id}")
         when (CardStats.getCardByID(card.state.id)?.passive?.effect) {
-            // TODO: Create Unique passives for each card.
             PassiveEffectType.NONE -> {
                 return NullPassive(this, card, player)
             }

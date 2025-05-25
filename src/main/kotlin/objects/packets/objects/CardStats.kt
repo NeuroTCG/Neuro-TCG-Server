@@ -136,11 +136,23 @@ class CardStats(
                         null,
                         0,
                         2,
-                        13, // Was 28, just lowering it for the sake of testing
+                        28, // Was 28, just lowering it for the sake of testing
                         arrayOf<Tactic>(),
                         CardType.DECK_MASTER,
                         Ability(AbilityEffect.ADD_ATTACK_HP, 1, AbilityRange.ALLY_CARD, 3),
                         Passive(PassiveEffectType.REACH_HP_THRESHOLD, intArrayOf(12, 1, 1)),
+                    ),
+                7 to
+                    CardStats(
+                        "Cerber",
+                        null,
+                        0,
+                        2,
+                        24,
+                        arrayOf<Tactic>(),
+                        CardType.DECK_MASTER,
+                        Ability(AbilityEffect.BUFF_SELF_REMOVE_CARD, 1, AbilityRange.ALLY_FIELD, 2),
+                        Passive(PassiveEffectType.ATTACK_AFTER_ABILITY, intArrayOf()),
                     ),
             )
 

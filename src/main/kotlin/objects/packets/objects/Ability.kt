@@ -11,6 +11,7 @@ enum class AbilityEffect {
     ATTACK,
     SHIELD,
     DRAW_CARD,
+    BUFF_SELF_REMOVE_CARD,
 }
 
 @Serializable
