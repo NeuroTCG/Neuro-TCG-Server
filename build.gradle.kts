@@ -11,7 +11,7 @@ ktlint {
 }
 
 group = "org.example"
-version = "0.1"
+version = null
 val exposedVersion = "0.60.0"
 val ktorVersion = "3.1.1"
 
