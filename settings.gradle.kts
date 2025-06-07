@@ -1,4 +1,4 @@
 plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "0.9.0"
 }
-rootProject.name = "Neuro-TCG-server"
+rootProject.name = "Neuro-TCG-Server"
