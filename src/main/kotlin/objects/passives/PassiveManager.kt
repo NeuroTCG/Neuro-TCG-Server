@@ -78,6 +78,9 @@ class PassiveManager(
             PassiveEffectType.REACH_HP_THRESHOLD -> {
                 return ReachHPThreshold(this, card, player)
             }
+            PassiveEffectType.ATTACK_AFTER_ABILITY -> {
+                return AttackAfterAbility(this, card, player)
+            }
             else -> {
                 return null
             }

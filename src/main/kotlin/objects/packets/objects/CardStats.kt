@@ -33,6 +33,7 @@ class CardStats(
     @Required val card_type: CardType,
     @Required val ability: Ability,
     @Required val passive: Passive = Passive(),
+    @Required val max_counter_attack: Int = 999,
 ) {
     init {
         require(summoning_cost in 0..10) { "A card must cost 0-10 ram to summon" }
@@ -223,6 +224,7 @@ class CardStats(
                         Passive(
                             PassiveEffectType.ATTACK_AFTER_ABILITY, // can (or has to?) attack after using its ability
                         ),
+                        5, // Cap Cerber's counterattack so that she isn't OP late game.
                     ),
                 maxID++ to
                     CardStats(

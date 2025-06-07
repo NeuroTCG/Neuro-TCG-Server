@@ -6,6 +6,7 @@ import objects.packets.*
 @Serializable(with = CardTurnPhase.Serializer::class)
 enum class CardTurnPhase {
     Done,
+    AttackOnly,
     Action,
     MoveOrAction,
     ;

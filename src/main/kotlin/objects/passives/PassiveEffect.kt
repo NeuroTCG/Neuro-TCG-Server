@@ -330,3 +330,33 @@ class ReachHPThreshold(
         return CardActionList.emptyActionList(card)
     }
 }
+
+class AttackAfterAbility(
+    passiveManager: PassiveManager,
+    card: Card,
+    player: Player,
+) : PassiveEffect(passiveManager, card, player) {
+    var turnPhaseSet: Boolean = false
+
+    override suspend fun update(
+        lastChange: Packet?,
+        boardState: BoardState,
+    ): CardActionList? {
+        if (card.state.ability_was_used && !turnPhaseSet) {
+            // Specify that we only want to be able to attack after using
+            // an ability as opposed to doing either an attack or using the ability again.
+            card.state.phase = CardTurnPhase.AttackOnly
+
+            turnPhaseSet = true
+
+            return CardActionList(card, arrayOf(CardAction(CardActionNames.SET_PHASE, arrayOf(), CardTurnPhase.AttackOnly.ordinal)))
+        }
+
+        // Reset variable before turn ends
+        if (lastChange is EndTurnPacket) {
+            turnPhaseSet = false
+        }
+
+        return CardActionList.emptyActionList(card)
+    }
+}

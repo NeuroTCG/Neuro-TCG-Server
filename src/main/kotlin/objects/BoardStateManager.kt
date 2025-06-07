@@ -389,7 +389,8 @@ class BoardStateManager(
 
         if (canAttackBack) {
             if (attackerState.shield == 0) {
-                attackerState.health -= max(targetCardStat.base_atk + targetState.attack_bonus - 1, 0)
+                attackerState.health -=
+                    (targetCardStat.base_atk + targetState.attack_bonus - 1).coerceIn(0, targetCardStat.max_counter_attack)
             } else {
                 attackerState.shield -= 1
             }
@@ -812,7 +813,13 @@ class BoardStateManager(
                 }
 
                 var target = getCard(player, target_position)
-                if (target == null && ability.range == AbilityRange.ENEMY_CARD) {
+                if (target == null) {
+                    return false
+                }
+
+                // We don't want the player to remove deck masters, so mark any attempt to do so
+                // as invalid.
+                if (CardStats.cardIDMapping[target.state.id]!!.card_type == CardType.DECK_MASTER) {
                     return false
                 }
 
@@ -822,8 +829,15 @@ class BoardStateManager(
 
                 // Apply +1/+1 to self
                 abilityCard.state.attack_bonus += ability.value
+                abilityCard.state.health += ability.value
 
-                // TODO: Set up removing cards
+                /* TODO:
+                    Just setting the card at that location to be null, but will need to verify that
+                    this is the only thing that needs to be done.
+                 */
+
+                boardState.cards[target.playerIdx][target.position.row][target.position.column] = null
+
                 return true
             }
         }
@@ -927,6 +941,9 @@ class BoardStateManager(
         }
 
         val ability = cardStat.ability
+
+        val target = getCard(player, packet.target_position)!!.state
+
         val targetCards = useAbility(player, abilityCard, ability, packet.target_position)
 
         if (!targetCards) {
@@ -938,8 +955,6 @@ class BoardStateManager(
             sendInvalid()
             return
         }
-
-        val target = getCard(player, packet.target_position)!!.state
 
         getConnection(player).sendPacket(
             packet.getResponsePacket(
