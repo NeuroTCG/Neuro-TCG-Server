@@ -57,6 +57,8 @@ class PassiveManager(
         }
     }
 
+    fun isTurnOfPlayer(player: Player) = boardManager.isTurnOfPlayer(player)
+
     fun assignPassiveByCard(
         card: Card,
         player: Player,
@@ -64,6 +66,9 @@ class PassiveManager(
         println("Card's ID is ${card.state.id}")
         when (CardStats.getCardByID(card.state.id)?.passive?.effect) {
             PassiveEffectType.NONE -> {
+                return NullPassive(this, card, player)
+            }
+            PassiveEffectType.NOT_IMPLEMENTED -> {
                 return NullPassive(this, card, player)
             }
             PassiveEffectType.BUFF_ADJACENT -> {

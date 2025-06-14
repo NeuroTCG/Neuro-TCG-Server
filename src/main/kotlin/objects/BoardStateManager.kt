@@ -31,7 +31,7 @@ class BoardStateManager(
 
     fun getBoardState(): BoardState = this.boardState
 
-    private fun isTurnOfPlayer(player: Player): Boolean = boardState.first_player_active == (player == Player.Player1)
+    fun isTurnOfPlayer(player: Player): Boolean = boardState.first_player_active == (player == Player.Player1)
 
     private fun playerToIndex(player: Player): Int =
         if (player == Player.Player1) {
@@ -101,6 +101,7 @@ class BoardStateManager(
         this.boardState.ram[playerToIndex(player)] = getMaxRam(player)
     }
 
+    /*
     // TODO: remove this function after deck masters are no longer null
     // This is here to encapsulate code that doesn't need to be in the
     // final server
@@ -124,6 +125,7 @@ class BoardStateManager(
 
         return null
     }
+     */
 
     private suspend fun getGameWinner(): Player? {
         if (this.boardState.deck_masters.all { (it?.run { state.health > 0 }) != false }) {
@@ -133,20 +135,8 @@ class BoardStateManager(
         val player1 = Player.Player1
         val player2 = Player.Player2
 
-        // TODO: These are temporary after we consider that deck_masters must exist
-        // TODO: Hence, when they do exist, remove the next few lines
-        val deckMasterPlayer1Opt = this.boardState.deck_masters[playerToIndex(Player.Player1)]?.state
-        val deckMasterPlayer2Opt = this.boardState.deck_masters[playerToIndex(Player.Player2)]?.state
-        val temporarySpecialGameOver =
-            isGameOverTemporarySpecialLogic(deckMasterPlayer1Opt, deckMasterPlayer2Opt)
-
-        if (temporarySpecialGameOver != null) {
-            return temporarySpecialGameOver
-        }
-
-        // NOTE: at this point, deckMasterPlayer1 & 2 are guaranteed to exist
-        val deckMasterPlayer1 = deckMasterPlayer1Opt!!
-        val deckMasterPlayer2 = deckMasterPlayer2Opt!!
+        val deckMasterPlayer1 = this.boardState.deck_masters[playerToIndex(Player.Player1)]!!.state
+        val deckMasterPlayer2 = this.boardState.deck_masters[playerToIndex(Player.Player2)]!!.state
 
         if (deckMasterPlayer1.health > 0 && deckMasterPlayer2.health > 0) {
             return null
@@ -221,12 +211,12 @@ class BoardStateManager(
         getConnection(winner).let {
             it.readyToPlay = false
             it.sendPacket(GameOverPacket(true))
-            it.sendPacket(DisconnectPacket(DisconnectPacket.Reason.game_over, "Game is over"))
+            // it.sendPacket(DisconnectPacket(DisconnectPacket.Reason.game_over, "Game is over"))
         }
         getConnection(!winner).let {
             it.readyToPlay = false
             it.sendPacket(GameOverPacket(false))
-            it.sendPacket(DisconnectPacket(DisconnectPacket.Reason.game_over, "Game is over"))
+            // it.sendPacket(DisconnectPacket(DisconnectPacket.Reason.game_over, "Game is over"))
         }
     }
 
@@ -355,7 +345,7 @@ class BoardStateManager(
         val attackerState = attacker.state
         val targetState = target.state
 
-        if (attackerState.phase < CardTurnPhase.Action) {
+        if (attackerState.phase < CardTurnPhase.AttackOnly) {
             sendInvalid()
             return
         }

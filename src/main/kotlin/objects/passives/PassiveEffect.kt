@@ -342,6 +342,9 @@ class AttackAfterAbility(
         lastChange: Packet?,
         boardState: BoardState,
     ): CardActionList? {
+        if (!passiveManager.isTurnOfPlayer(player)) {
+            return CardActionList.emptyActionList(card)
+        }
         if (card.state.ability_was_used && !turnPhaseSet) {
             // Specify that we only want to be able to attack after using
             // an ability as opposed to doing either an attack or using the ability again.
