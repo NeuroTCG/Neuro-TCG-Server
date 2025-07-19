@@ -14,6 +14,7 @@ enum class PassiveEffectType {
     NOT_IMPLEMENTED,
     DRAW_ON_DESTRUCTION, // TODO: make num cards configurable
     BUFF_ADJACENT, // atk, hp
+    CANNOT_ATTACK, // Used for Mini
 }
 
 @Serializable
@@ -32,6 +33,7 @@ data class Passive(
                         PassiveEffectType.CARD_DISCOUNT -> 3 // discount, minimum, card type
                         PassiveEffectType.REACH_HP_THRESHOLD -> 3 // Threshold, +HP, +ATTACK
                         PassiveEffectType.ATTACK_AFTER_ABILITY -> 0
+                        PassiveEffectType.CANNOT_ATTACK -> 0
                         else -> {
                             require(false)
                         }

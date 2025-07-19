@@ -33,6 +33,7 @@ class CardStats(
     @Required val card_type: CardType,
     @Required val ability: Ability,
     @Required val passive: Passive = Passive(),
+    @Required val min_counter_attack: Int = 0,
     @Required val max_counter_attack: Int = 999,
 ) {
     init {
@@ -113,7 +114,7 @@ class CardStats(
                         null,
                         0,
                         2,
-                        24,
+                        24, // Was 24, lowering HP for testing.
                         arrayOf<Tactic>(),
                         CardType.DECK_MASTER,
                         Ability(
@@ -202,7 +203,7 @@ class CardStats(
                             8,
                         ),
                         Passive(
-                            PassiveEffectType.BUFF_ADJACENT,
+                            PassiveEffectType.NOT_IMPLEMENTED,
                             intArrayOf(1, 0), // amount gained
                         ),
                     ),
@@ -322,9 +323,9 @@ class CardStats(
                             6,
                         ),
                         Passive(
-                            PassiveEffectType.NOT_IMPLEMENTED, // the special atk property above
-                            intArrayOf(2), // dmg for counterattack
+                            PassiveEffectType.CANNOT_ATTACK, // the special atk property above
                         ),
+                        2, // still does 2 dmg for counterattack
                     ),
                 // ------------------------ Creatures ------------------------ //
                 maxID++ to

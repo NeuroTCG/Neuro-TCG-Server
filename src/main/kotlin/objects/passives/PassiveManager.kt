@@ -86,10 +86,28 @@ class PassiveManager(
             PassiveEffectType.ATTACK_AFTER_ABILITY -> {
                 return AttackAfterAbility(this, card, player)
             }
+            PassiveEffectType.CANNOT_ATTACK -> {
+                return CannotAttack(this, card, player)
+            }
             else -> {
                 return null
             }
         }
+    }
+
+    suspend fun initPassives(): PassiveUpdatePacket {
+        val updateActions: MutableList<CardActionList> = mutableListOf()
+
+        for (p: PassiveEffect in passives.values) {
+            val updates: CardActionList = p.initialize()
+
+            if (updates.actions.isNotEmpty()) {
+                updateActions.add(updates)
+            }
+            // Empty List -> no actions needed, don't add CardActionList to packet
+        }
+
+        return PassiveUpdatePacket(updateActions.toTypedArray())
     }
 
     suspend fun updatePassives(packet: Packet): PassiveUpdatePacket {

@@ -18,6 +18,11 @@ abstract class PassiveEffect(
     open val player: Player,
 ) {
     /*
+     * Perform any actions that must be done prior to being summoned.
+     */
+    open fun initialize(): CardActionList = CardActionList.emptyActionList(card)
+
+    /*
     Update the state of the passive, return any actions for the update
      */
     abstract suspend fun update(
@@ -358,6 +363,43 @@ class AttackAfterAbility(
         // Reset variable before turn ends
         if (lastChange is EndTurnPacket) {
             turnPhaseSet = false
+        }
+
+        return CardActionList.emptyActionList(card)
+    }
+}
+
+class CannotAttack(
+    passiveManager: PassiveManager,
+    card: Card,
+    player: Player,
+) : PassiveEffect(passiveManager, card, player) {
+    var initialized: Boolean = false
+
+    override fun initialize(): CardActionList {
+        card.state.phase = CardTurnPhase.MoveOrAbility
+        initialized = true
+        return CardActionList(card, arrayOf(CardAction(CardActionNames.SET_PHASE, arrayOf(), CardTurnPhase.MoveOrAbility.ordinal)))
+    }
+
+    override suspend fun update(
+        lastChange: Packet?,
+        boardState: BoardState,
+    ): CardActionList? {
+        if (!passiveManager.isTurnOfPlayer(player)) {
+            if (lastChange is EndTurnPacket) {
+                initialized = false
+            }
+            return CardActionList.emptyActionList(card)
+        }
+        if (!initialized) {
+            return initialize()
+        }
+
+        if (card.state.phase != CardTurnPhase.MoveOrAbility && card.state.phase > CardTurnPhase.AbilityOnly) {
+            card.state.phase = CardTurnPhase.AbilityOnly
+
+            return CardActionList(card, arrayOf(CardAction(CardActionNames.SET_PHASE, arrayOf(), CardTurnPhase.AbilityOnly.ordinal)))
         }
 
         return CardActionList.emptyActionList(card)

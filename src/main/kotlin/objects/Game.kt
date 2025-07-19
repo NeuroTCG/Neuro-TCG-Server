@@ -135,6 +135,8 @@ class Game(
             boardManager.drawCard(player)
         }
 
+        boardManager.initPassives(player)
+
         /*
          * Main Game Phase
          */

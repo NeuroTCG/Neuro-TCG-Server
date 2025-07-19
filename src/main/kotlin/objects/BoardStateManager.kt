@@ -3,7 +3,6 @@ package objects
 import objects.packets.*
 import objects.packets.objects.*
 import objects.passives.*
-import kotlin.math.*
 
 enum class Player {
     Player1,
@@ -380,7 +379,10 @@ class BoardStateManager(
         if (canAttackBack) {
             if (attackerState.shield == 0) {
                 attackerState.health -=
-                    (targetCardStat.base_atk + targetState.attack_bonus - 1).coerceIn(0, targetCardStat.max_counter_attack)
+                    (targetCardStat.base_atk + targetState.attack_bonus - 1).coerceIn(
+                        targetCardStat.min_counter_attack,
+                        targetCardStat.max_counter_attack,
+                    )
             } else {
                 attackerState.shield -= 1
             }
@@ -423,6 +425,13 @@ class BoardStateManager(
         }
 
         val updatePacket: PassiveUpdatePacket = passiveManager.updatePassives(packet)
+
+        getConnection(player).sendPacket(updatePacket)
+        getConnection(!player).sendPacket(updatePacket)
+    }
+
+    suspend fun initPassives(player: Player) {
+        val updatePacket: PassiveUpdatePacket = passiveManager.initPassives()
 
         getConnection(player).sendPacket(updatePacket)
         getConnection(!player).sendPacket(updatePacket)
@@ -485,7 +494,9 @@ class BoardStateManager(
         val c1 = getCard(player, packet.position1)
         val c2 = getCard(player, packet.position2)
 
-        if ((c1 != null && c1.state.phase < CardTurnPhase.MoveOrAction) || (c2 != null && c2.state!!.phase < CardTurnPhase.MoveOrAction)) {
+        if ((c1 != null && c1.state.phase < CardTurnPhase.MoveOrAbility) ||
+            (c2 != null && c2.state!!.phase < CardTurnPhase.MoveOrAbility)
+        ) {
             sendInvalid()
             return
         }
@@ -641,7 +652,7 @@ class BoardStateManager(
                 foreachInRange(player, target_position, ability.range) { p, pos ->
                     val card = getCard(p, pos)
                     if (card != null) {
-                        card.state!!.health += ability.value // isn't capped by design
+                        card.state.health += ability.value // isn't capped by design
                     }
                     setCard(player, pos, card)
                 }
