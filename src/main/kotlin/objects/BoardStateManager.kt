@@ -90,7 +90,9 @@ class BoardStateManager(
     ) {
         require(amount > 0)
         this.boardState.ram[playerToIndex(player)] -= amount
-        check(this.boardState.ram[playerToIndex(player)] in 0..getMaxRam(player))
+        check(this.boardState.ram[playerToIndex(player)] in 0..getMaxRam(player)) {
+            "Unexpected ram value: ${this.boardState.ram[playerToIndex(player)]}"
+        }
     }
 
     private fun refreshRam(player: Player) {
@@ -172,8 +174,8 @@ class BoardStateManager(
         deckMasterID: Int,
     ) {
         val dmStat = CardStats.getCardByID(deckMasterID)
-        if (dmStat == null) {
-            assert(false, { "Could not find a deck master with ID: $deckMasterID" })
+        require(dmStat != null) {
+            "Could not find a deck master with ID: $deckMasterID"
         }
 
         val deckMasterCard =
@@ -661,8 +663,7 @@ class BoardStateManager(
             }
 
             /**
-             * This might be something to look at later.
-             *  Adding the ability to have separate values for attack and hp.
+             *  TODO: Might want to add the ability to have separate values for attack and hp.
              */
             AbilityEffect.ADD_ATTACK_HP -> {
                 if (ability.range != AbilityRange.ALLY_CARD && ability.range != AbilityRange.ALLY_FIELD) {

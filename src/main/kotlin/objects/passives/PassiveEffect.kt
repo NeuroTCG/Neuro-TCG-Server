@@ -20,7 +20,7 @@ abstract class PassiveEffect(
     /*
      * Perform any actions that must be done prior to being summoned.
      */
-    open fun initialize(): CardActionList = CardActionList.emptyActionList(card)
+    open fun initialize(): CardActionList? = CardActionList.emptyActionList(card)
 
     /*
     Update the state of the passive, return any actions for the update
@@ -205,10 +205,14 @@ class CardDiscount(
         }
     }
 
+    override fun initialize(): CardActionList? = updateDiscounts()
+
     override suspend fun update(
         lastChange: Packet?,
         boardState: BoardState,
-    ): CardActionList? {
+    ): CardActionList? = updateDiscounts()
+
+    private fun updateDiscounts(): CardActionList? {
         val actions: MutableList<CardAction> = mutableListOf()
 
         val removeBuffList: MutableList<Card> = mutableListOf()
@@ -221,20 +225,16 @@ class CardDiscount(
 
                 for (c: Card in currentDiscountValues.keys) {
                     val discount = currentDiscountValues[c]
+                    check(discount != null) { "Could not find a card with value: $c" }
+                    c.state.ability_cost_modifier += discount
 
-                    if (discount == null) {
-                        assert(false, { "Could not find a card with value: $c" })
-                    } else {
-                        c.state.ability_cost_modifier += discount
-
-                        actions.add(
-                            CardAction(
-                                CardActionNames.ADD_ABILITY_COST_MODIFIER,
-                                arrayOf(CardActionTarget(playerIdx(), c.position)),
-                                discount,
-                            ),
-                        )
-                    }
+                    actions.add(
+                        CardAction(
+                            CardActionNames.ADD_ABILITY_COST_MODIFIER,
+                            arrayOf(CardActionTarget(playerIdx(), c.position)),
+                            discount,
+                        ),
+                    )
                 }
 
                 return CardActionList(card, actions.toTypedArray())

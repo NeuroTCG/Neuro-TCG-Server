@@ -44,7 +44,7 @@ class Game(
                         otherConnection.sendPacket(
                             DisconnectPacket(
                                 DisconnectPacket.Reason.opponent_disconnect,
-                                "The opponent has closed it's connection",
+                                "The opponent has closed their connection",
                             ),
                         )
                         // otherConnection.close()
@@ -52,15 +52,12 @@ class Game(
                 }
                 is DeckMasterRequestPacket -> {
                     playerDeckMasterId = boardManager.handleDeckMasterRequest(player, packet)
-                    if (playerDeckMasterId != -1) {
-                        imReady = true
-                        connection.sendPacket(DeckMasterSelectedPacket(true, true))
+                    check(playerDeckMasterId != -1) { "Server received invalid card ID." }
+                    imReady = true
+                    connection.sendPacket(DeckMasterSelectedPacket(true, true))
 
-                        // Let the opponent know that player is ready.
-                        otherConnection.sendPacket(DeckMasterSelectedPacket(true, false))
-                    } else {
-                        assert(false) { "Server received invalid card ID." }
-                    }
+                    // Let the opponent know that player is ready.
+                    otherConnection.sendPacket(DeckMasterSelectedPacket(true, false))
                 }
                 is OpponentReadyPacket -> {
                     theirReady = true
@@ -97,7 +94,7 @@ class Game(
                         otherConnection.sendPacket(
                             DisconnectPacket(
                                 DisconnectPacket.Reason.opponent_disconnect,
-                                "The opponent has closed it's connection",
+                                "The opponent has closed their connection",
                             ),
                         )
                         // otherConnection.close()

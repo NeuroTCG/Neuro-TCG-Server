@@ -99,7 +99,7 @@ class PassiveManager(
         val updateActions: MutableList<CardActionList> = mutableListOf()
 
         for (p: PassiveEffect in passives.values) {
-            val updates: CardActionList = p.initialize()
+            val updates: CardActionList = p.initialize() ?: continue
 
             if (updates.actions.isNotEmpty()) {
                 updateActions.add(updates)

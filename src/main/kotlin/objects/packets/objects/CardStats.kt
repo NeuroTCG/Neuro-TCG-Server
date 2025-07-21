@@ -960,7 +960,7 @@ class CardStats(
                         0,
                         arrayOf<Tactic>(),
                         CardType.MAGIC,
-                        Ability(AbilityEffect.ATTACK, 5, AbilityRange.ENEMY_ROW, 0),
+                        Ability(AbilityEffect.ATTACK, 4, AbilityRange.ENEMY_ROW, 5),
                         Passive(),
                     ),
             )
