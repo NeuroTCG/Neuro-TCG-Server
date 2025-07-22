@@ -33,6 +33,8 @@ class CardStats(
     @Required val card_type: CardType,
     @Required val ability: Ability,
     @Required val passive: Passive = Passive(),
+    @Required val min_counter_attack: Int = 0,
+    @Required val max_counter_attack: Int = 999,
 ) {
     init {
         require(summoning_cost in 0..10) { "A card must cost 0-10 ram to summon" }
@@ -112,7 +114,7 @@ class CardStats(
                         null,
                         0,
                         2,
-                        24,
+                        24, // Was 24, lowering HP for testing.
                         arrayOf<Tactic>(),
                         CardType.DECK_MASTER,
                         Ability(
@@ -201,7 +203,7 @@ class CardStats(
                             8,
                         ),
                         Passive(
-                            PassiveEffectType.BUFF_ADJACENT,
+                            PassiveEffectType.NOT_IMPLEMENTED,
                             intArrayOf(1, 0), // amount gained
                         ),
                     ),
@@ -215,14 +217,15 @@ class CardStats(
                         arrayOf<Tactic>(),
                         CardType.DECK_MASTER,
                         Ability(
-                            AbilityEffect.NOT_IMPLEMENTED, // REMOVE_CARD_AND_GAIN_ATK_HP
+                            AbilityEffect.BUFF_SELF_REMOVE_CARD, // REMOVE_CARD_AND_GAIN_ATK_HP
                             1, // this has two parameters technically: atk and hp, both 1 here
                             AbilityRange.ALLY_CARD,
                             2,
                         ),
                         Passive(
-                            PassiveEffectType.NOT_IMPLEMENTED, // can (or has to?) attack after using its ability
+                            PassiveEffectType.ATTACK_AFTER_ABILITY, // can (or has to?) attack after using its ability
                         ),
+                        5, // Cap Cerber's counterattack so that she isn't OP late game.
                     ),
                 maxID++ to
                     CardStats(
@@ -234,14 +237,14 @@ class CardStats(
                         arrayOf<Tactic>(),
                         CardType.DECK_MASTER,
                         Ability(
-                            AbilityEffect.NOT_IMPLEMENTED, // DRAW_CARD
+                            AbilityEffect.DRAW_CARD, // DRAW_CARD
                             1, // number of cards drawn
                             AbilityRange.PLAYER_DECK, // not really relevant, but it's the closest we have
                             4,
                         ),
                         Passive(
-                            PassiveEffectType.NOT_IMPLEMENTED, // magic cards are cheaper
-                            intArrayOf(1, 1), // reduction, minimum
+                            PassiveEffectType.CARD_DISCOUNT, // magic cards are cheaper
+                            intArrayOf(1, 1, 2), // reduction, minimum, card
                         ),
                     ),
                 maxID++ to
@@ -254,14 +257,14 @@ class CardStats(
                         arrayOf<Tactic>(),
                         CardType.DECK_MASTER,
                         Ability(
-                            AbilityEffect.NOT_IMPLEMENTED, // ADD_HP_AND_ATK
+                            AbilityEffect.ADD_ATTACK_HP, // ADD_HP_AND_ATK
                             1, // card gains 1 atk and 1 hp, but they should be independently configurable
                             AbilityRange.ALLY_CARD,
                             3,
                         ),
                         Passive(
-                            PassiveEffectType.NOT_IMPLEMENTED, // BUFF_ALL_ALLIES, but only after reaching 12 hp for the first time
-                            intArrayOf(2, 2), // atk, hp
+                            PassiveEffectType.REACH_HP_THRESHOLD, // BUFF_ALL_ALLIES, but only after reaching 12 hp for the first time
+                            intArrayOf(12, 2, 2), // threshold, atk, hp
                         ),
                     ),
                 maxID++ to
@@ -320,9 +323,9 @@ class CardStats(
                             6,
                         ),
                         Passive(
-                            PassiveEffectType.NOT_IMPLEMENTED, // the special atk property above
-                            intArrayOf(2), // dmg for counterattack
+                            PassiveEffectType.CANNOT_ATTACK, // the special atk property above
                         ),
+                        2, // still does 2 dmg for counterattack
                     ),
                 // ------------------------ Creatures ------------------------ //
                 maxID++ to
@@ -337,7 +340,6 @@ class CardStats(
                         Ability(),
                         Passive(
                             PassiveEffectType.DRAW_ON_DESTRUCTION,
-                            intArrayOf(1), // num cards to draw
                         ),
                     ),
                 maxID++ to
@@ -508,7 +510,6 @@ class CardStats(
                         Ability(),
                         Passive(
                             PassiveEffectType.DRAW_ON_DESTRUCTION,
-                            intArrayOf(1), // num cards
                         ),
                     ),
                 maxID++ to
@@ -959,11 +960,11 @@ class CardStats(
                         0,
                         arrayOf<Tactic>(),
                         CardType.MAGIC,
-                        Ability(AbilityEffect.ATTACK, 5, AbilityRange.ENEMY_ROW, 0),
+                        Ability(AbilityEffect.ATTACK, 4, AbilityRange.ENEMY_ROW, 5),
                         Passive(),
                     ),
             )
 
-        fun getCardByID(id: Int): CardStats? = cardIDMapping.get(id)
+        fun getCardByID(id: Int): CardStats? = cardIDMapping[id]
     }
 }

@@ -6,7 +6,10 @@ import objects.packets.*
 @Serializable(with = CardTurnPhase.Serializer::class)
 enum class CardTurnPhase {
     Done,
+    AbilityOnly,
+    AttackOnly,
     Action,
+    MoveOrAbility,
     MoveOrAction,
     ;
 
@@ -23,4 +26,9 @@ data class CardState(
     @Required var shield: Int,
     @Required var sealed_turns_left: Int,
     @Required var attack_bonus: Int = 0,
-)
+    @Required var ability_cost_modifier: Int = 0,
+) {
+    fun currentAttackValue(): Int = CardStats.getCardByID(id)!!.base_atk + attack_bonus
+
+    fun currentAbilityCost(): Int = CardStats.getCardByID(id)!!.ability.cost + ability_cost_modifier
+}

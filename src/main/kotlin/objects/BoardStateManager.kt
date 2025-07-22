@@ -3,7 +3,6 @@ package objects
 import objects.packets.*
 import objects.packets.objects.*
 import objects.passives.*
-import kotlin.math.*
 
 enum class Player {
     Player1,
@@ -31,7 +30,7 @@ class BoardStateManager(
 
     fun getBoardState(): BoardState = this.boardState
 
-    private fun isTurnOfPlayer(player: Player): Boolean = boardState.first_player_active == (player == Player.Player1)
+    fun isTurnOfPlayer(player: Player): Boolean = boardState.first_player_active == (player == Player.Player1)
 
     private fun playerToIndex(player: Player): Int =
         if (player == Player.Player1) {
@@ -46,6 +45,8 @@ class BoardStateManager(
         } else {
             player2Connection
         }
+
+    private fun isHandFull(player: Player): Boolean = this.boardState.hands[playerToIndex(player)].size >= 5
 
     private fun handContains(
         player: Player,
@@ -89,7 +90,9 @@ class BoardStateManager(
     ) {
         require(amount > 0)
         this.boardState.ram[playerToIndex(player)] -= amount
-        check(this.boardState.ram[playerToIndex(player)] in 0..getMaxRam(player))
+        check(this.boardState.ram[playerToIndex(player)] in 0..getMaxRam(player)) {
+            "Unexpected ram value: ${this.boardState.ram[playerToIndex(player)]}"
+        }
     }
 
     private fun refreshRam(player: Player) {
@@ -99,6 +102,7 @@ class BoardStateManager(
         this.boardState.ram[playerToIndex(player)] = getMaxRam(player)
     }
 
+    /*
     // TODO: remove this function after deck masters are no longer null
     // This is here to encapsulate code that doesn't need to be in the
     // final server
@@ -122,29 +126,18 @@ class BoardStateManager(
 
         return null
     }
+     */
 
     private suspend fun getGameWinner(): Player? {
-        if (this.boardState.deck_masters.all { (it?.run { health > 0 }) != false }) {
+        if (this.boardState.deck_masters.all { (it?.run { state.health > 0 }) != false }) {
             return null
         }
 
         val player1 = Player.Player1
         val player2 = Player.Player2
 
-        // TODO: These are temporary after we consider that deck_masters must exist
-        // TODO: Hence, when they do exist, remove the next few lines
-        val deckMasterPlayer1Opt = this.boardState.deck_masters[playerToIndex(Player.Player1)]
-        val deckMasterPlayer2Opt = this.boardState.deck_masters[playerToIndex(Player.Player2)]
-        val temporarySpecialGameOver =
-            isGameOverTemporarySpecialLogic(deckMasterPlayer1Opt, deckMasterPlayer2Opt)
-
-        if (temporarySpecialGameOver != null) {
-            return temporarySpecialGameOver
-        }
-
-        // NOTE: at this point, deckMasterPlayer1 & 2 are guaranteed to exist
-        val deckMasterPlayer1 = deckMasterPlayer1Opt!!
-        val deckMasterPlayer2 = deckMasterPlayer2Opt!!
+        val deckMasterPlayer1 = this.boardState.deck_masters[playerToIndex(Player.Player1)]!!.state
+        val deckMasterPlayer2 = this.boardState.deck_masters[playerToIndex(Player.Player2)]!!.state
 
         if (deckMasterPlayer1.health > 0 && deckMasterPlayer2.health > 0) {
             return null
@@ -153,19 +146,78 @@ class BoardStateManager(
         return if (deckMasterPlayer1.health > deckMasterPlayer2.health) player1 else player2
     }
 
-    suspend fun gameOverHandler() {
-        val winner = getGameWinner()
-        if (winner == null) {
-            return
+    suspend fun handleDeckMasterRequest(
+        player: Player,
+        packet: DeckMasterRequestPacket,
+    ): Int {
+        val sendInvalid =
+            suspend {
+                getConnection(player).sendPacket(DeckMasterSelectedPacket(false, true))
+            }
+
+        val card: CardStats? = CardStats.getCardByID(packet.card_id)
+
+        // Check if id belongs to a valid Deck Master.
+        if (card == null) {
+            sendInvalid()
+            return -1
+        } else if (card.card_type != CardType.DECK_MASTER) {
+            sendInvalid()
+            return -1
         }
 
+        return packet.card_id
+    }
+
+    suspend fun initDeckMaster(
+        player: Player,
+        deckMasterID: Int,
+    ) {
+        val dmStat = CardStats.getCardByID(deckMasterID)
+        require(dmStat != null) {
+            "Could not find a deck master with ID: $deckMasterID"
+        }
+
+        val deckMasterCard =
+            Card(
+                playerToIndex(player),
+                CardPosition(1, 1),
+                CardState(
+                    deckMasterID,
+                    dmStat!!.max_hp,
+                    false,
+                    CardTurnPhase.MoveOrAction,
+                    0,
+                    0,
+                ),
+            )
+
+        setCard(
+            player,
+            deckMasterCard.position,
+            deckMasterCard,
+        )
+
+        this.boardState.deck_masters[playerToIndex(player)] = deckMasterCard
+
+        passiveManager.addPassive(deckMasterCard, player)
+
+        getConnection(player).sendPacket(DeckMasterInitPacket(true, true, deckMasterCard.position, deckMasterCard.state))
+        getConnection(!player).sendPacket(DeckMasterInitPacket(false, true, deckMasterCard.position, deckMasterCard.state))
+    }
+
+    suspend fun gameOverHandler() {
+        val winner = getGameWinner() ?: return
+
         getConnection(winner).let {
+            it.readyToPlay = false
             it.sendPacket(GameOverPacket(true))
-            it.sendPacket(DisconnectPacket(DisconnectPacket.Reason.game_over, "Game is over"))
+            // it.sendPacket(DisconnectPacket(DisconnectPacket.Reason.game_over, "Game is over"))
         }
         getConnection(!winner).let {
+            it.readyToPlay = false
             it.sendPacket(GameOverPacket(false))
-            it.sendPacket(DisconnectPacket(DisconnectPacket.Reason.game_over, "Game is over"))
+            // it.sendPacket(DisconnectPacket(DisconnectPacket.Reason.game_over, "Game is over"))
         }
     }
 
@@ -228,7 +280,7 @@ class BoardStateManager(
 
         val newCard =
             Card(
-                packet.card_id,
+                playerToIndex(player),
                 packet.position,
                 newCardState,
             )
@@ -243,11 +295,6 @@ class BoardStateManager(
         removeRam(player, cardStat.summoning_cost)
 
         passiveManager.addPassive(newCard, player)
-
-        // If it's a deck master, we put it in the board state
-        if (cardStat.card_type == CardType.DECK_MASTER) {
-            this.boardState.deck_masters[playerToIndex(player)] = newCardState
-        }
 
         getConnection(player).sendPacket(
             packet.getResponsePacket(
@@ -299,7 +346,7 @@ class BoardStateManager(
         val attackerState = attacker.state
         val targetState = target.state
 
-        if (attackerState.phase < CardTurnPhase.Action) {
+        if (attackerState.phase < CardTurnPhase.AttackOnly) {
             sendInvalid()
             return
         }
@@ -333,7 +380,11 @@ class BoardStateManager(
 
         if (canAttackBack) {
             if (attackerState.shield == 0) {
-                attackerState.health -= max(targetCardStat.base_atk + targetState.attack_bonus - 1, 0)
+                attackerState.health -=
+                    (targetCardStat.base_atk + targetState.attack_bonus - 1).coerceIn(
+                        targetCardStat.min_counter_attack,
+                        targetCardStat.max_counter_attack,
+                    )
             } else {
                 attackerState.shield -= 1
             }
@@ -376,6 +427,13 @@ class BoardStateManager(
         }
 
         val updatePacket: PassiveUpdatePacket = passiveManager.updatePassives(packet)
+
+        getConnection(player).sendPacket(updatePacket)
+        getConnection(!player).sendPacket(updatePacket)
+    }
+
+    suspend fun initPassives(player: Player) {
+        val updatePacket: PassiveUpdatePacket = passiveManager.initPassives()
 
         getConnection(player).sendPacket(updatePacket)
         getConnection(!player).sendPacket(updatePacket)
@@ -438,7 +496,9 @@ class BoardStateManager(
         val c1 = getCard(player, packet.position1)
         val c2 = getCard(player, packet.position2)
 
-        if ((c1 != null && c1.state.phase < CardTurnPhase.MoveOrAction) || (c2 != null && c2.state!!.phase < CardTurnPhase.MoveOrAction)) {
+        if ((c1 != null && c1.state.phase < CardTurnPhase.MoveOrAbility) ||
+            (c2 != null && c2.state!!.phase < CardTurnPhase.MoveOrAbility)
+        ) {
             sendInvalid()
             return
         }
@@ -533,6 +593,16 @@ class BoardStateManager(
         } else {
             cardState.phase = CardTurnPhase.MoveOrAction
         }
+
+        // Refresh Deck Master's abilities
+        val cardstat: CardStats = CardStats.getCardByID(cardState.id)!!
+
+        println("End Turn For ${cardstat.name}")
+        println(cardstat.card_type)
+
+        if (cardstat.card_type == CardType.DECK_MASTER) {
+            cardState.ability_was_used = false
+        }
     }
 
     val cardDecks = listOf(CardDeck(), CardDeck())
@@ -552,7 +622,6 @@ class BoardStateManager(
 
     suspend fun drawCard(player: Player) {
         val cardID = cardDecks[playerToIndex(player)].drawCard()
-
         placeInHand(player, cardID)
 
         getConnection(player).sendPacket(DrawCard(cardID, true))
@@ -561,6 +630,7 @@ class BoardStateManager(
 
     suspend fun useAbility(
         player: Player,
+        abilityCard: Card?,
         ability: Ability,
         target_position: CardPosition?,
     ): Boolean {
@@ -584,7 +654,36 @@ class BoardStateManager(
                 foreachInRange(player, target_position, ability.range) { p, pos ->
                     val card = getCard(p, pos)
                     if (card != null) {
+                        card.state.health += ability.value // isn't capped by design
+                    }
+                    setCard(player, pos, card)
+                }
+
+                return true
+            }
+
+            /**
+             *  TODO: Might want to add the ability to have separate values for attack and hp.
+             */
+            AbilityEffect.ADD_ATTACK_HP -> {
+                if (ability.range != AbilityRange.ALLY_CARD && ability.range != AbilityRange.ALLY_FIELD) {
+                    return false
+                }
+
+                if (target_position == null) {
+                    return false
+                }
+
+                val ally = getCard(player, target_position)
+                if (ally == null && ability.range == AbilityRange.ALLY_CARD) {
+                    return false
+                }
+
+                foreachInRange(player, target_position, ability.range) { p, pos ->
+                    val card = getCard(p, pos)
+                    if (card != null) {
                         card.state!!.health += ability.value // isn't capped by design
+                        card.state!!.attack_bonus += ability.value
                     }
                     setCard(player, pos, card)
                 }
@@ -684,6 +783,65 @@ class BoardStateManager(
 
                 return true
             }
+
+            AbilityEffect.DRAW_CARD -> {
+                if (ability.range != AbilityRange.PLAYER_DECK) {
+                    return false
+                }
+
+                if (isHandFull(player)) {
+                    return false
+                }
+
+                /*val cardID = cardDecks[playerToIndex(player)].drawCard()
+                placeInHand(player, cardID)*/
+
+                drawCard(player)
+
+                return true
+            }
+
+            AbilityEffect.BUFF_SELF_REMOVE_CARD -> {
+                if (!arrayOf(
+                        AbilityRange.ALLY_FIELD,
+                        AbilityRange.ALLY_CARD,
+                    ).contains(ability.range)
+                ) {
+                    return false
+                }
+
+                if (target_position == null) {
+                    return false
+                }
+
+                var target = getCard(player, target_position)
+                if (target == null) {
+                    return false
+                }
+
+                // We don't want the player to remove deck masters, so mark any attempt to do so
+                // as invalid.
+                if (CardStats.cardIDMapping[target.state.id]!!.card_type == CardType.DECK_MASTER) {
+                    return false
+                }
+
+                if (abilityCard == null) {
+                    return false
+                }
+
+                // Apply +1/+1 to self
+                abilityCard.state.attack_bonus += ability.value
+                abilityCard.state.health += ability.value
+
+                /* TODO:
+                    Just setting the card at that location to be null, but will need to verify that
+                    this is the only thing that needs to be done.
+                 */
+
+                boardState.cards[target.playerIdx][target.position.row][target.position.column] = null
+
+                return true
+            }
         }
     }
 
@@ -713,7 +871,8 @@ class BoardStateManager(
         }
 
         val ability = cardStat.ability
-        val targetCards = useAbility(player, ability, packet.target_position)
+        // Cards aren't initialized when in hand, so abilityCard is left null here.
+        val targetCards = useAbility(player, null, ability, packet.target_position)
 
         if (!targetCards) {
             sendInvalid()
@@ -764,20 +923,30 @@ class BoardStateManager(
             return
         }
 
-        val abilityCard = getCard(player, packet.ability_position)?.state
-        if (abilityCard == null || abilityCard.phase < CardTurnPhase.Action || abilityCard.ability_was_used) {
+        val abilityCard = getCard(player, packet.ability_position)
+
+        if (abilityCard != null) {
+            println("Card's name = ${CardStats.getCardByID(abilityCard.state.id)?.name}")
+            println("Ability was used: ${abilityCard.state.ability_was_used}")
+            println("Current turn phase: ${abilityCard.state.phase}")
+        }
+
+        if (abilityCard == null || abilityCard.state.phase < CardTurnPhase.Action || abilityCard.state.ability_was_used) {
             sendInvalid()
             return
         }
 
-        val cardStat = CardStats.getCardByID(abilityCard.id)
+        val cardStat = CardStats.getCardByID(abilityCard.state.id)
         if (cardStat == null) {
             sendInvalid()
             return
         }
 
         val ability = cardStat.ability
-        val targetCards = useAbility(player, ability, packet.target_position)
+
+        val target = getCard(player, packet.target_position)!!.state
+
+        val targetCards = useAbility(player, abilityCard, ability, packet.target_position)
 
         if (!targetCards) {
             sendInvalid()
@@ -789,14 +958,12 @@ class BoardStateManager(
             return
         }
 
-        val target = getCard(player, packet.target_position)!!.state
-
         getConnection(player).sendPacket(
             packet.getResponsePacket(
                 isYou = true,
                 valid = true,
                 targetCard = target,
-                abilityCard = abilityCard,
+                abilityCard = abilityCard.state,
             ),
         )
         getConnection(!player).sendPacket(
@@ -804,13 +971,19 @@ class BoardStateManager(
                 isYou = false,
                 valid = true,
                 targetCard = target,
-                abilityCard = abilityCard,
+                abilityCard = abilityCard.state,
             ),
         )
 
         removeRam(player, ability.cost)
-        abilityCard.phase = CardTurnPhase.Done
-        abilityCard.ability_was_used = true
+        abilityCard.state.phase = CardTurnPhase.Done
+        abilityCard.state.ability_was_used = true
+
+        if (abilityCard != null) {
+            print("Card's name = ${CardStats.getCardByID(abilityCard.state.id)?.name}")
+            print("Ability was used: ${abilityCard.state.ability_was_used}")
+            print("Current turn phase: ${abilityCard.state.phase}")
+        }
     }
 
     private fun foreachInRange(
@@ -836,8 +1009,7 @@ class BoardStateManager(
                     }
                 }
             }
-
-            AbilityRange.PLAYER_DECK -> TODO()
+            AbilityRange.PLAYER_DECK -> {}
         }
     }
 }

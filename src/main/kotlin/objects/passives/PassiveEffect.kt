@@ -7,7 +7,7 @@ package objects.passives
 import objects.*
 import objects.packets.*
 import objects.packets.objects.*
-import kotlin.math.max
+import kotlin.math.*
 
 abstract class PassiveEffect(
     // The passive manager
@@ -17,6 +17,11 @@ abstract class PassiveEffect(
     // The player that owns the card associated with this passive.
     open val player: Player,
 ) {
+    /*
+     * Perform any actions that must be done prior to being summoned.
+     */
+    open fun initialize(): CardActionList? = CardActionList.emptyActionList(card)
+
     /*
     Update the state of the passive, return any actions for the update
      */
@@ -172,5 +177,231 @@ class BuffAdjacent(
         }
 
         return CardActionList(card, actions.toTypedArray())
+    }
+}
+
+class CardDiscount(
+    passiveManager: PassiveManager,
+    card: Card,
+    player: Player,
+) : PassiveEffect(passiveManager, card, player) {
+    // Keep track of discount values in a dictionary so that we don't interfere with other abilities that
+    // may modify the cost of a card's ability.
+    private val currentDiscountValues: MutableMap<Card, Int> = mutableMapOf()
+    private var resetDiscountOnDestroy = false
+
+    private var discountAmount = 0
+    private var minAbilityCost = 0
+    private var cardType = 0
+
+    init {
+        val stats: CardStats? = CardStats.getCardByID(card.state.id)
+        stats?.let { cardStats ->
+            discountAmount = stats.passive.values[0]
+            minAbilityCost = stats.passive.values[1]
+            cardType = stats.passive.values[2]
+        } ?: run {
+            println("Warning: no card was found with ID ${card.state.id}")
+        }
+    }
+
+    override fun initialize(): CardActionList? = updateDiscounts()
+
+    override suspend fun update(
+        lastChange: Packet?,
+        boardState: BoardState,
+    ): CardActionList? = updateDiscounts()
+
+    private fun updateDiscounts(): CardActionList? {
+        val actions: MutableList<CardAction> = mutableListOf()
+
+        val removeBuffList: MutableList<Card> = mutableListOf()
+
+        if (cardWasDestroyed()) {
+            if (resetDiscountOnDestroy) {
+                return null
+            } else {
+                resetDiscountOnDestroy = true
+
+                for (c: Card in currentDiscountValues.keys) {
+                    val discount = currentDiscountValues[c]
+                    check(discount != null) { "Could not find a card with value: $c" }
+                    c.state.ability_cost_modifier += discount
+
+                    actions.add(
+                        CardAction(
+                            CardActionNames.ADD_ABILITY_COST_MODIFIER,
+                            arrayOf(CardActionTarget(playerIdx(), c.position)),
+                            discount,
+                        ),
+                    )
+                }
+
+                return CardActionList(card, actions.toTypedArray())
+            }
+        }
+
+        val newMagicCardMap = passiveManager.getCardsInFieldOfType(player, CardType.entries[cardType])
+
+        for (c: Card in newMagicCardMap.values) {
+            if (!currentDiscountValues.containsKey(c)) {
+                var discount = 0
+                if (c.state.currentAbilityCost() - discountAmount < minAbilityCost) {
+                    discount = c.state.currentAbilityCost() - minAbilityCost
+                } else {
+                    discount = discountAmount
+                }
+
+                currentDiscountValues[c] = discount
+                c.state.ability_cost_modifier -= discount
+                actions.add(
+                    CardAction(CardActionNames.SUB_ABILITY_COST_MODIFIER, arrayOf(CardActionTarget(playerIdx(), c.position)), discount),
+                )
+            }
+        }
+
+        for (c: Card in currentDiscountValues.keys) {
+            // Remove if card is no longer in player's field
+            if (!newMagicCardMap.containsKey(c)) {
+                removeBuffList.add(c)
+
+                val discount = currentDiscountValues[c]!!
+
+                c.state.ability_cost_modifier += discount
+
+                actions.add(
+                    CardAction(CardActionNames.ADD_ABILITY_COST_MODIFIER, arrayOf(CardActionTarget(playerIdx(), c.position)), discount),
+                )
+            }
+        }
+
+        for (c: Card in removeBuffList) {
+            currentDiscountValues.remove(c)
+        }
+
+        return CardActionList(card, actions.toTypedArray())
+    }
+}
+
+class ReachHPThreshold(
+    passiveManager: PassiveManager,
+    card: Card,
+    player: Player,
+) : PassiveEffect(passiveManager, card, player) {
+    private var hpThreshold: Int = 0
+    private var hpBuffAmount: Int = 0
+    private var attackBuffAmount: Int = 0
+
+    private var hpThresholdReached = false
+
+    init {
+        val stats: CardStats? = CardStats.getCardByID(card.state.id)
+        stats?.let { cardStats ->
+            hpThreshold = stats.passive.values[0]
+            hpBuffAmount = stats.passive.values[1]
+            attackBuffAmount = stats.passive.values[2]
+        } ?: run {
+            println("Warning: no card was found with ID ${card.state.id}")
+        }
+    }
+
+    override suspend fun update(
+        lastChange: Packet?,
+        boardState: BoardState,
+    ): CardActionList? {
+        // Buff has been applied. Remove passive
+        if (hpThresholdReached) {
+            return null
+        }
+
+        if (card.state.health <= hpThreshold) {
+            hpThresholdReached = true
+            val allyCards = passiveManager.getAllAllyCardsOf(card, false)
+            val targets: MutableList<CardActionTarget> = mutableListOf()
+
+            for (c: Card in allyCards.values) {
+                targets.add(CardActionTarget(c.playerIdx, c.position))
+            }
+
+            val actions =
+                arrayOf(
+                    CardAction(CardActionNames.ADD_HP, targets.toTypedArray(), hpBuffAmount),
+                    CardAction(CardActionNames.ADD_ATTACK, targets.toTypedArray(), attackBuffAmount),
+                )
+
+            return CardActionList(card, actions)
+        }
+
+        return CardActionList.emptyActionList(card)
+    }
+}
+
+class AttackAfterAbility(
+    passiveManager: PassiveManager,
+    card: Card,
+    player: Player,
+) : PassiveEffect(passiveManager, card, player) {
+    var turnPhaseSet: Boolean = false
+
+    override suspend fun update(
+        lastChange: Packet?,
+        boardState: BoardState,
+    ): CardActionList? {
+        if (!passiveManager.isTurnOfPlayer(player)) {
+            return CardActionList.emptyActionList(card)
+        }
+        if (card.state.ability_was_used && !turnPhaseSet) {
+            // Specify that we only want to be able to attack after using
+            // an ability as opposed to doing either an attack or using the ability again.
+            card.state.phase = CardTurnPhase.AttackOnly
+
+            turnPhaseSet = true
+
+            return CardActionList(card, arrayOf(CardAction(CardActionNames.SET_PHASE, arrayOf(), CardTurnPhase.AttackOnly.ordinal)))
+        }
+
+        // Reset variable before turn ends
+        if (lastChange is EndTurnPacket) {
+            turnPhaseSet = false
+        }
+
+        return CardActionList.emptyActionList(card)
+    }
+}
+
+class CannotAttack(
+    passiveManager: PassiveManager,
+    card: Card,
+    player: Player,
+) : PassiveEffect(passiveManager, card, player) {
+    var initialized: Boolean = false
+
+    override fun initialize(): CardActionList {
+        card.state.phase = CardTurnPhase.MoveOrAbility
+        initialized = true
+        return CardActionList(card, arrayOf(CardAction(CardActionNames.SET_PHASE, arrayOf(), CardTurnPhase.MoveOrAbility.ordinal)))
+    }
+
+    override suspend fun update(
+        lastChange: Packet?,
+        boardState: BoardState,
+    ): CardActionList? {
+        if (!passiveManager.isTurnOfPlayer(player)) {
+            if (lastChange is EndTurnPacket) {
+                initialized = false
+            }
+            return CardActionList.emptyActionList(card)
+        }
+        if (!initialized) {
+            return initialize()
+        }
+
+        if (card.state.phase != CardTurnPhase.MoveOrAbility && card.state.phase > CardTurnPhase.AbilityOnly) {
+            card.state.phase = CardTurnPhase.AbilityOnly
+
+            return CardActionList(card, arrayOf(CardAction(CardActionNames.SET_PHASE, arrayOf(), CardTurnPhase.AbilityOnly.ordinal)))
+        }
+
+        return CardActionList.emptyActionList(card)
     }
 }

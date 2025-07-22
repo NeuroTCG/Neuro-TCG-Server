@@ -1,7 +1,6 @@
 package objects
 
 import objects.packets.*
-import objects.passives.*
 
 class Game(
     val p1Connection: GameConnection,
@@ -21,9 +20,108 @@ class Game(
         println(prefix + "Sending game rules to client")
         connection.sendPacket(RuleInfoPacket())
         println(prefix + "Sending match to client")
+
         connection.sendPacket(
             MatchFoundPacket(otherConnection.getUserInfo(), id, false, player == Player.Player1),
         )
+
+        /*
+         * Deck Master Select Phase -> Keep looping until both players are ready.
+         */
+        var playerDeckMasterId = -1
+        var imReady = false
+        var theirReady = false
+
+        while (!(imReady && theirReady) && connection.isOpen) {
+            val packet = connection.receivePacket()
+            when (packet) {
+                null -> {
+                    if (connection.isOpen) connection.close()
+                    println(prefix + "Connection was closed unexpectedly")
+
+                    if (otherConnection.isOpen) {
+                        println(prefix + "Informing opponent")
+                        otherConnection.sendPacket(
+                            DisconnectPacket(
+                                DisconnectPacket.Reason.opponent_disconnect,
+                                "The opponent has closed their connection",
+                            ),
+                        )
+                        // otherConnection.close()
+                    }
+                }
+                is DeckMasterRequestPacket -> {
+                    playerDeckMasterId = boardManager.handleDeckMasterRequest(player, packet)
+                    check(playerDeckMasterId != -1) { "Server received invalid card ID." }
+                    imReady = true
+                    connection.sendPacket(DeckMasterSelectedPacket(true, true))
+
+                    // Let the opponent know that player is ready.
+                    otherConnection.sendPacket(DeckMasterSelectedPacket(true, false))
+                }
+                is OpponentReadyPacket -> {
+                    theirReady = true
+                }
+                else -> {
+                    connection.sendPacket(
+                        UnknownPacketPacket(
+                            "Received an unexpected packet type.",
+                        ),
+                    )
+                    println(prefix + "Received unknown packet")
+                }
+            }
+        }
+
+        println("Sending Game Start Packet to...$connection, ${player == Player.Player1}")
+        connection.sendPacket(GameStartPacket())
+
+        imReady = false
+        theirReady = false
+
+        /*
+         * Wait until both clients have loaded into main game scene before sending 'setup' packets.
+         */
+        while (!(imReady && theirReady) && connection.isOpen) {
+            val packet = connection.receivePacket()
+            when (packet) {
+                null -> {
+                    if (connection.isOpen) connection.close()
+                    println(prefix + "Connection was closed unexpectedly")
+
+                    if (otherConnection.isOpen) {
+                        println(prefix + "Informing opponent")
+                        otherConnection.sendPacket(
+                            DisconnectPacket(
+                                DisconnectPacket.Reason.opponent_disconnect,
+                                "The opponent has closed their connection",
+                            ),
+                        )
+                        // otherConnection.close()
+                    }
+                }
+                is PlayerReadyPacket -> {
+                    otherConnection.sendPacket(OpponentReadyPacket())
+                    imReady = true
+                }
+                is OpponentReadyPacket -> {
+                    theirReady = true
+                }
+                else -> {
+                    connection.sendPacket(
+                        UnknownPacketPacket(
+                            "Received an unexpected packet type.",
+                        ),
+                    )
+                    println(prefix + "Received unknown packet")
+                }
+            }
+        }
+
+        /*
+         * Add Deck Master onto game board.
+         */
+        boardManager.initDeckMaster(player, playerDeckMasterId)
 
         for (i in 0..<4) {
             boardManager.drawCard(player)
@@ -34,6 +132,11 @@ class Game(
             boardManager.drawCard(player)
         }
 
+        boardManager.initPassives(player)
+
+        /*
+         * Main Game Phase
+         */
         while (connection.isOpen) {
             val packet = connection.receivePacket()
             when (packet) {

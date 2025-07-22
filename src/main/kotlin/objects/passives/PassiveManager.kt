@@ -57,14 +57,18 @@ class PassiveManager(
         }
     }
 
+    fun isTurnOfPlayer(player: Player) = boardManager.isTurnOfPlayer(player)
+
     fun assignPassiveByCard(
         card: Card,
         player: Player,
     ): PassiveEffect? {
         println("Card's ID is ${card.state.id}")
         when (CardStats.getCardByID(card.state.id)?.passive?.effect) {
-            // TODO: Create Unique passives for each card.
             PassiveEffectType.NONE -> {
+                return NullPassive(this, card, player)
+            }
+            PassiveEffectType.NOT_IMPLEMENTED -> {
                 return NullPassive(this, card, player)
             }
             PassiveEffectType.BUFF_ADJACENT -> {
@@ -73,10 +77,37 @@ class PassiveManager(
             PassiveEffectType.DRAW_ON_DESTRUCTION -> {
                 return DrawOnDestruction(this, card, player)
             }
+            PassiveEffectType.CARD_DISCOUNT -> {
+                return CardDiscount(this, card, player)
+            }
+            PassiveEffectType.REACH_HP_THRESHOLD -> {
+                return ReachHPThreshold(this, card, player)
+            }
+            PassiveEffectType.ATTACK_AFTER_ABILITY -> {
+                return AttackAfterAbility(this, card, player)
+            }
+            PassiveEffectType.CANNOT_ATTACK -> {
+                return CannotAttack(this, card, player)
+            }
             else -> {
                 return null
             }
         }
+    }
+
+    suspend fun initPassives(): PassiveUpdatePacket {
+        val updateActions: MutableList<CardActionList> = mutableListOf()
+
+        for (p: PassiveEffect in passives.values) {
+            val updates: CardActionList = p.initialize() ?: continue
+
+            if (updates.actions.isNotEmpty()) {
+                updateActions.add(updates)
+            }
+            // Empty List -> no actions needed, don't add CardActionList to packet
+        }
+
+        return PassiveUpdatePacket(updateActions.toTypedArray())
     }
 
     suspend fun updatePassives(packet: Packet): PassiveUpdatePacket {
@@ -135,6 +166,43 @@ class PassiveManager(
         }
 
         return workingList.toMap()
+    }
+
+    fun getCardsInFieldOfType(
+        player: Player,
+        type: CardType,
+    ): Map<Card, Card> {
+        val workingMap: MutableMap<Card, Card> = mutableMapOf()
+
+        for (row: Array<Card?> in boardManager.getBoardState().cards[playerToIdx(player)]) {
+            for (c: Card? in row) {
+                if (c != null && CardStats.getCardByID(c.state.id)!!.card_type == type) {
+                    workingMap[c] = c
+                }
+            }
+        }
+
+        return workingMap.toMap()
+    }
+
+    /*
+        Gets all the cards in the field that are allies of the given card
+     */
+    fun getAllAllyCardsOf(
+        card: Card,
+        includeMe: Boolean = true,
+    ): Map<Card, Card> {
+        val workingMap: MutableMap<Card, Card> = mutableMapOf()
+
+        for (row: Array<Card?> in boardManager.getBoardState().cards[card.playerIdx]) {
+            for (c: Card? in row) {
+                if (c != null && (c.state.id != card.state.id || includeMe)) {
+                    workingMap[c] = c
+                }
+            }
+        }
+
+        return workingMap.toMap()
     }
 
     private fun positionLeftOf(position: CardPosition): CardPosition? {

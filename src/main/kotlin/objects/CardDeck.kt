@@ -1,13 +1,23 @@
 package objects
 
+import objects.packets.objects.*
+
 class CardDeck {
     // TODO: replace with actual implementation
 
-    // used to force feed some cards
-    private val queue = mutableListOf(2)
+    // This gets consumed first. Fill this up with cards you want to have in
+    // the player's hand when testing.
+    private val queue = mutableListOf(55)
 
-    // gets repeated after `queue` is empty
-    private val loop = mutableListOf(0, 1, 4, 3)
+    private val loop = arrayListOf<Int>()
+
+    init {
+        for (id: Int in CardStats.cardIDMapping.keys) {
+            if (CardStats.cardIDMapping[id]!!.card_type != CardType.DECK_MASTER) {
+                loop.add(id)
+            }
+        }
+    }
 
     fun drawCard(): Int {
         if (queue.size > 0) {
