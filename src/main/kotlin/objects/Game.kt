@@ -1,5 +1,6 @@
 package objects
 
+import SuspendingCyclicBarrier
 import objects.packets.*
 
 class Game(
@@ -10,6 +11,8 @@ class Game(
     private val boardManager = BoardStateManager(db, p1Connection, p2connection)
 
     val id = boardManager.gameID
+
+    var readyBarrier = SuspendingCyclicBarrier(2)
 
     suspend fun mainLoop(player: Player) {
         val prefix = "[Game $id][Player ${if (player == Player.Player1) 1 else 2}] "
@@ -29,10 +32,8 @@ class Game(
          * Deck Master Select Phase -> Keep looping until both players are ready.
          */
         var playerDeckMasterId = -1
-        var imReady = false
-        var theirReady = false
 
-        while (!(imReady && theirReady) && connection.isOpen) {
+        while (connection.isOpen) {
             val packet = connection.receivePacket()
             when (packet) {
                 null -> {
@@ -47,20 +48,19 @@ class Game(
                                 "The opponent has closed their connection",
                             ),
                         )
-                        // otherConnection.close()
+                        otherConnection.close()
+                        readyBarrier.reset()
+                        return
                     }
                 }
                 is DeckMasterRequestPacket -> {
                     playerDeckMasterId = boardManager.handleDeckMasterRequest(player, packet)
                     check(playerDeckMasterId != -1) { "Server received invalid card ID." }
-                    imReady = true
                     connection.sendPacket(DeckMasterSelectedPacket(packet.response_id, true, true))
 
                     // Let the opponent know that player is ready.
                     otherConnection.sendPacket(DeckMasterSelectedPacket(-1, true, false))
-                }
-                is OpponentReadyPacket -> {
-                    theirReady = true
+                    break
                 }
                 else -> {
                     connection.sendPacket(
@@ -73,16 +73,15 @@ class Game(
             }
         }
 
-        println("Sending Game Start Packet to...$connection, ${player == Player.Player1}")
-        connection.sendPacket(GameStartPacket())
+        readyBarrier.await()
 
-        imReady = false
-        theirReady = false
+        println(prefix + "Sending Game Start Packet to...$connection, ${player == Player.Player1}")
+        connection.sendPacket(GameStartPacket())
 
         /*
          * Wait until both clients have loaded into main game scene before sending 'setup' packets.
          */
-        while (!(imReady && theirReady) && connection.isOpen) {
+        while (connection.isOpen) {
             val packet = connection.receivePacket()
             when (packet) {
                 null -> {
@@ -97,15 +96,14 @@ class Game(
                                 "The opponent has closed their connection",
                             ),
                         )
-                        // otherConnection.close()
+                        otherConnection.close()
+                        readyBarrier.reset()
+                        return
                     }
                 }
                 is PlayerReadyPacket -> {
                     otherConnection.sendPacket(OpponentReadyPacket())
-                    imReady = true
-                }
-                is OpponentReadyPacket -> {
-                    theirReady = true
+                    break
                 }
                 else -> {
                     connection.sendPacket(
@@ -117,6 +115,9 @@ class Game(
                 }
             }
         }
+
+        readyBarrier.await()
+        println(prefix + "Setting up initial game state")
 
         /*
          * Add Deck Master onto game board.
@@ -133,6 +134,9 @@ class Game(
         }
 
         boardManager.initPassives(player)
+
+        readyBarrier.await()
+        println(prefix + "Game is starting")
 
         /*
          * Main Game Phase
@@ -153,6 +157,8 @@ class Game(
                             ),
                         )
                         otherConnection.close()
+                        readyBarrier.reset()
+                        return
                     }
                 }
                 is GetBoardStatePacket -> {
