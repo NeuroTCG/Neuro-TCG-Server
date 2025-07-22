@@ -343,8 +343,11 @@ class BoardStateManager(
             return
         }
 
-        val attackerState = attacker.state
-        val targetState = target.state
+        var attackerState: CardState? = attacker.state
+        var targetState: CardState? = target.state
+
+        check(attackerState != null)
+        check(targetState != null)
 
         if (attackerState.phase < CardTurnPhase.AttackOnly) {
             sendInvalid()
@@ -392,9 +395,11 @@ class BoardStateManager(
 
         if (attackerState.health <= 0) {
             attacker = null
+            attackerState = null
         }
         if (targetState.health <= 0) {
             target = null
+            targetState = null
         }
 
         setCard(player, packet.attacker_position, attacker)
