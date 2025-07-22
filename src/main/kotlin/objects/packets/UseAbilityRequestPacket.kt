@@ -7,6 +7,7 @@ import objects.packets.objects.*
 @SerialName(PacketType.USE_ABILITY_REQUEST)
 @Suppress("PropertyName")
 class UseAbilityRequestPacket(
+    @Required val response_id: Int,
     @Required val target_position: CardPosition,
     @Required val ability_position: CardPosition,
 ) : Packet() {
@@ -15,13 +16,14 @@ class UseAbilityRequestPacket(
         valid: Boolean,
         targetCard: CardState?,
         abilityCard: CardState?,
-    ): UseAbilityPacket = UseAbilityPacket(isYou, valid, target_position, ability_position, targetCard, abilityCard)
+    ): UseAbilityPacket = UseAbilityPacket(response_id, isYou, valid, target_position, ability_position, targetCard, abilityCard)
 }
 
 @Serializable
 @SerialName(PacketType.USE_ABILITY)
 @Suppress("PropertyName")
 class UseAbilityPacket(
+    @Required val response_id: Int,
     @Required val is_you: Boolean,
     @Required val valid: Boolean,
     @Required val target_position: CardPosition?,

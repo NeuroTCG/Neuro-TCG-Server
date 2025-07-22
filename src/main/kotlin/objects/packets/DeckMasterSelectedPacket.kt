@@ -10,6 +10,7 @@ import kotlinx.serialization.*
 @SerialName(PacketType.DECK_MASTER_SELECTED)
 @Suppress("PropertyName")
 class DeckMasterSelectedPacket(
+    @Required val response_id: Int,
     @Required val valid: Boolean,
     @Required val is_you: Boolean,
 ) : Packet()

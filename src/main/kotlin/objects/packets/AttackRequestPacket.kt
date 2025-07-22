@@ -14,6 +14,7 @@ import objects.packets.objects.*
 @SerialName(PacketType.ATTACK_REQUEST)
 @Suppress("PropertyName")
 class AttackRequestPacket(
+    @Required val response_id: Int,
     @Required val target_position: CardPosition,
     @Required val attacker_position: CardPosition,
 ) : Packet() {
@@ -22,7 +23,7 @@ class AttackRequestPacket(
         valid: Boolean,
         targetCard: CardState?,
         attackerCard: CardState?,
-    ): AttackPacket = AttackPacket(isYou, valid, target_position, attacker_position, targetCard, attackerCard)
+    ): AttackPacket = AttackPacket(response_id, isYou, valid, target_position, attacker_position, targetCard, attackerCard)
 }
 
 /**
@@ -37,6 +38,7 @@ class AttackRequestPacket(
 @SerialName(PacketType.ATTACK)
 @Suppress("PropertyName")
 class AttackPacket(
+    @Required val response_id: Int,
     @Required val is_you: Boolean,
     @Required val valid: Boolean,
     @Required val target_position: CardPosition?,

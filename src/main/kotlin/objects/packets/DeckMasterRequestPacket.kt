@@ -13,5 +13,6 @@ import kotlinx.serialization.*
 @SerialName(PacketType.DECK_MASTER_REQUEST)
 @Suppress("PropertyName")
 class DeckMasterRequestPacket(
+    @Required val response_id: Int,
     @Required val card_id: Int,
 ) : Packet()

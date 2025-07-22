@@ -13,5 +13,6 @@ import objects.Token
 @Serializable
 @SerialName(PacketType.AUTHENTICATE)
 class AuthenticatePacket(
+    @Required val response_id: Int,
     @Required val token: Token,
 ) : Packet()

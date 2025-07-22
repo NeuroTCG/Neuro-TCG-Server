@@ -152,7 +152,7 @@ class BoardStateManager(
     ): Int {
         val sendInvalid =
             suspend {
-                getConnection(player).sendPacket(DeckMasterSelectedPacket(false, true))
+                getConnection(player).sendPacket(DeckMasterSelectedPacket(packet.response_id, false, true))
             }
 
         val card: CardStats? = CardStats.getCardByID(packet.card_id)
@@ -184,7 +184,7 @@ class BoardStateManager(
                 CardPosition(1, 1),
                 CardState(
                     deckMasterID,
-                    dmStat!!.max_hp,
+                    dmStat.max_hp,
                     false,
                     CardTurnPhase.MoveOrAction,
                     0,
@@ -497,7 +497,7 @@ class BoardStateManager(
         val c2 = getCard(player, packet.position2)
 
         if ((c1 != null && c1.state.phase < CardTurnPhase.MoveOrAbility) ||
-            (c2 != null && c2.state!!.phase < CardTurnPhase.MoveOrAbility)
+            (c2 != null && c2.state.phase < CardTurnPhase.MoveOrAbility)
         ) {
             sendInvalid()
             return
@@ -542,7 +542,7 @@ class BoardStateManager(
 
         getConnection(!player).sendPacket(StartTurnPacket())
         if (this.boardState.hands[playerToIndex(!player)].size < 5) {
-            drawCard(!player)
+            drawCard(!player, null)
         }
     }
 
@@ -567,7 +567,7 @@ class BoardStateManager(
             return
         }
 
-        val cardState = card.state!!
+        val cardState = card.state
 
         if (cardState.sealed_turns_left > 0) {
             cardState.phase = CardTurnPhase.Done
@@ -607,25 +607,31 @@ class BoardStateManager(
 
     val cardDecks = listOf(CardDeck(), CardDeck())
 
-    suspend fun handleDrawCard(player: Player) {
+    suspend fun handleDrawCard(
+        packet: DrawCardRequestPacket,
+        player: Player,
+    ) {
         if (!isTurnOfPlayer(player)) {
-            getConnection(player).sendPacket(DrawCard(-1, true))
+            getConnection(player).sendPacket(DrawCard(packet.response_id, -1, true))
             return
         }
         if (this.boardState.hands[playerToIndex(player)].size > 5) {
-            getConnection(player).sendPacket(DrawCard(-1, true))
+            getConnection(player).sendPacket(DrawCard(packet.response_id, -1, true))
             return
         }
 
-        drawCard(player)
+        drawCard(player, packet)
     }
 
-    suspend fun drawCard(player: Player) {
+    suspend fun drawCard(
+        player: Player,
+        packet: DrawCardRequestPacket?,
+    ) {
         val cardID = cardDecks[playerToIndex(player)].drawCard()
         placeInHand(player, cardID)
 
-        getConnection(player).sendPacket(DrawCard(cardID, true))
-        getConnection(!player).sendPacket(DrawCard(cardID, false))
+        getConnection(player).sendPacket(DrawCard(packet?.response_id ?: -1, cardID, true))
+        getConnection(!player).sendPacket(DrawCard(-1, cardID, false))
     }
 
     suspend fun useAbility(
@@ -682,8 +688,8 @@ class BoardStateManager(
                 foreachInRange(player, target_position, ability.range) { p, pos ->
                     val card = getCard(p, pos)
                     if (card != null) {
-                        card.state!!.health += ability.value // isn't capped by design
-                        card.state!!.attack_bonus += ability.value
+                        card.state.health += ability.value // isn't capped by design
+                        card.state.attack_bonus += ability.value
                     }
                     setCard(player, pos, card)
                 }
@@ -744,8 +750,8 @@ class BoardStateManager(
                 foreachInRange(player, target_position, ability.range) { p, pos ->
                     var card = getCard(p, pos)
                     if (card != null) {
-                        card.state!!.health -= ability.value
-                        if (card.state!!.health <= 0) {
+                        card.state.health -= ability.value
+                        if (card.state.health <= 0) {
                             card = null
                         }
                     }
@@ -796,7 +802,7 @@ class BoardStateManager(
                 /*val cardID = cardDecks[playerToIndex(player)].drawCard()
                 placeInHand(player, cardID)*/
 
-                drawCard(player)
+                drawCard(player, null)
 
                 return true
             }

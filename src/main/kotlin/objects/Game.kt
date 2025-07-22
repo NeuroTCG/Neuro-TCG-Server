@@ -54,10 +54,10 @@ class Game(
                     playerDeckMasterId = boardManager.handleDeckMasterRequest(player, packet)
                     check(playerDeckMasterId != -1) { "Server received invalid card ID." }
                     imReady = true
-                    connection.sendPacket(DeckMasterSelectedPacket(true, true))
+                    connection.sendPacket(DeckMasterSelectedPacket(packet.response_id, true, true))
 
                     // Let the opponent know that player is ready.
-                    otherConnection.sendPacket(DeckMasterSelectedPacket(true, false))
+                    otherConnection.sendPacket(DeckMasterSelectedPacket(-1, true, false))
                 }
                 is OpponentReadyPacket -> {
                     theirReady = true
@@ -124,12 +124,12 @@ class Game(
         boardManager.initDeckMaster(player, playerDeckMasterId)
 
         for (i in 0..<4) {
-            boardManager.drawCard(player)
+            boardManager.drawCard(player, null)
         }
 
         if (player == Player.Player1) {
             connection.sendPacket(StartTurnPacket())
-            boardManager.drawCard(player)
+            boardManager.drawCard(player, null)
         }
 
         boardManager.initPassives(player)
@@ -157,7 +157,7 @@ class Game(
                 }
                 is GetBoardStatePacket -> {
                     println(prefix + "getboardstate")
-                    connection.sendPacket(GetBoardStateResponse(boardManager.getBoardState()))
+                    connection.sendPacket(GetBoardStateResponse(packet.response_id, boardManager.getBoardState()))
                 }
                 is AttackRequestPacket -> {
                     boardManager.handleAttackPacket(packet, player)
@@ -172,7 +172,7 @@ class Game(
                     boardManager.handleEndTurn(player)
                 }
                 is DrawCardRequestPacket -> {
-                    boardManager.handleDrawCard(player)
+                    boardManager.handleDrawCard(packet, player)
                 }
                 is UseAbilityRequestPacket -> {
                     boardManager.handleUseAbilityPacket(packet, player)

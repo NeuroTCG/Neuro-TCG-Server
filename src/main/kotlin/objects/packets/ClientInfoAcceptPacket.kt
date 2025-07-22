@@ -9,4 +9,6 @@ import kotlinx.serialization.*
  */
 @Serializable
 @SerialName(PacketType.CLIENT_INFO_ACCEPT)
-class ClientInfoAcceptPacket : Packet()
+class ClientInfoAcceptPacket(
+    @Required val response_id: Int,
+) : Packet()
