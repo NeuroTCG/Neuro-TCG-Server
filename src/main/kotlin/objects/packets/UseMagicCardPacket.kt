@@ -17,7 +17,20 @@ class UseMagicCardRequestPacket(
         valid: Boolean,
         ability: Ability?,
         target_card: CardState?,
-    ): UseMagicCardPacket = UseMagicCardPacket(response_id, isYou, valid, hand_pos, ability, target_position, target_card)
+    ): UseMagicCardPacket =
+        UseMagicCardPacket(
+            if (isYou) {
+                response_id
+            } else {
+                -1
+            },
+            isYou,
+            valid,
+            hand_pos,
+            ability,
+            target_position,
+            target_card,
+        )
 }
 
 @Serializable

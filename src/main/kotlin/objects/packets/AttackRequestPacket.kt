@@ -23,7 +23,20 @@ class AttackRequestPacket(
         valid: Boolean,
         targetCard: CardState?,
         attackerCard: CardState?,
-    ): AttackPacket = AttackPacket(response_id, isYou, valid, target_position, attacker_position, targetCard, attackerCard)
+    ): AttackPacket =
+        AttackPacket(
+            if (isYou) {
+                response_id
+            } else {
+                -1
+            },
+            isYou,
+            valid,
+            target_position,
+            attacker_position,
+            targetCard,
+            attackerCard,
+        )
 }
 
 /**

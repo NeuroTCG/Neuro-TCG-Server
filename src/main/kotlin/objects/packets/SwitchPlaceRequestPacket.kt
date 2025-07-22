@@ -18,7 +18,18 @@ class SwitchPlaceRequestPacket(
     fun getResponsePacket(
         isYou: Boolean,
         valid: Boolean,
-    ): SwitchPlacePacket = SwitchPlacePacket(response_id, isYou, valid, position1, position2)
+    ): SwitchPlacePacket =
+        SwitchPlacePacket(
+            if (isYou) {
+                response_id
+            } else {
+                -1
+            },
+            isYou,
+            valid,
+            position1,
+            position2,
+        )
 }
 
 /**

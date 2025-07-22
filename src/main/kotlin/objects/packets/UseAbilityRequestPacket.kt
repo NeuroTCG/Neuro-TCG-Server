@@ -16,7 +16,20 @@ class UseAbilityRequestPacket(
         valid: Boolean,
         targetCard: CardState?,
         abilityCard: CardState?,
-    ): UseAbilityPacket = UseAbilityPacket(response_id, isYou, valid, target_position, ability_position, targetCard, abilityCard)
+    ): UseAbilityPacket =
+        UseAbilityPacket(
+            if (isYou) {
+                response_id
+            } else {
+                -1
+            },
+            isYou,
+            valid,
+            target_position,
+            ability_position,
+            targetCard,
+            abilityCard,
+        )
 }
 
 @Serializable

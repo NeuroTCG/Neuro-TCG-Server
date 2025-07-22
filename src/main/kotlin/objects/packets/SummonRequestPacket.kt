@@ -21,7 +21,19 @@ class SummonRequestPacket(
         valid: Boolean,
         newCard: CardState?,
         newRam: Int,
-    ): SummonPacket = SummonPacket(response_id, isYou, valid, position, newCard, newRam)
+    ): SummonPacket =
+        SummonPacket(
+            if (isYou) {
+                response_id
+            } else {
+                -1
+            },
+            isYou,
+            valid,
+            position,
+            newCard,
+            newRam,
+        )
 }
 
 /**
