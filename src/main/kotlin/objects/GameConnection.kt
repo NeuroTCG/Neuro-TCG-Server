@@ -50,7 +50,7 @@ class GameConnection(
                         "Client '${clientInfo.client_name}' v${clientInfo.client_version} connected " +
                             "using protocol v${clientInfo.protocol_version}",
                     )
-                    sendPacket(ClientInfoAcceptPacket())
+                    sendPacket(ClientInfoAcceptPacket(clientInfo.response_id))
                 }
             }
 
@@ -74,7 +74,7 @@ class GameConnection(
                 if (db.checkToken(authPacket.token)) {
                     val userId = db.getUserIdFromToken(authPacket.token)!!
                     userInfo = UserInfo(userId)
-                    sendPacket(AuthenticationValidPacket(false, userInfo!!))
+                    sendPacket(AuthenticationValidPacket(authPacket.response_id, false, userInfo!!))
                     println("User '$userId' has connected")
                 } else {
                     sendPacket(DisconnectPacket(DisconnectPacket.Reason.auth_invalid, "Token is invalid"))

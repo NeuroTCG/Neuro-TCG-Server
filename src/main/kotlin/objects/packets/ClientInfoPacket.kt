@@ -17,6 +17,7 @@ import kotlinx.serialization.*
 @SerialName(PacketType.CLIENT_INFO)
 @Suppress("PropertyName")
 class ClientInfoPacket(
+    @Required val response_id: Int,
     @Required val client_name: String,
     @Required val client_version: String,
     @Required val protocol_version: Int,

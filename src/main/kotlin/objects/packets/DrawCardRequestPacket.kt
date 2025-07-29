@@ -7,7 +7,9 @@ import kotlinx.serialization.*
  */
 @Serializable
 @SerialName(PacketType.DRAW_CARD_REQUEST)
-class DrawCardRequestPacket : Packet()
+class DrawCardRequestPacket(
+    @Required val response_id: Int,
+) : Packet()
 
 /**
  * Sent by: Server
@@ -18,6 +20,7 @@ class DrawCardRequestPacket : Packet()
 @SerialName(PacketType.DRAW_CARD)
 @Suppress("PropertyName")
 class DrawCard(
+    @Required val response_id: Int,
     @Required val card_id: Int,
     @Required val is_you: Boolean,
 ) : Packet()

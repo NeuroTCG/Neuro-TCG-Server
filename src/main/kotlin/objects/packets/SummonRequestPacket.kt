@@ -12,6 +12,7 @@ import objects.packets.objects.*
 @SerialName(PacketType.SUMMON_REQUEST)
 @Suppress("PropertyName")
 class SummonRequestPacket(
+    @Required val response_id: Int,
     @Required val card_id: Int,
     @Required val position: CardPosition,
 ) : Packet() {
@@ -20,7 +21,19 @@ class SummonRequestPacket(
         valid: Boolean,
         newCard: CardState?,
         newRam: Int,
-    ): SummonPacket = SummonPacket(isYou, valid, position, newCard, newRam)
+    ): SummonPacket =
+        SummonPacket(
+            if (isYou) {
+                response_id
+            } else {
+                -1
+            },
+            isYou,
+            valid,
+            position,
+            newCard,
+            newRam,
+        )
 }
 
 /**
@@ -35,6 +48,7 @@ class SummonRequestPacket(
 @SerialName(PacketType.SUMMON)
 @Suppress("PropertyName")
 class SummonPacket(
+    @Required val response_id: Int,
     @Required val is_you: Boolean,
     @Required val valid: Boolean,
     @Required val position: CardPosition?,

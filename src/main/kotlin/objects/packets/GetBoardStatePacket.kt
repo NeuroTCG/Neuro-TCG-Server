@@ -9,6 +9,7 @@ import objects.packets.objects.*
 @Serializable
 @SerialName(PacketType.GET_BOARD_STATE)
 class GetBoardStatePacket(
+    @Required val response_id: Int,
     @Required val reason: Reason,
 ) : Packet() {
     @Suppress("EnumEntryName")
@@ -44,5 +45,6 @@ class GetBoardStatePacket(
 @Serializable
 @SerialName(PacketType.GET_BOARD_STATE_RESPONSE)
 class GetBoardStateResponse(
+    @Required val response_id: Int,
     @Required val board: BoardState,
 ) : Packet()
