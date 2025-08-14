@@ -50,8 +50,8 @@ class BoardStateManager(
 
     private fun handContains(
         player: Player,
-        id: Int,
-    ): Boolean = this.boardState.hands[playerToIndex(player)].contains(id)
+        state: CardState,
+    ): Boolean = this.boardState.hands[playerToIndex(player)].contains(state)
 
     fun getCard(
         player: Player,
@@ -70,14 +70,26 @@ class BoardStateManager(
         player: Player,
         cardID: Int,
     ) {
-        this.boardState.hands[playerToIndex(player)].add(cardID)
+        val cardStat: CardStats = CardStats.getCardByID(cardID)!!
+
+        val newCardState =
+            CardState(
+                cardID,
+                cardStat.max_hp,
+                false,
+                CardTurnPhase.MoveOrAction,
+                0,
+                0,
+            )
+
+        this.boardState.hands[playerToIndex(player)].add(newCardState)
     }
 
     private fun removeFromHand(
         player: Player,
-        cardID: Int,
+        card: CardState,
     ) {
-        this.boardState.hands[playerToIndex(player)].remove(cardID)
+        this.boardState.hands[playerToIndex(player)].remove(card)
     }
 
     private fun getRam(player: Player): Int = this.boardState.ram[playerToIndex(player)]
@@ -101,32 +113,6 @@ class BoardStateManager(
         }
         this.boardState.ram[playerToIndex(player)] = getMaxRam(player)
     }
-
-    /*
-    // TODO: remove this function after deck masters are no longer null
-    // This is here to encapsulate code that doesn't need to be in the
-    // final server
-    private suspend fun isGameOverTemporarySpecialLogic(
-        deckMasterPlayer1: CardState?,
-        deckMasterPlayer2: CardState?,
-    ): Player? {
-        val player1Died = (deckMasterPlayer1?.run { health < 0 }) ?: false
-        val player2Died = (deckMasterPlayer2?.run { health < 0 }) ?: false
-        if (player1Died && player2Died) {
-            return null
-        }
-
-        if (player1Died) {
-            return Player.Player2
-        }
-
-        if (player2Died) {
-            return Player.Player1
-        }
-
-        return null
-    }
-     */
 
     private suspend fun getGameWinner(): Player? {
         if (this.boardState.deck_masters.all { (it?.run { state.health > 0 }) != false }) {
@@ -242,16 +228,22 @@ class BoardStateManager(
             return
         }
         if (getCard(player, packet.position) != null) {
+            println("invalid summon: bad packet position")
             sendInvalid()
             return
         }
-        if (!handContains(player, packet.card_id)) {
+        if (!handContains(player, packet.card_state)) {
+            println("invalid summon: bad packet state: ${packet.card_state}, HAND: (Size ${boardState.hands[playerToIndex(player)].size})")
+            for (state: CardState in boardState.hands[playerToIndex(player)]) {
+                println(state)
+            }
             sendInvalid()
             return
         }
 
-        val cardStat = CardStats.getCardByID(packet.card_id)
+        val cardStat = CardStats.getCardByID(packet.card_state.id)
         if (cardStat == null) {
+            println("invalid summon: bad packet id")
             sendInvalid()
             return
         }
@@ -268,21 +260,13 @@ class BoardStateManager(
             return
         }
 
-        val newCardState =
-            CardState(
-                packet.card_id,
-                cardStat.max_hp,
-                false,
-                if (!cardStat.tactics.contains(Tactic.NIMBLE)) CardTurnPhase.Done else CardTurnPhase.MoveOrAction,
-                0,
-                0,
-            )
+        packet.card_state.phase = if (!cardStat.tactics.contains(Tactic.NIMBLE)) CardTurnPhase.Done else CardTurnPhase.MoveOrAction
 
-        val newCard =
+        val newCard: Card =
             Card(
                 playerToIndex(player),
                 packet.position,
-                newCardState,
+                packet.card_state,
             )
 
         setCard(
@@ -291,7 +275,7 @@ class BoardStateManager(
             newCard,
         )
 
-        removeFromHand(player, packet.card_id)
+        removeFromHand(player, packet.card_state)
         removeRam(player, cardStat.summoning_cost)
 
         passiveManager.addPassive(newCard, player)
@@ -300,7 +284,7 @@ class BoardStateManager(
             packet.getResponsePacket(
                 true,
                 valid = true,
-                newCard = newCardState,
+                newCard = newCard.state,
                 newRam = getRam(player),
             ),
         )
@@ -308,7 +292,7 @@ class BoardStateManager(
             packet.getResponsePacket(
                 isYou = false,
                 valid = true,
-                newCard = newCardState,
+                newCard = newCard.state,
                 newRam = getRam(player),
             ),
         )
@@ -870,12 +854,12 @@ class BoardStateManager(
             return
         }
 
-        if (!handContains(player, packet.card_id)) {
+        if (!handContains(player, packet.card_state)) {
             sendInvalid()
             return
         }
 
-        val cardStat = CardStats.getCardByID(packet.card_id)
+        val cardStat = CardStats.getCardByID(packet.card_state.id)
         if (cardStat == null) {
             sendInvalid()
             return
@@ -890,7 +874,7 @@ class BoardStateManager(
             return
         }
 
-        if (getRam(player) < ability.cost) {
+        if (getRam(player) < packet.card_state.currentAbilityCost()) {
             sendInvalid()
             return
         }
@@ -917,7 +901,7 @@ class BoardStateManager(
             ),
         )
 
-        removeRam(player, ability.cost)
+        removeRam(player, packet.card_state.currentAbilityCost())
     }
 
     suspend fun handleUseAbilityPacket(

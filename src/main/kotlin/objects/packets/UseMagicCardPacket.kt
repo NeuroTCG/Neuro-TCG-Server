@@ -9,7 +9,7 @@ import objects.packets.objects.*
 class UseMagicCardRequestPacket(
     @Required val response_id: Int,
     @Required val target_position: CardPosition?,
-    @Required val card_id: Int,
+    @Required val card_state: CardState,
     @Required val hand_pos: Int,
 ) : Packet() {
     fun getResponsePacket(
