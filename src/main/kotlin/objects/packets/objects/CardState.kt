@@ -30,7 +30,7 @@ data class CardState(
 ) {
     fun currentAttackValue(): Int = CardStats.getCardByID(id)!!.base_atk + attack_bonus
 
-    fun currentAbilityCost(): Int = CardStats.getCardByID(id)!!.ability.cost + ability_cost_modifier
+    fun currentAbilityCost(): Int = CardStats.getCardByID(id)!!.ability.cost - ability_cost_modifier
 
     override fun hashCode(): Int {
         var result = id

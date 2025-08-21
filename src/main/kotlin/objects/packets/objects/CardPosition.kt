@@ -28,10 +28,11 @@ data class CardPosition(
     val column: Int,
 ) {
     init {
-        require(row in 0..1)
+        require(row in -1..1)
         when (row) {
             FRONT_ROW -> require(column in 0..<4)
             BACK_ROW -> require(column in 0..<3)
+            HAND -> require(column in 0..4)
             else -> require(false)
         }
     }
@@ -46,6 +47,11 @@ data class CardPosition(
          * The one with 3 spaces
          */
         const val BACK_ROW = 1
+
+        /**
+         * The player hand
+         */
+        const val HAND = -1
     }
 }
 

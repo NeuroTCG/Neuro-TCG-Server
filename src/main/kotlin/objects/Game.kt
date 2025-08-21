@@ -133,9 +133,10 @@ class Game(
             boardManager.drawCard(player, null)
         }
 
+        readyBarrier.await()
+
         boardManager.initPassives(player)
 
-        readyBarrier.await()
         println(prefix + "Game is starting")
 
         /*

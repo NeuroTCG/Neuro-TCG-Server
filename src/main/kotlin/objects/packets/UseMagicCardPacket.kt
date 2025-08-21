@@ -9,14 +9,14 @@ import objects.packets.objects.*
 class UseMagicCardRequestPacket(
     @Required val response_id: Int,
     @Required val target_position: CardPosition?,
-    @Required val card_state: CardState,
+    @Required val card: Card,
     @Required val hand_pos: Int,
 ) : Packet() {
     fun getResponsePacket(
         isYou: Boolean,
         valid: Boolean,
         ability: Ability?,
-        target_card: CardState?,
+        target_card: Card?,
     ): UseMagicCardPacket =
         UseMagicCardPacket(
             if (isYou) {
@@ -43,5 +43,5 @@ class UseMagicCardPacket(
     @Required val hand_pos: Int,
     @Required val ability: Ability?,
     @Required val target_position: CardPosition?,
-    @Required val target_card: CardState?,
+    @Required val target_card: Card?,
 ) : Packet()

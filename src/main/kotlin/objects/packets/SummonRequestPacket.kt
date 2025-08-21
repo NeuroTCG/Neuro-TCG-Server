@@ -13,13 +13,13 @@ import objects.packets.objects.*
 @Suppress("PropertyName")
 class SummonRequestPacket(
     @Required val response_id: Int,
-    @Required val card_state: CardState,
+    @Required val card: Card,
     @Required val position: CardPosition,
 ) : Packet() {
     fun getResponsePacket(
         isYou: Boolean,
         valid: Boolean,
-        newCard: CardState?,
+        newCard: Card?,
         newRam: Int,
     ): SummonPacket =
         SummonPacket(
@@ -52,7 +52,7 @@ class SummonPacket(
     @Required val is_you: Boolean,
     @Required val valid: Boolean,
     @Required val position: CardPosition?,
-    @Required val new_card: CardState?,
+    @Required val new_card: Card?,
     @Required val new_ram: Int,
 ) : Packet() {
     init {

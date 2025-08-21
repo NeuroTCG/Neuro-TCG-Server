@@ -32,8 +32,13 @@ abstract class PassiveEffect(
 
     fun playerIdx(): Int = passiveManager.playerToIdx(player)
 
-    fun cardWasDestroyed(it: Card = card): Boolean =
-        passiveManager.findCardByPosition(passiveManager.idxToPlayer(it.playerIdx), it.position) == null
+    fun cardWasDestroyed(it: Card = card): Boolean {
+        // If the card was in the hand
+        if (it.position.row == CardPosition.HAND) {
+            return !passiveManager.handContains(player, card)
+        }
+        return passiveManager.findCardByPosition(passiveManager.idxToPlayer(it.playerIdx), it.position) == null
+    }
 }
 
 class NullPassive(
@@ -223,15 +228,20 @@ class CardDiscount(
             } else {
                 resetDiscountOnDestroy = true
 
-                for (c: Card in currentDiscountValues.keys) {
-                    val discount = currentDiscountValues[c]
-                    check(discount != null) { "Could not find a card with value: $c" }
-                    c.state.ability_cost_modifier += discount
+                for (card: Card in currentDiscountValues.keys) {
+                    val discount = currentDiscountValues[card]
+                    check(discount != null) { "Could not find a card with value: $card" }
+                    card.state.ability_cost_modifier -= discount
 
                     actions.add(
                         CardAction(
-                            CardActionNames.ADD_ABILITY_COST_MODIFIER,
-                            arrayOf(CardActionTarget(playerIdx(), c.position)),
+                            CardActionNames.SUB_ABILITY_COST_MODIFIER,
+                            arrayOf(
+                                CardActionTarget(
+                                    playerIdx(),
+                                    CardPosition(CardPosition.HAND, passiveManager.findHandPositionOf(player, card)),
+                                ),
+                            ),
                             discount,
                         ),
                     )
@@ -241,36 +251,77 @@ class CardDiscount(
             }
         }
 
-        val newMagicCardMap = passiveManager.getCardsInFieldOfType(player, CardType.entries[cardType])
+        val newMagicCardMap = passiveManager.getCardsInHandOfType(player, CardType.entries[cardType])
 
-        for (c: Card in newMagicCardMap.values) {
-            if (!currentDiscountValues.containsKey(c)) {
-                var discount = 0
-                if (c.state.currentAbilityCost() - discountAmount < minAbilityCost) {
-                    discount = c.state.currentAbilityCost() - minAbilityCost
-                } else {
-                    discount = discountAmount
-                }
+        for (card: Card in newMagicCardMap.values) {
+            if (!currentDiscountValues.containsKey(card)) {
+                println("Adding state: $card")
+                val discount = evaluateDiscount(card.state)
+                currentDiscountValues[card] = discount
 
-                currentDiscountValues[c] = discount
-                c.state.ability_cost_modifier -= discount
+                if (discount == 0) continue
+
+                card.state.ability_cost_modifier += discount
                 actions.add(
-                    CardAction(CardActionNames.SUB_ABILITY_COST_MODIFIER, arrayOf(CardActionTarget(playerIdx(), c.position)), discount),
+                    CardAction(
+                        CardActionNames.ADD_ABILITY_COST_MODIFIER,
+                        arrayOf(
+                            CardActionTarget(playerIdx(), CardPosition(CardPosition.HAND, passiveManager.findHandPositionOf(player, card))),
+                        ),
+                        discount,
+                    ),
                 )
             }
         }
 
-        for (c: Card in currentDiscountValues.keys) {
-            // Remove if card is no longer in player's field
-            if (!newMagicCardMap.containsKey(c)) {
-                removeBuffList.add(c)
+        for (card: Card in currentDiscountValues.keys) {
+            // Remove if card is no longer in player's hand
+            if (!newMagicCardMap.containsKey(card)) {
+                removeBuffList.add(card)
 
-                val discount = currentDiscountValues[c]!!
+                val cardIdx = passiveManager.findHandPositionOf(player, card)
+                if (cardIdx == -1) {
+                    currentDiscountValues.remove(card)
+                    continue
+                }
 
-                c.state.ability_cost_modifier += discount
+                cardWasDestroyed()
+
+                val discount = currentDiscountValues[card]!!
+
+                card.state.ability_cost_modifier -= discount
 
                 actions.add(
-                    CardAction(CardActionNames.ADD_ABILITY_COST_MODIFIER, arrayOf(CardActionTarget(playerIdx(), c.position)), discount),
+                    CardAction(
+                        CardActionNames.SUB_ABILITY_COST_MODIFIER,
+                        arrayOf(CardActionTarget(playerIdx(), CardPosition(CardPosition.HAND, cardIdx))),
+                        discount,
+                    ),
+                )
+            } else {
+                println("Updating state: $card")
+
+                val oldDiscount = currentDiscountValues[card]!!
+                val newDiscount = evaluateDiscount(card.state)
+
+                var action: String? = null
+
+                if (oldDiscount < newDiscount) {
+                    action = CardActionNames.ADD_ABILITY_COST_MODIFIER
+                } else if (oldDiscount > newDiscount) {
+                    action = CardActionNames.SUB_ABILITY_COST_MODIFIER
+                } else {
+                    continue
+                }
+
+                actions.add(
+                    CardAction(
+                        action,
+                        arrayOf(
+                            CardActionTarget(playerIdx(), CardPosition(CardPosition.HAND, passiveManager.findHandPositionOf(player, card))),
+                        ),
+                        abs(oldDiscount - newDiscount),
+                    ),
                 )
             }
         }
@@ -280,6 +331,17 @@ class CardDiscount(
         }
 
         return CardActionList(card, actions.toTypedArray())
+    }
+
+    private fun evaluateDiscount(state: CardState): Int {
+        var discount = 0
+        if (state.currentAbilityCost() - discountAmount < minAbilityCost) {
+            discount = state.currentAbilityCost() - minAbilityCost
+        } else {
+            discount = discountAmount
+        }
+
+        return discount
     }
 }
 

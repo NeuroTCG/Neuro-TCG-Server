@@ -48,15 +48,38 @@ class BoardStateManager(
 
     private fun isHandFull(player: Player): Boolean = this.boardState.hands[playerToIndex(player)].size >= 5
 
-    private fun handContains(
+    fun handContains(
         player: Player,
-        state: CardState,
-    ): Boolean = this.boardState.hands[playerToIndex(player)].contains(state)
+        card: Card,
+    ): Boolean = findHandPositionOf(player, card) != -1
+
+    fun findHandPositionOf(
+        player: Player,
+        card: Card,
+    ): Int {
+        for (i in 0..<this.boardState.hands[playerToIndex(player)].size) {
+            val thisCard = this.boardState.hands[playerToIndex(player)][i]
+            if (thisCard === card) {
+                return i
+            }
+
+            if (thisCard.playerIdx == card.playerIdx && thisCard.position == card.position && thisCard.state == card.state) {
+                return i
+            }
+        }
+
+        return -1
+    }
 
     fun getCard(
         player: Player,
         position: CardPosition,
-    ): Card? = this.boardState.cards[playerToIndex(player)][position.row][position.column]
+    ): Card? {
+        if (position.row == -1) {
+            return this.boardState.hands[playerToIndex(player)][position.column]
+        }
+        return this.boardState.cards[playerToIndex(player)][position.row][position.column]
+    }
 
     private fun setCard(
         player: Player,
@@ -77,19 +100,35 @@ class BoardStateManager(
                 cardID,
                 cardStat.max_hp,
                 false,
-                CardTurnPhase.MoveOrAction,
+                CardTurnPhase.Done,
                 0,
                 0,
             )
 
-        this.boardState.hands[playerToIndex(player)].add(newCardState)
+        val nextHandIdx = this.boardState.hands[playerToIndex(player)].size
+
+        val newCard =
+            Card(
+                playerToIndex(player),
+                CardPosition(-1, nextHandIdx),
+                newCardState,
+            )
+
+        this.boardState.hands[playerToIndex(player)].add(newCard)
     }
 
     private fun removeFromHand(
         player: Player,
-        card: CardState,
+        card: Card,
     ) {
         this.boardState.hands[playerToIndex(player)].remove(card)
+        updateHandCardPositions(player)
+    }
+
+    private fun updateHandCardPositions(player: Player) {
+        for (i: Int in 0..<boardState.hands[playerToIndex(player)].size) {
+            boardState.hands[playerToIndex(player)][i].position = CardPosition(CardPosition.HAND, i)
+        }
     }
 
     private fun getRam(player: Player): Int = this.boardState.ram[playerToIndex(player)]
@@ -227,23 +266,26 @@ class BoardStateManager(
             sendInvalid()
             return
         }
+
+        val cardStat = CardStats.getCardByID(packet.card.state.id)
+        if (cardStat == null) {
+            println("invalid summon: bad packet id")
+            sendInvalid()
+            return
+        }
+
         if (getCard(player, packet.position) != null) {
             println("invalid summon: bad packet position")
             sendInvalid()
             return
         }
-        if (!handContains(player, packet.card_state)) {
-            println("invalid summon: bad packet state: ${packet.card_state}, HAND: (Size ${boardState.hands[playerToIndex(player)].size})")
-            for (state: CardState in boardState.hands[playerToIndex(player)]) {
+
+        val summoningCardIdx: Int = findHandPositionOf(player, packet.card)
+        if (summoningCardIdx == -1) {
+            println("invalid summon: bad card: ${packet.card}, HAND: (Size ${boardState.hands[playerToIndex(player)].size})")
+            for (state: Card in boardState.hands[playerToIndex(player)]) {
                 println(state)
             }
-            sendInvalid()
-            return
-        }
-
-        val cardStat = CardStats.getCardByID(packet.card_state.id)
-        if (cardStat == null) {
-            println("invalid summon: bad packet id")
             sendInvalid()
             return
         }
@@ -253,38 +295,34 @@ class BoardStateManager(
                 packet.getResponsePacket(
                     true,
                     valid = false,
-                    newCard = null,
+                    newCard = packet.card,
                     newRam = -1,
                 ),
             )
             return
         }
 
-        packet.card_state.phase = if (!cardStat.tactics.contains(Tactic.NIMBLE)) CardTurnPhase.Done else CardTurnPhase.MoveOrAction
+        val cardToSummon: Card = boardState.hands[playerToIndex(player)][summoningCardIdx]
 
-        val newCard: Card =
-            Card(
-                playerToIndex(player),
-                packet.position,
-                packet.card_state,
-            )
+        cardToSummon.state.phase = if (!cardStat.tactics.contains(Tactic.NIMBLE)) CardTurnPhase.Done else CardTurnPhase.MoveOrAction
+        cardToSummon.position = packet.position
 
         setCard(
             player,
             packet.position,
-            newCard,
+            cardToSummon,
         )
 
-        removeFromHand(player, packet.card_state)
+        removeFromHand(player, cardToSummon)
         removeRam(player, cardStat.summoning_cost)
 
-        passiveManager.addPassive(newCard, player)
+        passiveManager.addPassive(cardToSummon, player)
 
         getConnection(player).sendPacket(
             packet.getResponsePacket(
                 true,
                 valid = true,
-                newCard = newCard.state,
+                newCard = packet.card,
                 newRam = getRam(player),
             ),
         )
@@ -292,7 +330,7 @@ class BoardStateManager(
             packet.getResponsePacket(
                 isYou = false,
                 valid = true,
-                newCard = newCard.state,
+                newCard = packet.card,
                 newRam = getRam(player),
             ),
         )
@@ -846,7 +884,7 @@ class BoardStateManager(
     ) {
         val sendInvalid =
             suspend {
-                getConnection(player).sendPacket(packet.getResponsePacket(isYou = true, valid = false, null, null))
+                getConnection(player).sendPacket(packet.getResponsePacket(isYou = true, valid = false, Ability(), packet.card))
             }
 
         if (!isTurnOfPlayer(player)) {
@@ -854,27 +892,34 @@ class BoardStateManager(
             return
         }
 
-        if (!handContains(player, packet.card_state)) {
+        val magicCardIdx = findHandPositionOf(player, packet.card)
+        if (magicCardIdx == -1) {
+            println("find card failed!: ${packet.card.state} ${packet.card.position}")
             sendInvalid()
             return
         }
 
-        val cardStat = CardStats.getCardByID(packet.card_state.id)
+        val magicCard: Card = boardState.hands[playerToIndex(player)][magicCardIdx]
+
+        val cardStat = CardStats.getCardByID(magicCard.state.id)
         if (cardStat == null) {
+            println("card state failed!")
             sendInvalid()
             return
         }
 
         val ability = cardStat.ability
-        // Cards aren't initialized when in hand, so abilityCard is left null here.
-        val targetCards = useAbility(player, null, ability, packet.target_position)
+
+        val targetCards = useAbility(player, magicCard, ability, packet.target_position)
 
         if (!targetCards) {
+            println("Ability use failed!")
             sendInvalid()
             return
         }
 
-        if (getRam(player) < packet.card_state.currentAbilityCost()) {
+        if (getRam(player) < magicCard.state.currentAbilityCost()) {
+            println("use ram failed!")
             sendInvalid()
             return
         }
@@ -889,7 +934,7 @@ class BoardStateManager(
                 isYou = true,
                 valid = true,
                 ability = ability,
-                target_card = target?.state,
+                target_card = target,
             ),
         )
         getConnection(!player).sendPacket(
@@ -897,11 +942,12 @@ class BoardStateManager(
                 isYou = false,
                 valid = true,
                 ability = ability,
-                target_card = target?.state,
+                target_card = target,
             ),
         )
 
-        removeRam(player, packet.card_state.currentAbilityCost())
+        removeRam(player, magicCard.state.currentAbilityCost())
+        removeFromHand(player, magicCard)
     }
 
     suspend fun handleUseAbilityPacket(

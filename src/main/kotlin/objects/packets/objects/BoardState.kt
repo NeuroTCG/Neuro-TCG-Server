@@ -44,7 +44,7 @@ class BoardState {
 
     @Required
     var hands =
-        arrayOf<MutableList<CardState>>(
+        arrayOf<MutableList<Card>>(
             // player1
             mutableListOf(),
             // player2

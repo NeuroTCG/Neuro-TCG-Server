@@ -185,6 +185,21 @@ class PassiveManager(
         return workingMap.toMap()
     }
 
+    fun getCardsInHandOfType(
+        player: Player,
+        type: CardType,
+    ): Map<Card, Card> {
+        val workingMap: MutableMap<Card, Card> = mutableMapOf()
+
+        for (card: Card in boardManager.getBoardState().hands[playerToIdx(player)]) {
+            if (CardStats.getCardByID(card.state.id)!!.card_type == type) {
+                workingMap[card] = card
+            }
+        }
+
+        return workingMap.toMap()
+    }
+
     /*
         Gets all the cards in the field that are allies of the given card
      */
@@ -204,6 +219,11 @@ class PassiveManager(
 
         return workingMap.toMap()
     }
+
+    fun findHandPositionOf(
+        player: Player,
+        card: Card,
+    ) = boardManager.findHandPositionOf(player, card)
 
     private fun positionLeftOf(position: CardPosition): CardPosition? {
         val leftColumn = max(0, position.column - 1)
@@ -228,4 +248,9 @@ class PassiveManager(
 
         return cardID
     }
+
+    fun handContains(
+        player: Player,
+        card: Card,
+    ): Boolean = boardManager.handContains(player, card)
 }

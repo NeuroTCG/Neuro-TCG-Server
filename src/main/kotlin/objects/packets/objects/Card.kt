@@ -15,4 +15,6 @@ class Card(
     var playerIdx: Int,
     var position: CardPosition,
     var state: CardState,
-)
+) {
+    override fun toString(): String = "(Player=$playerIdx, Position=$position, State=$state)"
+}
