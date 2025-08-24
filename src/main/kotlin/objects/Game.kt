@@ -139,6 +139,8 @@ class Game(
 
         println(prefix + "Game is starting")
 
+        println(boardManager.getVersusString())
+
         /*
          * Main Game Phase
          */

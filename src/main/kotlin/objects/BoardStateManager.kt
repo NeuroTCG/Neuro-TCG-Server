@@ -75,7 +75,7 @@ class BoardStateManager(
         player: Player,
         position: CardPosition,
     ): Card? {
-        if (position.row == -1) {
+        if (position.row == CardPosition.HAND) {
             return this.boardState.hands[playerToIndex(player)][position.column]
         }
         return this.boardState.cards[playerToIndex(player)][position.row][position.column]
@@ -169,6 +169,16 @@ class BoardStateManager(
         }
 
         return if (deckMasterPlayer1.health > deckMasterPlayer2.health) player1 else player2
+    }
+
+    fun getVersusString(): String {
+        val player1Dm = boardState.deck_masters[playerToIndex(Player.Player1)]!!
+        val player2Dm = boardState.deck_masters[playerToIndex(Player.Player2)]!!
+
+        println(boardState.cards[playerToIndex(Player.Player1)][1][1])
+        println(boardState.cards[playerToIndex(Player.Player2)][1][1])
+
+        return "${CardStats.getCardByID(player1Dm.state.id)!!.name} VS. ${CardStats.getCardByID(player2Dm.state.id)!!.name}"
     }
 
     suspend fun handleDeckMasterRequest(
@@ -782,7 +792,6 @@ class BoardStateManager(
                             card = null
                         }
                     }
-                    setCard(player, pos, card)
                 }
 
                 return true
@@ -967,6 +976,8 @@ class BoardStateManager(
         val abilityCard = getCard(player, packet.ability_position)
 
         if (abilityCard != null) {
+            println("Player: ${playerToIndex(player)}")
+            println("Card's owner: ${abilityCard.playerIdx}")
             println("Card's name = ${CardStats.getCardByID(abilityCard.state.id)?.name}")
             println("Ability was used: ${abilityCard.state.ability_was_used}")
             println("Current turn phase: ${abilityCard.state.phase}")
@@ -1021,9 +1032,9 @@ class BoardStateManager(
         abilityCard.state.ability_was_used = true
 
         if (abilityCard != null) {
-            print("Card's name = ${CardStats.getCardByID(abilityCard.state.id)?.name}")
-            print("Ability was used: ${abilityCard.state.ability_was_used}")
-            print("Current turn phase: ${abilityCard.state.phase}")
+            println("Card's name = ${CardStats.getCardByID(abilityCard.state.id)?.name}")
+            println("Ability was used: ${abilityCard.state.ability_was_used}")
+            println("Current turn phase: ${abilityCard.state.phase}")
         }
     }
 
