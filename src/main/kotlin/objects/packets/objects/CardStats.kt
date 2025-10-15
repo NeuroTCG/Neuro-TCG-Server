@@ -352,7 +352,7 @@ class CardStats(
                         4,
                         arrayOf<Tactic>(),
                         CardType.CREATURE,
-                        Ability(),
+                        Ability(AbilityEffect.SEAL, 2, AbilityRange.ENEMY_CARD, 1),
                         Passive(),
                     ),
                 maxID++ to

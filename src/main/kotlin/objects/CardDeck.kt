@@ -7,7 +7,7 @@ class CardDeck {
 
     // This gets consumed first. Fill this up with cards you want to have in
     // the player's hand when testing.
-    private val queue = mutableListOf(55)
+    private val queue = mutableListOf(14, 15, 16, 17, 18, 19)
 
     private val loop = arrayListOf<Int>()
 
