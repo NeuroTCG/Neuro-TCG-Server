@@ -43,6 +43,10 @@ class GameDatabase(
             commit()
         }
 
+        transaction {
+            // TODO: recover these games instead
+            CurrentGames.deleteAll()
+        }
         require(transaction { CurrentGames.selectAll().count() } == 0L, { "Not all games were finished correctly" })
     }
 
