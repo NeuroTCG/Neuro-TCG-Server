@@ -673,10 +673,16 @@ class BoardStateManager(
 
     suspend fun useAbility(
         player: Player,
-        abilityCard: Card?,
+        abilityCard: Card,
         ability: Ability,
         target_position: CardPosition?,
     ): Boolean {
+
+        //Player cannot use abilities while in a sealed state.
+        if (abilityCard.state.sealed_turns_left > 0) {
+            return false
+        }
+
         when (ability.effect) {
             AbilityEffect.NONE -> TODO()
             AbilityEffect.NOT_IMPLEMENTED -> TODO()
@@ -982,7 +988,7 @@ class BoardStateManager(
             println("Ability was used: ${abilityCard.state.ability_was_used}")
             println("Current turn phase: ${abilityCard.state.phase}")
         }
-
+        
         if (abilityCard == null || abilityCard.state.phase < CardTurnPhase.Action || abilityCard.state.ability_was_used) {
             sendInvalid()
             return
