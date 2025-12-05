@@ -39,6 +39,8 @@ class CardActionList(
             card,
             arrayOf(CardAction(CardActionNames.DRAW_CARD, arrayOf(CardActionTarget(playerIdx, card.position)), cardId)),
         )
+
+
     }
 }
 
@@ -75,6 +77,7 @@ object CardActionNames {
     const val DRAW_CARD = "draw_card"
     const val ADD_ABILITY_COST_MODIFIER = "add_ability_cost_modifier"
     const val SUB_ABILITY_COST_MODIFIER = "sub_ability_cost_modifier"
+    const val MOVE_CARD = "move_card"
 }
 
 /**

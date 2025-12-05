@@ -988,7 +988,7 @@ class BoardStateManager(
             println("Ability was used: ${abilityCard.state.ability_was_used}")
             println("Current turn phase: ${abilityCard.state.phase}")
         }
-        
+
         if (abilityCard == null || abilityCard.state.phase < CardTurnPhase.Action || abilityCard.state.ability_was_used) {
             sendInvalid()
             return

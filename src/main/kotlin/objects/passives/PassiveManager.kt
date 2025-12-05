@@ -141,6 +141,38 @@ class PassiveManager(
         return PassiveUpdatePacket(updateActions.toTypedArray())
     }
 
+    /**
+     * Moves the given card to new position and returns a CardAction that reflects the changes.
+     */
+    fun handleMoveCardAction(card: Card, player: Player, newPosition: CardPosition)
+        : CardAction {
+        card.position = newPosition
+        val playerIdx = playerToIdx(player)
+        boardManager.getBoardState().cards[playerIdx][newPosition.row][newPosition.column] = card
+        return CardAction(CardActionNames.MOVE_CARD,
+            arrayOf(CardActionTarget(playerIdx, newPosition)),0)
+    }
+
+    /**
+     * Finds any empty spots on the given player's side of the field.
+     */
+    fun findEmptySpotsInField(player: Player) : List<CardPosition> {
+        val emptySpots = mutableListOf<CardPosition>()
+
+        val cards = boardManager.getBoardState().cards[playerToIdx(player)]
+
+        for (row in cards.indices) {
+            for(column in cards[row].indices) {
+                if (cards[row][column] == null) emptySpots.add(CardPosition(row, column))
+            }
+        }
+
+        return emptySpots;
+    }
+
+    fun isCorner(player: Player, position: CardPosition) =
+        position.column == 0 or boardManager.getBoardState().cards[playerToIdx(player)][position.row].size - 1
+
     fun findCardByPosition(
         player: Player,
         position: CardPosition,
